@@ -6,7 +6,7 @@ from tkinter import messagebox
 import argparse
 import sys
 
-__version__ = "0.0.4"
+__version__ = "0.0.7"
 
 class Version:
     """A class to represent a semantic version."""
@@ -52,6 +52,37 @@ def save_version(version):
         f.write(new_content)
         f.truncate()
 
+def analyze_repository():
+    """Analyze the repository to generate a summary."""
+    total_files = 0
+    py_files = 0
+    py_lines = 0
+    for root, _, files in os.walk("."):
+        if "versions_ndaversis" in root:
+            continue
+        for file in files:
+            total_files += 1
+            if file.endswith(".py"):
+                py_files += 1
+                try:
+                    with open(os.path.join(root, file), "r", encoding="utf-8") as f:
+                        py_lines += len(f.readlines())
+                except (IOError, UnicodeDecodeError):
+                    # Ignore files that can't be read
+                    pass
+
+    return (
+        f'\n\n'
+        f'---\n'
+        f'*This summary is auto-generated and reflects the state of the repository at the time of the last version update.*\n\n'
+        f'**Repository Analysis:**\n'
+        f'- **Total Files:** {total_files}\n'
+        f'- **Python Files:** {py_files}\n'
+        f'- **Total Python Lines:** {py_lines}\n'
+        f'---\n'
+    )
+
+
 def update_readme(version, summary):
     """Update the readme.md file with the new version and summary."""
     with open("readme.md", "r", encoding="utf-8") as f:
@@ -64,6 +95,30 @@ def update_readme(version, summary):
     if version_line in content:
         print(f"Version {version_str} already exists in readme.md. Skipping.")
         return
+
+    # Update "Description Summary" with auto-generated analysis
+    analysis_summary = analyze_repository()
+
+    # Define start and end markers for the auto-generated block
+    start_marker = "---"
+    end_marker = "---"
+
+    # Remove any existing auto-generated block
+    # We match from the start marker to the end marker, including the markers themselves
+    # The DOTALL flag allows the dot to match newlines
+    content = re.sub(
+        f"\\s*{start_marker}\\s*.*?This summary is auto-generated.*?\\s*{end_marker}\\s*",
+        "",
+        content,
+        flags=re.DOTALL
+    )
+
+    # Add the new analysis to the "Description Summary"
+    description_heading = "## 2. Description Summary"
+    content = content.replace(
+        description_heading,
+        f"{description_heading}\n{analysis_summary}"
+    )
 
     # Update "Last Version Summary"
     new_summary_text = f"\nThe last version is `{version_str}`. Summary: {summary}\n"
