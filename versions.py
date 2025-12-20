@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import messagebox
 import argparse
 
-__version__ = "0.0.2"
+__version__ = "0.0.1"
 
 class Version:
     """A class to represent a semantic version."""
