@@ -1,6 +1,6 @@
 # NDAVERSIS: agentic semantic version info system.
 
-**Ndaversis** (**N**ikita **D**rozdov **A**gentic **Ver**sioning **S**emantic **I**nfo **S**ystem) is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, making it a flexible solution for a wide range of development workflows.
+**Ndaversis** is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, making it a flexible solution for a wide range of development workflows.
 
 This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management. The core functionality is encapsulated within a single script, `versions.py`, which programmatically modifies itself to update the project's version.
 
