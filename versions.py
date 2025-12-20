@@ -4,8 +4,9 @@ import re
 import tkinter as tk
 from tkinter import messagebox
 import argparse
+import sys
 
-__version__ = "0.0.1"
+__version__ = "0.0.4"
 
 class Version:
     """A class to represent a semantic version."""
@@ -59,16 +60,30 @@ def update_readme(version, summary):
     version_str = str(version)
     version_line = f"## Version {version_str}"
 
+    # Check for duplicates first
     if version_line in content:
-        # Version already exists, so we don't do anything
         print(f"Version {version_str} already exists in readme.md. Skipping.")
         return
 
-    # Add the new version and summary
-    new_content = content + f"\n{version_line}\n\n{summary}\n"
+    # Update "Last Version Summary"
+    new_summary_text = f"\nThe last version is `{version_str}`. Summary: {summary}\n"
+    content = re.sub(
+        r"(?<=## 13\. Last Version Summary\n).*?(?=## 14\. Version History)",
+        new_summary_text,
+        content,
+        flags=re.DOTALL
+    )
+
+    # Update "Version History"
+    version_history_heading = "## 14. Version History"
+    new_version_entry = f"## Version {version_str}\n{summary}"
+    content = content.replace(
+        version_history_heading,
+        f"{version_history_heading}\n\n{new_version_entry}"
+    )
 
     with open("readme.md", "w", encoding="utf-8") as f:
-        f.write(new_content)
+        f.write(content)
 
 
 def main_gui():
@@ -107,16 +122,8 @@ def main_gui():
 
     root.mainloop()
 
-def main_cli():
+def main_cli(args):
     """Run the command-line interface."""
-    parser = argparse.ArgumentParser(description="Version Manager")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--major", action="store_true", help="Increment major version")
-    group.add_argument("--minor", action="store_true", help="Increment minor version")
-    group.add_argument("--patch", action="store_true", help="Increment patch version")
-    parser.add_argument("--summary", type=str, help="Summary of changes")
-    args = parser.parse_args()
-
     version = get_version()
 
     if args.major:
@@ -125,9 +132,6 @@ def main_cli():
         version.increment_minor()
     elif args.patch:
         version.increment_patch()
-    else:
-        print("No version increment specified. Use --major, --minor, or --patch")
-        return
 
     summary = args.summary if args.summary else "No summary provided."
     save_version(version)
@@ -136,11 +140,27 @@ def main_cli():
 
 
 if __name__ == "__main__":
-    main_parser = argparse.ArgumentParser(description="Version Manager")
-    main_parser.add_argument("--gui", action="store_true", help="Run the GUI")
-    main_args, unknown = main_parser.parse_known_args()
+    parser = argparse.ArgumentParser(description="Version Manager")
+    subparsers = parser.add_subparsers(dest="command")
 
-    if main_args.gui:
+    # GUI subparser
+    gui_parser = subparsers.add_parser("gui", help="Run the GUI")
+
+    # CLI subparser
+    cli_parser = subparsers.add_parser("cli", help="Run the command-line interface")
+    group = cli_parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--major", action="store_true", help="Increment major version")
+    group.add_argument("--minor", action="store_true", help="Increment minor version")
+    group.add_argument("--patch", action="store_true", help="Increment patch version")
+    cli_parser.add_argument("--summary", type=str, help="Summary of changes")
+
+    if len(sys.argv) == 1:
         main_gui()
     else:
-        main_cli()
+        args = parser.parse_args()
+        if args.command == "gui":
+            main_gui()
+        elif args.command == "cli":
+            main_cli(args)
+        else:
+            parser.print_help()
