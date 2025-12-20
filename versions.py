@@ -1,8 +1,11 @@
 """A module for managing semantic versioning."""
 import os
+import re
 import tkinter as tk
 from tkinter import messagebox
 import argparse
+
+__version__ = "0.0.2"
 
 class Version:
     """A class to represent a semantic version."""
@@ -31,23 +34,22 @@ class Version:
         self.patch += 1
 
 def get_version():
-    """Get the current version from the VERSION file."""
-    if not os.path.exists("VERSION"):
-        with open("VERSION", "w", encoding="utf-8") as f:
-            f.write("0.0.0")
-        return Version(0, 0, 0)
-    with open("VERSION", "r", encoding="utf-8") as f:
-        version_str = f.read().strip()
-    try:
-        major, minor, patch = map(int, version_str.split("."))
-        return Version(major, minor, patch)
-    except (ValueError, IndexError):
-        return Version(0, 0, 0)
+    """Get the current version from the __version__ variable."""
+    major, minor, patch = map(int, __version__.split("."))
+    return Version(major, minor, patch)
 
 def save_version(version):
-    """Save the version to the VERSION file."""
-    with open("VERSION", "w", encoding="utf-8") as f:
-        f.write(str(version) + "\n")
+    """Save the version back to the versions.py file."""
+    with open(__file__, "r+", encoding="utf-8") as f:
+        content = f.read()
+        new_content = re.sub(
+            r"__version__ = \".*\"",
+            f"__version__ = \"{version}\"",
+            content
+        )
+        f.seek(0)
+        f.write(new_content)
+        f.truncate()
 
 def update_readme(version, summary):
     """Update the readme.md file with the new version and summary."""
