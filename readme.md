@@ -1,6 +1,17 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
 ## 2. Description Summary
+
+
+---
+*This summary is auto-generated and reflects the state of the repository at the time of the last version update.*
+
+**Repository Analysis:**
+- **Total Files:** 65
+- **Python Files:** 2
+- **Total Python Lines:** 225
+---
+\n\n\n
 "Ndaversis is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, making it a flexible solution for a wide range of development workflows.
 This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management. The core functionality is encapsulated within a single script, versions.py, which programmatically modifies itself to update the project's version."
 
@@ -79,8 +90,17 @@ No installation is required. Simply clone or download the repository and run the
 
 ## 13. Last Version Summary
 
-The last version is `0.0.4`. Summary: Testing robust regex
+The last version is `0.0.7`. Summary: Test final regex
 ## 14. Version History
+
+## Version 0.0.7
+Test final regex
+
+## Version 0.0.6
+Test corrected formatting
+
+## Version 0.0.5
+Test auto-summary
 
 ## Version 0.0.4
 Testing robust regex
