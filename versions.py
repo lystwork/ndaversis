@@ -6,7 +6,7 @@ from tkinter import messagebox
 import argparse
 import sys
 
-__version__ = "0.0.7"
+__version__ = "0.0.11"
 
 class Version:
     """A class to represent a semantic version."""
@@ -99,25 +99,16 @@ def update_readme(version, summary):
     # Update "Description Summary" with auto-generated analysis
     analysis_summary = analyze_repository()
 
-    # Define start and end markers for the auto-generated block
-    start_marker = "---"
-    end_marker = "---"
+    # Define the markers for the auto-generated block
+    start_marker = "<!-- AUTO-SUMMARY-START -->"
+    end_marker = "<!-- AUTO-SUMMARY-END -->"
 
-    # Remove any existing auto-generated block
-    # We match from the start marker to the end marker, including the markers themselves
-    # The DOTALL flag allows the dot to match newlines
+    # Replace the content between the markers
     content = re.sub(
-        f"\\s*{start_marker}\\s*.*?This summary is auto-generated.*?\\s*{end_marker}\\s*",
-        "",
+        f"({start_marker})(.*?)({end_marker})",
+        f"\\1{analysis_summary}\\3",
         content,
         flags=re.DOTALL
-    )
-
-    # Add the new analysis to the "Description Summary"
-    description_heading = "## 2. Description Summary"
-    content = content.replace(
-        description_heading,
-        f"{description_heading}\n{analysis_summary}"
     )
 
     # Update "Last Version Summary"
