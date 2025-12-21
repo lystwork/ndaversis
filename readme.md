@@ -2,17 +2,21 @@
 
 ## 2. Description Summary
 
+Ndaversis is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, making it a flexible solution for a wide range of development workflows.
+This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management. The core functionality is encapsulated within a single script, versions.py, which programmatically modifies itself to update the project's version.
+
+---
+<!-- AUTO-SUMMARY-START -->
 
 ---
 *This summary is auto-generated and reflects the state of the repository at the time of the last version update.*
 
 **Repository Analysis:**
-- **Total Files:** 65
+- **Total Files:** 91
 - **Python Files:** 2
-- **Total Python Lines:** 225
+- **Total Python Lines:** 216
 ---
-Ndaversis is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, making it a flexible solution for a wide range of development workflows.
-This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management. The core functionality is encapsulated within a single script, versions.py, which programmatically modifies itself to update the project's version.
+<!-- AUTO-SUMMARY-END -->
 
 ## 3. Use Cases
 *   **Git-Independent Projects:** Ideal for projects where versioning is needed but Git is not used, such as in certain CI/CD pipelines or for projects managed outside of traditional version control.
@@ -89,8 +93,20 @@ No installation is required. Simply clone or download the repository and run the
 
 ## 13. Last Version Summary
 
-The last version is `0.0.7`. Summary: Test final regex
+The last version is `0.0.11`. Summary: Test marker-based insertion
 ## 14. Version History
+
+## Version 0.0.11
+Test marker-based insertion
+
+## Version 0.0.10
+Final test of formatting
+
+## Version 0.0.9
+Test final formatting
+
+## Version 0.0.8
+Test reordered summary
 
 ## Version 0.0.7
 Test final regex
