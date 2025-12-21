@@ -3,7 +3,7 @@
 ## 2. Description Summary
 
 <!-- AUTO-DESCRIPTION-START -->
-NDAVERSIS is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, and offers both a GUI and a CLI for user interaction. The core functionality is encapsulated within a single script, which programmatically modifies itself to update the project's version. This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management.
+NDAVERSIS is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, and offers both a GUI and a CLI for user interaction. This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management.
 <!-- AUTO-DESCRIPTION-END -->
 
 ---
@@ -15,7 +15,7 @@ NDAVERSIS is a monolithic, self-contained Python wrapper designed to manage sema
 **Repository Analysis:**
 - **Total Files:** 6
 - **Python Files:** 3
-- **Total Python Lines:** 298
+- **Total Python Lines:** 417
 ---
 <!-- AUTO-SUMMARY-END -->
 
@@ -94,8 +94,67 @@ No installation is required. Simply clone or download the repository and run the
 
 ## 13. Last Version Summary
 
-The last version is `0.0.14`. Summary: Test change
+The last version is `0.0.18`. Summary: - Added imports: argparse, ast, json, os, re, sys, tkinter
+- Added functions: _analyze_codebase, analyze_repository, generate_change_summary, generate_project_description, get_version, hello_world, load_previous_code_state, main_cli, main_gui, save_version, update_and_close, update_readme
+- Added classes: Version
 ## 14. Version History
+
+## Version 0.0.18
+### Goals
+Auto-generated update.
+
+### What Changed
+- Added imports: argparse, ast, json, os, re, sys, tkinter
+- Added functions: _analyze_codebase, analyze_repository, generate_change_summary, generate_project_description, get_version, hello_world, load_previous_code_state, main_cli, main_gui, save_version, update_and_close, update_readme
+- Added classes: Version
+
+### What's Good for the User
+Automated and accurate changelog.
+
+### What's Possibly Next
+Further automation.
+
+## Version 0.0.17
+### Goals
+Auto-generated update.
+
+### What Changed
+- Added imports: json
+- Added functions: generate_change_summary, load_previous_code_state, update_and_close
+
+### What's Good for the User
+Automated and accurate changelog.
+
+### What's Possibly Next
+Further automation.
+
+## Version 0.0.16
+### Goals
+Auto-generated update.
+
+### What Changed
+- Added functions: generate_change_summary, update_and_close
+
+### What's Good for the User
+Automated and accurate changelog.
+
+### What's Possibly Next
+Further automation.
+
+## Version 0.0.15
+### Goals
+Auto-generated update.
+
+### What Changed
+- Added imports: argparse, ast, os, re, sys, tkinter
+- Added functions: _analyze_codebase, analyze_repository, generate_change_summary, generate_project_description, get_version, main_cli, main_gui, save_version, update_readme
+- Added classes: Version
+
+### What's Good for the User
+Automated and accurate changelog.
+
+### What's Possibly Next
+Further automation.
 
 ## Version 0.0.14
 ### Goals
@@ -156,3 +215,61 @@ Initial version.
 
 ## 16. Copyright
 ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. All rights belong to their respective owners.
+
+<!-- AUTO-CODE-STATE-START -->
+{
+    "imports": [
+        "argparse",
+        "ast",
+        "json",
+        "os",
+        "re",
+        "sys",
+        "tkinter"
+    ],
+    "classes": {
+        "Version": {
+            "methods": {
+                "__init__": [
+                    "major",
+                    "minor",
+                    "patch"
+                ],
+                "__str__": [],
+                "increment_major": [],
+                "increment_minor": [],
+                "increment_patch": []
+            }
+        }
+    },
+    "functions": {
+        "load_previous_code_state": [],
+        "get_version": [],
+        "save_version": [
+            "version"
+        ],
+        "_analyze_codebase": [],
+        "generate_change_summary": [
+            "old_state",
+            "new_state"
+        ],
+        "generate_project_description": [],
+        "analyze_repository": [],
+        "update_readme": [
+            "version",
+            "goals",
+            "what_changed",
+            "what_good_for_user",
+            "what_possibly_next"
+        ],
+        "main_gui": [],
+        "main_cli": [
+            "cli_args"
+        ],
+        "update_and_close": [
+            "increment_func"
+        ],
+        "hello_world": []
+    }
+}
+<!-- AUTO-CODE-STATE-END -->
