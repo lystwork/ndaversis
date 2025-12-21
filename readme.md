@@ -15,7 +15,7 @@ NDAVERSIS is a monolithic, self-contained Python wrapper designed to manage sema
 **Repository Analysis:**
 - **Total Files:** 6
 - **Python Files:** 3
-- **Total Python Lines:** 264
+- **Total Python Lines:** 298
 ---
 <!-- AUTO-SUMMARY-END -->
 
@@ -94,8 +94,21 @@ No installation is required. Simply clone or download the repository and run the
 
 ## 13. Last Version Summary
 
-The last version is `0.0.13`. Summary: Test dynamic description
+The last version is `0.0.14`. Summary: Test change
 ## 14. Version History
+
+## Version 0.0.14
+### Goals
+Test goal
+
+### What Changed
+Test change
+
+### What's Good for the User
+Test benefit
+
+### What's Possibly Next
+Test next
 
 ## Version 0.0.13
 Test dynamic description
