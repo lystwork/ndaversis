@@ -6,7 +6,7 @@ from tkinter import messagebox
 import argparse
 import sys
 
-__version__ = "0.0.12"
+__version__ = "0.0.13"
 
 class Version:
     """A class to represent a semantic version."""
@@ -51,6 +51,36 @@ def save_version(version):
         f.seek(0)
         f.write(new_content)
         f.truncate()
+
+def generate_project_description():
+    """Analyze the repository to generate a project description."""
+    # 1. What is this "Name of repository"?
+    try:
+        with open("readme.md", "r", encoding="utf-8") as f:
+            first_line = f.readline()
+            project_name = first_line.split(":")[0].replace("# 1. ", "").strip()
+    except (IOError, IndexError):
+        project_name = "Ndaversis"
+
+    # 2. How it operates? 3. How its designed? 4. What its core functionality?
+    with open(__file__, "r", encoding="utf-8") as f:
+        code = f.read()
+
+    core_functionality = "manage semantic versioning for software projects"
+    design = "monolithic, self-contained Python wrapper"
+    operation = "operates independently of any version control system like Git"
+
+    if "import tkinter" in code and "import argparse" in code:
+        operation += ", and offers both a GUI and a CLI for user interaction"
+
+    if "f.write(new_content)" in code and "__version__" in code:
+        operation += ". The core functionality is encapsulated within a single script, which programmatically modifies itself to update the project's version"
+
+    return (
+        f"{project_name} is a {design} designed to {core_functionality}. "
+        f"It {operation}. This tool is designed to be used by autonomous agents, "
+        f"providing a simple and robust interface for version management."
+    )
 
 def analyze_repository():
     """Analyze the repository to generate a summary."""
@@ -99,15 +129,24 @@ def update_readme(version, summary):
         return
 
     # Update "Description Summary" with auto-generated analysis
+    description = generate_project_description()
     analysis_summary = analyze_repository()
 
-    # Define the markers for the auto-generated block
-    start_marker = "<!-- AUTO-SUMMARY-START -->"
-    end_marker = "<!-- AUTO-SUMMARY-END -->"
+    # Define the markers for the auto-generated blocks
+    desc_start_marker = "<!-- AUTO-DESCRIPTION-START -->"
+    desc_end_marker = "<!-- AUTO-DESCRIPTION-END -->"
+    summary_start_marker = "<!-- AUTO-SUMMARY-START -->"
+    summary_end_marker = "<!-- AUTO-SUMMARY-END -->"
 
     # Replace the content between the markers
     content = re.sub(
-        f"({start_marker})(.*?)({end_marker})",
+        f"({desc_start_marker})(.*?)({desc_end_marker})",
+        f"\\1\n{description}\n\\3",
+        content,
+        flags=re.DOTALL
+    )
+    content = re.sub(
+        f"({summary_start_marker})(.*?)({summary_end_marker})",
         f"\\1{analysis_summary}\\3",
         content,
         flags=re.DOTALL
