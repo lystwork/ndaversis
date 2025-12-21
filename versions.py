@@ -6,8 +6,22 @@ from tkinter import messagebox
 import argparse
 import sys
 import ast
+import json
 
-__version__ = "0.0.14"
+__version__ = "0.0.18"
+def load_previous_code_state():
+    """Load the previous code state from the readme.md file."""
+    try:
+        with open("readme.md", "r", encoding="utf-8") as f:
+            content = f.read()
+            match = re.search(r"<!-- AUTO-CODE-STATE-START -->(.*?)<!-- AUTO-CODE-STATE-END -->", content, re.DOTALL)
+            if match:
+                return json.loads(match.group(1))
+            return {}
+    except (IOError, json.JSONDecodeError):
+        return {}
+
+__previous_code_state__ = load_previous_code_state()
 
 class Version:
     """A class to represent a semantic version."""
@@ -54,26 +68,116 @@ def save_version(version):
         f.truncate()
 
 def _analyze_codebase():
-    """Analyze the codebase to identify key features and return the code."""
+    """Analyze the codebase to identify key features and return a structured dictionary."""
     features = {
         "imports": set(),
-        "classes": set(),
-        "functions": set(),
+        "classes": {},
+        "functions": {},
     }
-    with open(__file__, "r", encoding="utf-8") as f:
-        code = f.read()
-        tree = ast.parse(code)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    features["imports"].add(alias.name)
-            elif isinstance(node, ast.ImportFrom):
+    method_names = set()
+    for root, _, files in os.walk("."):
+        if ".git" in root:
+            continue
+        for file in files:
+            if file.endswith(".py"):
+                with open(os.path.join(root, file), "r", encoding="utf-8") as f:
+                    code = f.read()
+                    try:
+                        tree = ast.parse(code)
+                        # First pass: Get classes and their methods
+                        for node in ast.walk(tree):
+                            if isinstance(node, ast.ClassDef):
+                                methods = {}
+                                for item in node.body:
+                                    if isinstance(item, ast.FunctionDef):
+                                        method_names.add(item.name)
+                                        func_args = [arg.arg for arg in item.args.args if arg.arg != "self"]
+                                        methods[item.name] = func_args
+                                features["classes"][node.name] = {"methods": methods}
+
+                        # Second pass: Get imports and top-level functions
+                        for node in ast.walk(tree):
+                            if isinstance(node, ast.Import):
+                                for alias in node.names:
+                                    features["imports"].add(alias.name)
+                            elif isinstance(node, ast.ImportFrom):
+                                if node.module:
+                                    features["imports"].add(node.module)
+                            elif isinstance(node, ast.FunctionDef):
+                                # Only add if it's not a method we've already processed
+                                if node.name not in method_names:
+                                    func_args = [arg.arg for arg in node.args.args]
+                                    features["functions"][node.name] = func_args
+                    except SyntaxError:
+                        # Ignore files with syntax errors
+                        continue
+    # First pass: Get classes and their methods
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            methods = {}
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef):
+                    method_names.add(item.name)
+                    func_args = [arg.arg for arg in item.args.args if arg.arg != "self"]
+                    methods[item.name] = func_args
+            features["classes"][node.name] = {"methods": methods}
+
+    # Second pass: Get imports and top-level functions
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                features["imports"].add(alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
                 features["imports"].add(node.module)
-            elif isinstance(node, ast.ClassDef):
-                features["classes"].add(node.name)
-            elif isinstance(node, ast.FunctionDef):
-                features["functions"].add(node.name)
+        elif isinstance(node, ast.FunctionDef):
+            # Only add if it's not a method we've already processed
+            if node.name not in method_names:
+                func_args = [arg.arg for arg in node.args.args]
+                features["functions"][node.name] = func_args
+
+    features["imports"] = sorted(list(features["imports"]))
     return features, code
+
+
+def generate_change_summary(old_state, new_state):
+    """Compare two code states and generate a summary of changes."""
+    summary = []
+
+    # Compare imports
+    old_imports = set(old_state.get("imports", []))
+    new_imports = set(new_state.get("imports", []))
+    added_imports = new_imports - old_imports
+    removed_imports = old_imports - new_imports
+    if added_imports:
+        summary.append(f"- Added imports: {', '.join(sorted(list(added_imports)))}")
+    if removed_imports:
+        summary.append(f"- Removed imports: {', '.join(sorted(list(removed_imports)))}")
+
+    # Compare functions
+    old_functions = old_state.get("functions", {})
+    new_functions = new_state.get("functions", {})
+    added_functions = set(new_functions.keys()) - set(old_functions.keys())
+    removed_functions = set(old_functions.keys()) - set(new_functions.keys())
+    if added_functions:
+        summary.append(f"- Added functions: {', '.join(sorted(list(added_functions)))}")
+    if removed_functions:
+        summary.append(f"- Removed functions: {', '.join(sorted(list(removed_functions)))}")
+
+    # Compare classes
+    old_classes = old_state.get("classes", {})
+    new_classes = new_state.get("classes", {})
+    added_classes = set(new_classes.keys()) - set(old_classes.keys())
+    removed_classes = set(old_classes.keys()) - set(new_classes.keys())
+    if added_classes:
+        summary.append(f"- Added classes: {', '.join(sorted(list(added_classes)))}")
+    if removed_classes:
+        summary.append(f"- Removed classes: {', '.join(sorted(list(removed_classes)))}")
+
+    if not summary:
+        return "No significant changes detected."
+
+    return "\n".join(summary)
 
 
 def generate_project_description():
@@ -163,7 +267,7 @@ def update_readme(version, goals, what_changed, what_good_for_user, what_possibl
 
     summary_text = f"\nThe last version is `{version_str}`. Summary: {what_changed}\n"
     content = re.sub(
-        r"(?<=## 13\. Last Version Summary\n).*?(?=## 14\. Version History)",
+        r"(?<=## 13\. Last Version Summary\n)(.|\n)*?(?=## 14\. Version History)",
         summary_text, content, flags=re.DOTALL
     )
 
@@ -235,6 +339,12 @@ def main_cli(cli_args):
     """Run the command-line interface."""
     version = get_version()
 
+    # Analyze the current code state
+    new_code_state, _ = _analyze_codebase()
+
+    # Generate the change summary
+    change_summary = generate_change_summary(__previous_code_state__, new_code_state)
+
     if cli_args.major:
         version.increment_major()
     elif cli_args.minor:
@@ -242,9 +352,34 @@ def main_cli(cli_args):
     elif cli_args.patch:
         version.increment_patch()
 
-    summary = cli_args.summary if cli_args.summary else "No summary provided."
+    details = {
+        "goals": "Auto-generated update.",
+        "what_changed": change_summary,
+        "what_good_for_user": "Automated and accurate changelog.",
+        "what_possibly_next": "Further automation.",
+    }
+
     save_version(version)
     update_readme(version, **details)
+
+    # Update the __previous_code_state__ in the readme.md file
+    with open("readme.md", "r+", encoding="utf-8") as f:
+        content = f.read()
+        state_string = json.dumps(new_code_state, indent=4)
+        # Use a robust regex to find and replace the state block
+        new_content = re.sub(
+            r"<!-- AUTO-CODE-STATE-START -->.*?<!-- AUTO-CODE-STATE-END -->",
+            f"<!-- AUTO-CODE-STATE-START -->\n{state_string}\n<!-- AUTO-CODE-STATE-END -->",
+            content,
+            flags=re.DOTALL
+        )
+        # If the block doesn't exist, append it to the end of the file
+        if "<!-- AUTO-CODE-STATE-START -->" not in new_content:
+            new_content += f"\n<!-- AUTO-CODE-STATE-START -->\n{state_string}\n<!-- AUTO-CODE-STATE-END -->"
+        f.seek(0)
+        f.write(new_content)
+        f.truncate()
+
     print(f"Version updated to {version}")
 
 if __name__ == "__main__":
@@ -258,11 +393,6 @@ if __name__ == "__main__":
     group.add_argument("--major", action="store_true", help="Increment major version")
     group.add_argument("--minor", action="store_true", help="Increment minor version")
     group.add_argument("--patch", action="store_true", help="Increment patch version")
-
-    cli_parser.add_argument("--goals", type=str, help="Goals for this version.")
-    cli_parser.add_argument("--changed", type=str, help="What changed in this version.")
-    cli_parser.add_argument("--user-benefit", type=str, help="What is good for the user.")
-    cli_parser.add_argument("--next-steps", type=str, help="What are the next steps.")
 
     if len(sys.argv) == 1:
         main_gui()
