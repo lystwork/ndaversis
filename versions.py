@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import messagebox
 import argparse
 import sys
+import ast
 
 __version__ = "0.0.13"
 
@@ -52,8 +53,33 @@ def save_version(version):
         f.write(new_content)
         f.truncate()
 
+def _analyze_codebase():
+    """Analyze the codebase to identify key features and return the code."""
+    features = {
+        "imports": set(),
+        "classes": set(),
+        "functions": set(),
+    }
+    with open(__file__, "r", encoding="utf-8") as f:
+        code = f.read()
+        tree = ast.parse(code)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    features["imports"].add(alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                features["imports"].add(node.module)
+            elif isinstance(node, ast.ClassDef):
+                features["classes"].add(node.name)
+            elif isinstance(node, ast.FunctionDef):
+                features["functions"].add(node.name)
+    return features, code
+
+
 def generate_project_description():
     """Analyze the repository to generate a project description."""
+    features, code = _analyze_codebase()
+
     # 1. What is this "Name of repository"?
     try:
         with open("readme.md", "r", encoding="utf-8") as f:
@@ -63,23 +89,23 @@ def generate_project_description():
         project_name = "Ndaversis"
 
     # 2. How it operates? 3. How its designed? 4. What its core functionality?
-    with open(__file__, "r", encoding="utf-8") as f:
-        code = f.read()
-
     core_functionality = "manage semantic versioning for software projects"
     design = "monolithic, self-contained Python wrapper"
     operation = "operates independently of any version control system like Git"
 
-    if "import tkinter" in code and "import argparse" in code:
+    if "tkinter" in features["imports"] and "argparse" in features["imports"]:
         operation += ", and offers both a GUI and a CLI for user interaction"
 
-    if "f.write(new_content)" in code and "__version__" in code:
-        operation += ". The core functionality is encapsulated within a single script, which programmatically modifies itself to update the project's version"
+    if "save_version" in features["functions"] and "__version__" in code:
+        operation += (
+            ". The core functionality is encapsulated within a single script, "
+            "which programmatically modifies itself to update the project's version"
+        )
 
     return (
         f"{project_name} is a {design} designed to {core_functionality}. "
         f"It {operation}. This tool is designed to be used by autonomous agents, "
-        f"providing a simple and robust interface for version management."
+        "providing a simple and robust interface for version management."
     )
 
 def analyze_repository():
@@ -106,7 +132,8 @@ def analyze_repository():
     return (
         f'\n\n'
         f'---\n'
-        f'*This summary is auto-generated and reflects the state of the repository at the time of the last version update.*\n\n'
+        f'*This summary is auto-generated and reflects the state of the repository at '
+        f'the time of the last version update.*\n\n'
         f'**Repository Analysis:**\n'
         f'- **Total Files:** {total_files}\n'
         f'- **Python Files:** {py_files}\n'
@@ -209,18 +236,18 @@ def main_gui():
 
     root.mainloop()
 
-def main_cli(args):
+def main_cli(cli_args):
     """Run the command-line interface."""
     version = get_version()
 
-    if args.major:
+    if cli_args.major:
         version.increment_major()
-    elif args.minor:
+    elif cli_args.minor:
         version.increment_minor()
-    elif args.patch:
+    elif cli_args.patch:
         version.increment_patch()
 
-    summary = args.summary if args.summary else "No summary provided."
+    summary = cli_args.summary if cli_args.summary else "No summary provided."
     save_version(version)
     update_readme(version, summary)
     print(f"Version updated to {version}")
