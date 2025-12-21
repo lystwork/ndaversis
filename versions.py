@@ -6,7 +6,7 @@ from tkinter import messagebox
 import argparse
 import sys
 
-__version__ = "0.0.13"
+__version__ = "0.0.14"
 
 class Version:
     """A class to represent a semantic version."""
@@ -54,7 +54,6 @@ def save_version(version):
 
 def generate_project_description():
     """Analyze the repository to generate a project description."""
-    # 1. What is this "Name of repository"?
     try:
         with open("readme.md", "r", encoding="utf-8") as f:
             first_line = f.readline()
@@ -62,7 +61,6 @@ def generate_project_description():
     except (IOError, IndexError):
         project_name = "Ndaversis"
 
-    # 2. How it operates? 3. How its designed? 4. What its core functionality?
     with open(__file__, "r", encoding="utf-8") as f:
         code = f.read()
 
@@ -74,7 +72,10 @@ def generate_project_description():
         operation += ", and offers both a GUI and a CLI for user interaction"
 
     if "f.write(new_content)" in code and "__version__" in code:
-        operation += ". The core functionality is encapsulated within a single script, which programmatically modifies itself to update the project's version"
+        operation += (
+            ". The core functionality is encapsulated within a single script, "
+            "which programmatically modifies itself to update the project's version"
+        )
 
     return (
         f"{project_name} is a {design} designed to {core_functionality}. "
@@ -84,11 +85,8 @@ def generate_project_description():
 
 def analyze_repository():
     """Analyze the repository to generate a summary."""
-    total_files = 0
-    py_files = 0
-    py_lines = 0
+    total_files, py_files, py_lines = 0, 0, 0
     for root, dirs, files in os.walk("."):
-        # Exclude the .git directory
         if ".git" in dirs:
             dirs.remove(".git")
 
@@ -100,13 +98,11 @@ def analyze_repository():
                     with open(os.path.join(root, file), "r", encoding="utf-8") as f:
                         py_lines += len(f.readlines())
                 except (IOError, UnicodeDecodeError):
-                    # Ignore files that can't be read
                     pass
-
     return (
-        f'\n\n'
-        f'---\n'
-        f'*This summary is auto-generated and reflects the state of the repository at the time of the last version update.*\n\n'
+        f'\n\n---\n'
+        f'*This summary is auto-generated and reflects the state of the repository '
+        f'at the time of the last version update.*\n\n'
         f'**Repository Analysis:**\n'
         f'- **Total Files:** {total_files}\n'
         f'- **Python Files:** {py_files}\n'
@@ -114,94 +110,94 @@ def analyze_repository():
         f'---\n'
     )
 
-
-def update_readme(version, summary):
-    """Update the readme.md file with the new version and summary."""
+def update_readme(version, goals, what_changed, what_good_for_user, what_possibly_next):
+    """Update the readme.md file with the new version and details."""
     with open("readme.md", "r", encoding="utf-8") as f:
         content = f.read()
 
     version_str = str(version)
-    version_line = f"## Version {version_str}"
-
-    # Check for duplicates first
-    if version_line in content:
+    if f"## Version {version_str}" in content:
         print(f"Version {version_str} already exists in readme.md. Skipping.")
         return
 
-    # Update "Description Summary" with auto-generated analysis
     description = generate_project_description()
     analysis_summary = analyze_repository()
 
-    # Define the markers for the auto-generated blocks
-    desc_start_marker = "<!-- AUTO-DESCRIPTION-START -->"
-    desc_end_marker = "<!-- AUTO-DESCRIPTION-END -->"
-    summary_start_marker = "<!-- AUTO-SUMMARY-START -->"
-    summary_end_marker = "<!-- AUTO-SUMMARY-END -->"
+    desc_markers = ("<!-- AUTO-DESCRIPTION-START -->", "<!-- AUTO-DESCRIPTION-END -->")
+    summary_markers = ("<!-- AUTO-SUMMARY-START -->", "<!-- AUTO-SUMMARY-END -->")
 
-    # Replace the content between the markers
     content = re.sub(
-        f"({desc_start_marker})(.*?)({desc_end_marker})",
-        f"\\1\n{description}\n\\3",
-        content,
-        flags=re.DOTALL
+        f"({desc_markers[0]})(.*?)({desc_markers[1]})",
+        f"\\1\n{description}\n\\3", content, flags=re.DOTALL
     )
     content = re.sub(
-        f"({summary_start_marker})(.*?)({summary_end_marker})",
-        f"\\1{analysis_summary}\\3",
-        content,
-        flags=re.DOTALL
+        f"({summary_markers[0]})(.*?)({summary_markers[1]})",
+        f"\\1{analysis_summary}\\3", content, flags=re.DOTALL
     )
 
-    # Update "Last Version Summary"
-    new_summary_text = f"\nThe last version is `{version_str}`. Summary: {summary}\n"
+    summary_text = f"\nThe last version is `{version_str}`. Summary: {what_changed}\n"
     content = re.sub(
         r"(?<=## 13\. Last Version Summary\n).*?(?=## 14\. Version History)",
-        new_summary_text,
-        content,
-        flags=re.DOTALL
+        summary_text, content, flags=re.DOTALL
     )
 
-    # Update "Version History"
-    version_history_heading = "## 14. Version History"
-    new_version_entry = f"## Version {version_str}\n{summary}"
-    content = content.replace(
-        version_history_heading,
-        f"{version_history_heading}\n\n{new_version_entry}"
+    history_heading = "## 14. Version History"
+    new_entry = (
+        f"## Version {version_str}\n"
+        f"### Goals\n{goals}\n\n"
+        f"### What Changed\n{what_changed}\n\n"
+        f"### What's Good for the User\n{what_good_for_user}\n\n"
+        f"### What's Possibly Next\n{what_possibly_next}"
     )
+    content = content.replace(history_heading, f"{history_heading}\n\n{new_entry}")
 
     with open("readme.md", "w", encoding="utf-8") as f:
         f.write(content)
-
 
 def main_gui():
     """Run the tkinter GUI."""
     version = get_version()
 
-    def update_and_close(increment_func):
-        increment_func()
-        summary = summary_entry.get("1.0", tk.END).strip()
-        save_version(version)
-        update_readme(version, summary)
-        messagebox.showinfo("Success", f"Version updated to {version}")
-        root.destroy()
-
     root = tk.Tk()
     root.title(f"Version Manager - Current Version: {version}")
 
-    tk.Label(root, text="Summary of changes:").pack()
-    summary_entry = tk.Text(root, height=5, width=50)
-    summary_entry.pack()
+    tk.Label(root, text="Goals:").pack()
+    goals_entry = tk.Text(root, height=3, width=50)
+    goals_entry.pack()
+
+    tk.Label(root, text="What changed:").pack()
+    changed_entry = tk.Text(root, height=5, width=50)
+    changed_entry.pack()
+
+    tk.Label(root, text="What's good for the user:").pack()
+    user_benefit_entry = tk.Text(root, height=3, width=50)
+    user_benefit_entry.pack()
+
+    tk.Label(root, text="What's possibly next:").pack()
+    next_steps_entry = tk.Text(root, height=3, width=50)
+    next_steps_entry.pack()
+
+    def update_and_close(increment_func):
+        increment_func()
+        details = {
+            "goals": goals_entry.get("1.0", tk.END).strip(),
+            "what_changed": changed_entry.get("1.0", tk.END).strip(),
+            "what_good_for_user": user_benefit_entry.get("1.0", tk.END).strip(),
+            "what_possibly_next": next_steps_entry.get("1.0", tk.END).strip()
+        }
+        save_version(version)
+        update_readme(version, **details)
+        messagebox.showinfo("Success", f"Version updated to {version}")
+        root.destroy()
 
     major_button = tk.Button(
         root, text="Increment Major", command=lambda: update_and_close(version.increment_major)
     )
     major_button.pack()
-
     minor_button = tk.Button(
         root, text="Increment Minor", command=lambda: update_and_close(version.increment_minor)
     )
     minor_button.pack()
-
     patch_button = tk.Button(
         root, text="Increment Patch", command=lambda: update_and_close(version.increment_patch)
     )
@@ -209,37 +205,43 @@ def main_gui():
 
     root.mainloop()
 
-def main_cli(args):
+def main_cli(cli_args):
     """Run the command-line interface."""
     version = get_version()
 
-    if args.major:
+    if cli_args.major:
         version.increment_major()
-    elif args.minor:
+    elif cli_args.minor:
         version.increment_minor()
-    elif args.patch:
+    elif cli_args.patch:
         version.increment_patch()
 
-    summary = args.summary if args.summary else "No summary provided."
+    details = {
+        "goals": cli_args.goals or "No goals provided.",
+        "what_changed": cli_args.changed or "No changes specified.",
+        "what_good_for_user": cli_args.user_benefit or "No user benefits specified.",
+        "what_possibly_next": cli_args.next_steps or "No next steps specified."
+    }
     save_version(version)
-    update_readme(version, summary)
+    update_readme(version, **details)
     print(f"Version updated to {version}")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Version Manager")
     subparsers = parser.add_subparsers(dest="command")
 
-    # GUI subparser
-    gui_parser = subparsers.add_parser("gui", help="Run the GUI")
-
-    # CLI subparser
+    subparsers.add_parser("gui", help="Run the GUI")
     cli_parser = subparsers.add_parser("cli", help="Run the command-line interface")
+
     group = cli_parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--major", action="store_true", help="Increment major version")
     group.add_argument("--minor", action="store_true", help="Increment minor version")
     group.add_argument("--patch", action="store_true", help="Increment patch version")
-    cli_parser.add_argument("--summary", type=str, help="Summary of changes")
+
+    cli_parser.add_argument("--goals", type=str, help="Goals for this version.")
+    cli_parser.add_argument("--changed", type=str, help="What changed in this version.")
+    cli_parser.add_argument("--user-benefit", type=str, help="What is good for the user.")
+    cli_parser.add_argument("--next-steps", type=str, help="What are the next steps.")
 
     if len(sys.argv) == 1:
         main_gui()
