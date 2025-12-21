@@ -2,8 +2,9 @@
 
 ## 2. Description Summary
 
-Ndaversis is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, making it a flexible solution for a wide range of development workflows.
-This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management. The core functionality is encapsulated within a single script, versions.py, which programmatically modifies itself to update the project's version.
+<!-- AUTO-DESCRIPTION-START -->
+NDAVERSIS is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, and offers both a GUI and a CLI for user interaction. The core functionality is encapsulated within a single script, which programmatically modifies itself to update the project's version. This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management.
+<!-- AUTO-DESCRIPTION-END -->
 
 ---
 <!-- AUTO-SUMMARY-START -->
@@ -14,7 +15,7 @@ This tool is designed to be used by autonomous agents, providing a simple and ro
 **Repository Analysis:**
 - **Total Files:** 6
 - **Python Files:** 3
-- **Total Python Lines:** 225
+- **Total Python Lines:** 264
 ---
 <!-- AUTO-SUMMARY-END -->
 
@@ -93,8 +94,11 @@ No installation is required. Simply clone or download the repository and run the
 
 ## 13. Last Version Summary
 
-The last version is `0.0.12`. Summary: Test corrected file counts
+The last version is `0.0.13`. Summary: Test dynamic description
 ## 14. Version History
+
+## Version 0.0.13
+Test dynamic description
 
 ## Version 0.0.12
 Test corrected file counts
