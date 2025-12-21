@@ -1,9 +1,22 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
 ## 2. Description Summary
-**Ndaversis** (**N**ikita **D**rozdov **A**gentic **Ver**sioning **S**emantic **I**nfo **S**ystem) is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, making it a flexible solution for a wide range of development workflows.
 
-This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management. The core functionality is encapsulated within a single script, `versions.py`, which programmatically modifies itself to update the project's version.
+Ndaversis is a monolithic, self-contained Python wrapper designed to manage semantic versioning for software projects. It operates independently of any version control system like Git, making it a flexible solution for a wide range of development workflows.
+This tool is designed to be used by autonomous agents, providing a simple and robust interface for version management. The core functionality is encapsulated within a single script, versions.py, which programmatically modifies itself to update the project's version.
+
+---
+<!-- AUTO-SUMMARY-START -->
+
+---
+*This summary is auto-generated and reflects the state of the repository at the time of the last version update.*
+
+**Repository Analysis:**
+- **Total Files:** 6
+- **Python Files:** 3
+- **Total Python Lines:** 225
+---
+<!-- AUTO-SUMMARY-END -->
 
 ## 3. Use Cases
 *   **Git-Independent Projects:** Ideal for projects where versioning is needed but Git is not used, such as in certain CI/CD pipelines or for projects managed outside of traditional version control.
@@ -80,8 +93,32 @@ No installation is required. Simply clone or download the repository and run the
 
 ## 13. Last Version Summary
 
-The last version is `0.0.4`. Summary: Testing robust regex
+The last version is `0.0.12`. Summary: Test corrected file counts
 ## 14. Version History
+
+## Version 0.0.12
+Test corrected file counts
+
+## Version 0.0.11
+Test marker-based insertion
+
+## Version 0.0.10
+Final test of formatting
+
+## Version 0.0.9
+Test final formatting
+
+## Version 0.0.8
+Test reordered summary
+
+## Version 0.0.7
+Test final regex
+
+## Version 0.0.6
+Test corrected formatting
+
+## Version 0.0.5
+Test auto-summary
 
 ## Version 0.0.4
 Testing robust regex
@@ -98,7 +135,7 @@ Initial version.
 
 ## 15. Contacts
 *   **Email:** n@ndaotec.com
-*   **Repository:** github.com/lystwork/ndaotec
+*   **Repository:** https://github.com/lystwork/ndaversis
 
 ## 16. Copyright
 ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. All rights belong to their respective owners.
