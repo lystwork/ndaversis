@@ -6,7 +6,7 @@ from tkinter import messagebox
 import argparse
 import sys
 
-__version__ = "0.0.11"
+__version__ = "0.0.12"
 
 class Version:
     """A class to represent a semantic version."""
@@ -57,9 +57,11 @@ def analyze_repository():
     total_files = 0
     py_files = 0
     py_lines = 0
-    for root, _, files in os.walk("."):
-        if "versions_ndaversis" in root:
-            continue
+    for root, dirs, files in os.walk("."):
+        # Exclude the .git directory
+        if ".git" in dirs:
+            dirs.remove(".git")
+
         for file in files:
             total_files += 1
             if file.endswith(".py"):
