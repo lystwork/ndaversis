@@ -8,6 +8,11 @@ import sys
 import ast
 import json
 
+CONTACT_EMAIL = "n@ndaotec.com"
+COPYRIGHT_HOLDER = "Nikita Andreevich Drozdov"
+REPOSITORY_ADDRESS = "https://github.com/lystwork/ndaversis"
+COPYRIGHT_TEXT = "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. All rights belong to their respective owners."
+
 __version__ = "0.0.18"
 def load_previous_code_state():
     """Load the previous code state from the readme.md file."""
@@ -73,68 +78,54 @@ def _analyze_codebase():
         "imports": set(),
         "classes": {},
         "functions": {},
+        "files": {},
     }
-    method_names = set()
+
     for root, _, files in os.walk("."):
         if ".git" in root:
             continue
         for file in files:
             if file.endswith(".py"):
-                with open(os.path.join(root, file), "r", encoding="utf-8") as f:
+                filepath = os.path.join(root, file)
+                with open(filepath, "r", encoding="utf-8") as f:
                     code = f.read()
                     try:
                         tree = ast.parse(code)
-                        # First pass: Get classes and their methods
-                        for node in ast.walk(tree):
-                            if isinstance(node, ast.ClassDef):
-                                methods = {}
-                                for item in node.body:
-                                    if isinstance(item, ast.FunctionDef):
-                                        method_names.add(item.name)
-                                        func_args = [arg.arg for arg in item.args.args if arg.arg != "self"]
-                                        methods[item.name] = func_args
-                                features["classes"][node.name] = {"methods": methods}
 
-                        # Second pass: Get imports and top-level functions
+                        # Get module-level docstring
+                        module_docstring = ast.get_docstring(tree)
+                        features["files"][filepath] = {"docstring": module_docstring}
+
+                        # Traverse the AST
                         for node in ast.walk(tree):
+                            # Get imports
                             if isinstance(node, ast.Import):
                                 for alias in node.names:
                                     features["imports"].add(alias.name)
                             elif isinstance(node, ast.ImportFrom):
                                 if node.module:
                                     features["imports"].add(node.module)
-                            elif isinstance(node, ast.FunctionDef):
-                                # Only add if it's not a method we've already processed
-                                if node.name not in method_names:
-                                    func_args = [arg.arg for arg in node.args.args]
-                                    features["functions"][node.name] = func_args
+
+                            # Get classes and their methods
+                            elif isinstance(node, ast.ClassDef):
+                                class_docstring = ast.get_docstring(node)
+                                methods = {}
+                                for item in node.body:
+                                    if isinstance(item, ast.FunctionDef):
+                                        method_docstring = ast.get_docstring(item)
+                                        func_args = [arg.arg for arg in item.args.args if arg.arg != "self"]
+                                        methods[item.name] = {"args": func_args, "docstring": method_docstring}
+                                features["classes"][node.name] = {"docstring": class_docstring, "methods": methods}
+
+                            # Get top-level functions
+                            elif isinstance(node, ast.FunctionDef) and not any(isinstance(parent, ast.ClassDef) for parent in ast.walk(tree) if hasattr(parent, 'body') and node in parent.body):
+                                func_docstring = ast.get_docstring(node)
+                                func_args = [arg.arg for arg in node.args.args]
+                                features["functions"][node.name] = {"args": func_args, "docstring": func_docstring}
+
                     except SyntaxError:
                         # Ignore files with syntax errors
                         continue
-    # First pass: Get classes and their methods
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            methods = {}
-            for item in node.body:
-                if isinstance(item, ast.FunctionDef):
-                    method_names.add(item.name)
-                    func_args = [arg.arg for arg in item.args.args if arg.arg != "self"]
-                    methods[item.name] = func_args
-            features["classes"][node.name] = {"methods": methods}
-
-    # Second pass: Get imports and top-level functions
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                features["imports"].add(alias.name)
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                features["imports"].add(node.module)
-        elif isinstance(node, ast.FunctionDef):
-            # Only add if it's not a method we've already processed
-            if node.name not in method_names:
-                func_args = [arg.arg for arg in node.args.args]
-                features["functions"][node.name] = func_args
 
     features["imports"] = sorted(list(features["imports"]))
     return features, code
@@ -178,6 +169,121 @@ def generate_change_summary(old_state, new_state):
         return "No significant changes detected."
 
     return "\n".join(summary)
+
+
+def generate_project_map(analysis_data):
+    """Generate a markdown tree of the project structure."""
+
+    project_map = "```\n"
+
+    for file in sorted(analysis_data["files"].keys()):
+        project_map += f"{file}\n"
+
+    project_map += "```"
+
+    return project_map
+
+
+def generate_readme_content(version, analysis_data, goals, what_changed, what_good_for_user, what_possibly_next):
+    """Generate the entire content of the README file."""
+
+    project_name = "NDAVERSIS: Agentic Semantic Version Info System"
+
+    # Title and Description
+    content = f"# 1. {project_name}\n\n"
+    content += "## 2. Description Summary\n\n"
+    content += "<!-- AUTO-DESCRIPTION-START -->\n"
+    content += f"{generate_project_description()}\n"
+    content += "<!-- AUTO-DESCRIPTION-END -->\n\n"
+
+    # Summary
+    content += "<!-- AUTO-SUMMARY-START -->\n"
+    content += f"{analyze_repository()}\n"
+    content += "<!-- AUTO-SUMMARY-END -->\n\n"
+
+    # Dynamic Sections
+    content += f"{generate_dynamic_sections(analysis_data)}\n"
+
+    # Project Map
+    content += "## 10. Project Map\n\n"
+    content += f"{generate_project_map(analysis_data)}\n\n"
+
+    # Last Version Summary
+    content += "## 13. Last Version Summary\n\n"
+    content += f"The last version is `{version}`. Summary: {what_changed}\n\n"
+
+    # Version History
+    content += "## 14. Version History\n\n"
+    content += f"## Version {version}\n"
+    content += f"### Goals\n{goals}\n\n"
+    content += f"### What Changed\n{what_changed}\n\n"
+    content += f"### What's Good for the User\n{what_good_for_user}\n\n"
+    content += f"### What's Possibly Next\n{what_possibly_next}\n\n"
+
+    # Contacts and Copyright
+    content += "## 15. Contacts\n\n"
+    content += f"*   **Email:** {CONTACT_EMAIL}\n"
+    content += f"*   **Repository:** {REPOSITORY_ADDRESS}\n\n"
+    content += "## 16. Copyright\n\n"
+    content += f"{COPYRIGHT_TEXT}\n"
+
+    return content
+
+def generate_dynamic_sections(analysis_data):
+    """Generate the dynamic sections of the README file."""
+
+    # Use Cases
+    use_cases = "## 3. Use Cases\n\n"
+    for func_name, func_data in analysis_data["functions"].items():
+        if func_data["docstring"] and "Use Case:" in func_data["docstring"]:
+            use_cases += f"*   **{func_name.replace('_', ' ').title()}**: {func_data['docstring'].split('Use Case:')[1].strip()}\n"
+
+    # User Stories
+    user_stories = "## 4. User Stories\n\n"
+    for func_name, func_data in analysis_data["functions"].items():
+        if func_data["docstring"] and "User Story:" in func_data["docstring"]:
+            user_stories += f"*   **As a user,** I want to be able to {func_name.replace('_', ' ')}, so that {func_data['docstring'].split('User Story:')[1].strip()}.\n"
+
+    # FAQ
+    faq = "## 5. FAQ\n\n"
+    for func_name, func_data in analysis_data["functions"].items():
+        if func_data["docstring"] and "FAQ:" in func_data["docstring"]:
+            faq += f"**Q: {func_name.replace('_', ' ').title()}?**\n**A:** {func_data['docstring'].split('FAQ:')[1].strip()}\n\n"
+
+    # How To
+    how_to = "## 6. How To\n\n"
+    for func_name, func_data in analysis_data["functions"].items():
+        if func_data["docstring"] and "How To:" in func_data["docstring"]:
+            how_to += f"### {func_name.replace('_', ' ').title()}\n\n{func_data['docstring'].split('How To:')[1].strip()}\n\n"
+
+    # Features
+    features = "## 7. Features\n\n"
+    for func_name, func_data in analysis_data["functions"].items():
+        if func_data["docstring"]:
+            features += f"*   **{func_name.replace('_', ' ').title()}**: {func_data['docstring'].splitlines()[0].strip()}\n"
+
+    # Requirements
+    requirements = "## 8. Requirements\n\n*   Python 3.6+\n"
+    if "tkinter" in analysis_data["imports"]:
+        requirements += "*   `tkinter` (for the GUI, usually included with Python)\n"
+
+    # Install
+    install = "## 9. Install\n\nNo installation is required. Simply clone or download the repository and run the `versions.py` script.\n"
+
+    # Project Map is generated separately
+
+    # Modules Map
+    modules_map = "## 11. Modules Map\n\n"
+    for file_path, file_data in analysis_data["files"].items():
+        if file_data["docstring"]:
+            modules_map += f"*   `{os.path.basename(file_path)}`: {file_data['docstring'].splitlines()[0].strip()}\n"
+
+    # Dependencies Map
+    dependencies_map = "## 12. Dependencies Map\n\n"
+    for dep in analysis_data["imports"]:
+        dependencies_map += f"*   `{dep}`\n"
+
+    return use_cases + user_stories + faq + how_to + features + requirements + install + modules_map + dependencies_map
 
 
 def generate_project_description():
@@ -240,46 +346,8 @@ def analyze_repository():
         f'---\n'
     )
 
-def update_readme(version, goals, what_changed, what_good_for_user, what_possibly_next):
-    """Update the readme.md file with the new version and details."""
-    with open("readme.md", "r", encoding="utf-8") as f:
-        content = f.read()
-
-    version_str = str(version)
-    if f"## Version {version_str}" in content:
-        print(f"Version {version_str} already exists in readme.md. Skipping.")
-        return
-
-    description = generate_project_description()
-    analysis_summary = analyze_repository()
-
-    desc_markers = ("<!-- AUTO-DESCRIPTION-START -->", "<!-- AUTO-DESCRIPTION-END -->")
-    summary_markers = ("<!-- AUTO-SUMMARY-START -->", "<!-- AUTO-SUMMARY-END -->")
-
-    content = re.sub(
-        f"({desc_markers[0]})(.*?)({desc_markers[1]})",
-        f"\\1\n{description}\n\\3", content, flags=re.DOTALL
-    )
-    content = re.sub(
-        f"({summary_markers[0]})(.*?)({summary_markers[1]})",
-        f"\\1{analysis_summary}\\3", content, flags=re.DOTALL
-    )
-
-    summary_text = f"\nThe last version is `{version_str}`. Summary: {what_changed}\n"
-    content = re.sub(
-        r"(?<=## 13\. Last Version Summary\n)(.|\n)*?(?=## 14\. Version History)",
-        summary_text, content, flags=re.DOTALL
-    )
-
-    history_heading = "## 14. Version History"
-    new_entry = (
-        f"## Version {version_str}\n"
-        f"### Goals\n{goals}\n\n"
-        f"### What Changed\n{what_changed}\n\n"
-        f"### What's Good for the User\n{what_good_for_user}\n\n"
-        f"### What's Possibly Next\n{what_possibly_next}"
-    )
-    content = content.replace(history_heading, f"{history_heading}\n\n{new_entry}")
+def update_readme(content):
+    """Update the readme.md file with the new content."""
 
     with open("readme.md", "w", encoding="utf-8") as f:
         f.write(content)
@@ -309,14 +377,25 @@ def main_gui():
 
     def update_and_close(increment_func):
         increment_func()
-        details = {
-            "goals": goals_entry.get("1.0", tk.END).strip(),
-            "what_changed": changed_entry.get("1.0", tk.END).strip(),
-            "what_good_for_user": user_benefit_entry.get("1.0", tk.END).strip(),
-            "what_possibly_next": next_steps_entry.get("1.0", tk.END).strip()
-        }
+
+        # Get the details from the GUI
+        goals = goals_entry.get("1.0", tk.END).strip()
+        what_changed = changed_entry.get("1.0", tk.END).strip()
+        what_good_for_user = user_benefit_entry.get("1.0", tk.END).strip()
+        what_possibly_next = next_steps_entry.get("1.0", tk.END).strip()
+
+        # Analyze the codebase
+        analysis_data, _ = _analyze_codebase()
+
+        # Generate the new README content
+        readme_content = generate_readme_content(version, analysis_data, goals, what_changed, what_good_for_user, what_possibly_next)
+
+        # Update the README file
+        update_readme(readme_content)
+
+        # Save the new version
         save_version(version)
-        update_readme(version, **details)
+
         messagebox.showinfo("Success", f"Version updated to {version}")
         root.destroy()
 
@@ -335,6 +414,7 @@ def main_gui():
 
     root.mainloop()
 
+
 def main_cli(cli_args):
     """Run the command-line interface."""
     version = get_version()
@@ -352,18 +432,22 @@ def main_cli(cli_args):
     elif cli_args.patch:
         version.increment_patch()
 
-    details = {
-        "goals": "Auto-generated update.",
-        "what_changed": change_summary,
-        "what_good_for_user": "Automated and accurate changelog.",
-        "what_possibly_next": "Further automation.",
-    }
+    # Set the details for the README
+    goals = "Auto-generated update."
+    what_good_for_user = "Automated and accurate changelog."
+    what_possibly_next = "Further automation."
 
+    # Generate the new README content
+    readme_content = generate_readme_content(version, new_code_state, goals, change_summary, what_good_for_user, what_possibly_next)
+
+    # Update the README file
+    update_readme(readme_content)
+
+    # Save the new version
     save_version(version)
-    update_readme(version, **details)
 
-    # Update the __previous_code_state__ in the readme.md file
-    with open("readme.md", "r+", encoding="utf-8") as f:
+    # Update the __previous_code_state__ in the versions.py file
+    with open(__file__, "r+", encoding="utf-8") as f:
         content = f.read()
         state_string = json.dumps(new_code_state, indent=4)
         # Use a robust regex to find and replace the state block
