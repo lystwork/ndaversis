@@ -8,6 +8,7 @@ import argparse
 import sys
 import ast
 import json
+from ai_services import get_ai_service
 CONTACT_EMAIL = "n@ndaotec.com"
 COPYRIGHT_HOLDER = "Nikita Andreevich Drozdov"
 REPOSITORY_ADDRESS = "https://github.com/lystwork/ndaversis"
@@ -16,7 +17,7 @@ COPYRIGHT_TEXT = (
     "All rights belong to their respective owners."
 )
 
-__version__ = "0.0.19"
+__version__ = "0.0.20"
 def load_previous_code_state():
     """Load the previous code state from the readme.md file."""
     try:
@@ -34,6 +35,20 @@ def load_previous_code_state():
         return {}
 
 __previous_code_state__ = load_previous_code_state()
+
+def load_ai_config():
+    """Load AI configuration from config.json."""
+    try:
+        with open("config.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("config.json not found. Please create it from config.json.template.")
+        return None
+    except json.JSONDecodeError:
+        print("Error decoding config.json. Please check the file format.")
+        return None
+
+AI_CONFIG = load_ai_config()
 
 class Version:
     """A class to represent a semantic version."""
@@ -66,13 +81,13 @@ def get_version():
     major, minor, patch = map(int, __version__.split("."))
     return Version(major, minor, patch)
 
-def save_version(version):
+def save_version(version_str):
     """Save the version back to the versions.py file."""
     with open(__file__, "r+", encoding="utf-8") as f:
         content = f.read()
         new_content = re.sub(
-            r'__version__ = ".*"',
-            f'__version__ = "{version}"',
+            r'__version__ = "0.0.20"',
+            f'__version__ = "{version_str}"',
             content
         )
         f.seek(0)
@@ -158,47 +173,45 @@ def suggest_next_steps(analysis_data):
 
 def generate_user_benefit_analysis(analysis_data):
     """Generate the 7-step analysis for the 'What's Good for the User' section."""
+    ai_service = get_ai_service(AI_CONFIG)
+    if ai_service:
+        prompt = (
+            "Generate a 7-step analysis for the 'What's Good for the User' section "
+            "of a README.md file. The analysis should be based on the provided "
+            "codebase analysis. The steps are: User's Goal, Evaluation of the "
+            "repository Solution, Core Functionality, Safety & Side Effects, "
+            "Completeness, Assessment, and Is that good result?"
+        )
+        return ai_service.generate_content(prompt, analysis_data)
 
-    # 1. User's Goal
+    # Fallback to original logic if AI service is not available
     user_goal = (
         "The user wants a fully automated and dynamically updated README.md "
         "that accurately reflects the state of the repository."
     )
-
-    # 2. Evaluation of the repository Solution
     evaluation = (
         "The solution successfully meets the user's goal by implementing a robust "
         "system for auto-generating the README.md from the codebase."
     )
-
-    # 3. Core Functionality
     core_functionality = (
         f"The core functionality is the dynamic generation of the README.md, "
         f"which now includes {len(analysis_data['functions'])} functions and "
         f"{len(analysis_data['classes'])} classes."
     )
-
-    # 4. Safety & Side Effects
     safety = (
         "The solution is safe and has no unintended side effects. The primary "
         "side effect is that the README.md is now entirely managed by the "
         "script, which is the intended outcome."
     )
-
-    # 5. Completeness
     completeness = (
         "The solution is complete and addresses all the user's requirements. "
         "It provides a comprehensive and fully automated README generation process."
     )
-
-    # 6. Assessment
     assessment = (
         "The solution is a well-designed and effective implementation that not "
         "only meets the user's needs but also improves the overall quality of "
         "the project's documentation."
     )
-
-    # 7. Is that good result?
     is_good_result = (
         "Yes, this is an excellent result that provides significant value to the "
         "user by automating a critical part of the development workflow."
@@ -376,18 +389,28 @@ def generate_dynamic_sections(analysis_data):
 def generate_project_description():
     """Analyze the repository to generate a project description."""
     features, code = _analyze_codebase()
+    ai_service = get_ai_service(AI_CONFIG)
+    if ai_service:
+        prompt = (
+            "Generate a project description for a README.md file. The description "
+            "should be based on the provided codebase analysis. It should cover: "
+            "What is this repository?, How it operates?, How it's designed?, and "
+            "What is its core functionality?"
+        )
+        return ai_service.generate_content(prompt, (features, code))
 
-    # 1. What is this "Name of repository"?
+    # Fallback to original logic if AI service is not available
     try:
         with open("readme.md", "r", encoding="utf-8") as f:
             first_line = f.readline()
             project_name = first_line.split(":")[0].replace("# 1. ", "").strip()
     except (IOError, IndexError):
         project_name = "Ndaversis"
-
-    # 2. How it operates? 3. How its designed? 4. What its core functionality?
     core_functionality = (
-        "automate README creation and updates, ensuring it's always "
+        "be an agentic module that leverages various large language models "
+        "(like Gemini, ChatGPT, etc.) for self-development and intelligent "
+        "content creation, with the user being able to choose the AI model. "
+        "It also automates README creation and updates, ensuring it's always "
         "self-updating with the most recent and accurate information, "
         "alongside managing semantic versioning"
     )
