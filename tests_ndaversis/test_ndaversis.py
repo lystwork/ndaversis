@@ -4,7 +4,7 @@ import sys
 import json
 import ast
 from argparse import Namespace
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 # Add the root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -18,6 +18,11 @@ from ndaversis import (
     generate_readme_content,
     get_version,
     main_cli,
+    get_ai_service,
+    GeminiService,
+    ChatGPTService,
+    ClaudeService,
+    DeepSeekService,
 )
 
 class TestNdaversis(unittest.TestCase):
@@ -177,6 +182,41 @@ class TestNdaversis(unittest.TestCase):
         # Check that other dynamic sections are present
         self.assertIn("## 2. Description Summary", content)
         self.assertIn("## 13. Last Version Summary", content)
+
+    @patch('os.getenv')
+    def test_get_ai_service(self, mock_getenv):
+        """Test the AI service factory function."""
+        # Test Gemini
+        mock_getenv.return_value = "fake_api_key"
+        config = {"ai_provider": "gemini"}
+        service = get_ai_service(config)
+        self.assertIsInstance(service, GeminiService)
+
+        # Test ChatGPT
+        config = {"ai_provider": "chatgpt"}
+        service = get_ai_service(config)
+        self.assertIsInstance(service, ChatGPTService)
+
+        # Test Claude
+        config = {"ai_provider": "claude"}
+        service = get_ai_service(config)
+        self.assertIsInstance(service, ClaudeService)
+
+        # Test DeepSeek
+        config = {"ai_provider": "deepseek"}
+        service = get_ai_service(config)
+        self.assertIsInstance(service, DeepSeekService)
+
+        # Test unknown provider
+        config = {"ai_provider": "unknown"}
+        service = get_ai_service(config)
+        self.assertIsNone(service)
+
+        # Test missing API key
+        mock_getenv.return_value = None
+        config = {"ai_provider": "gemini"}
+        service = get_ai_service(config)
+        self.assertIsNone(service)
 
 if __name__ == '__main__':
     unittest.main()

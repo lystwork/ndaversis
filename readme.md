@@ -64,6 +64,25 @@ NDAVERSIS is a monolithic, self-contained Python wrapper designed to be an agent
 
 No installation is required. Simply clone or download the repository and run the `ndaversis.py` script.
 
+### AI Provider Configuration
+
+This project supports multiple AI providers for generating content. To configure the AI provider, create a `config.json` file in the root of the repository with the following content:
+
+```json
+{
+  "ai_provider": "gemini"
+}
+```
+
+Supported providers are: `gemini`, `chatgpt`, `claude`, and `deepseek`.
+
+You must also set the appropriate environment variable for the chosen provider:
+
+*   **Gemini:** `GEMINI_API_KEY`
+*   **ChatGPT:** `OPENAI_API_KEY`
+*   **Claude:** `ANTHROPIC_API_KEY`
+*   **DeepSeek:** `DEEPSEEK_API_KEY`
+
 ## 11. Modules Map
 
 *   `ndaversis.py`: A module for managing semantic versioning.
