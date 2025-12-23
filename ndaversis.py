@@ -8,7 +8,7 @@ import argparse
 import sys
 import ast
 import json
-import google.generativeai as genai
+import google.genai as genai
 import openai
 import anthropic
 from deepseek import DeepSeekAPI
@@ -43,12 +43,15 @@ class GeminiService(AIService):
     """An AI service that uses the Google Gemini API."""
     def __init__(self, api_key):
         super().__init__()
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-pro")
+        self.client = genai.Client(api_key=api_key)
+        self.model = "gemini-1.5-flash"
 
     def generate_content(self, prompt, analysis_data):
         full_prompt = self._create_full_prompt(prompt, analysis_data)
-        response = self.model.generate_content(full_prompt)
+        response = self.client.generate_content(
+            model=self.model,
+            contents=full_prompt,
+        )
         return response.text
 
 class ChatGPTService(AIService):
