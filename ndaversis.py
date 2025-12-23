@@ -10,6 +10,8 @@ import ast
 import json
 import google.generativeai as genai
 
+README_FILE = "readme.md"
+
 # pylint: disable=too-few-public-methods
 class AIService:
     """Base class for AI services."""
@@ -56,11 +58,11 @@ COPYRIGHT_TEXT = (
     "All rights belong to their respective owners."
 )
 
-__version__ = "0.0.24"
+__version__ = "0.0.29"
 def load_previous_code_state():
     """Load the previous code state from the readme.md file."""
     try:
-        with open("readme.md", "r", encoding="utf-8") as f:
+        with open(README_FILE, "r", encoding="utf-8") as f:
             content = f.read()
             match = re.search(
                 r"<!-- AUTO-CODE-STATE-START -->(.*?)<!-- AUTO-CODE-STATE-END -->",
@@ -68,7 +70,7 @@ def load_previous_code_state():
                 re.DOTALL
             )
             if match:
-                return json.loads(match.group(1))
+                return json.loads(match.group(1).strip())
             return {}
     except (IOError, json.JSONDecodeError):
         return {}
@@ -317,7 +319,7 @@ def _generate_section(title, analysis_data, prefix, format_str):
     content = f"## {title}\n\n"
     items = []
     for func_name, func_data in analysis_data["functions"].items():
-        if func_data["docstring"] and prefix in func_data["docstring"]:
+        if func_data.get("docstring") and prefix in func_data["docstring"]:
             items.append(
                 format_str.format(
                     name=func_name.replace('_', ' ').title(),
@@ -361,9 +363,9 @@ def generate_dynamic_sections(analysis_data):
     features_str = "## 7. Features\n\n"
     features_str += "".join(
         f"*   **{func_name.replace('_', ' ').title()}**: "
-        f"{func_data['docstring'].splitlines()[0].strip()}\n"
+        f"{func_data.get('docstring', '').splitlines()[0].strip()}\n"
         for func_name, func_data in analysis_data["functions"].items()
-        if func_data["docstring"]
+        if func_data.get("docstring")
     )
 
 
@@ -384,9 +386,9 @@ def generate_dynamic_sections(analysis_data):
     modules_map = "## 11. Modules Map\n\n"
     modules_map_items = [
         f"*   `{os.path.basename(file_path)}`: "
-        f"{file_data['docstring'].splitlines()[0].strip()}"
-        for file_path, file_data in analysis_data["files"].items()
-        if file_data["docstring"]
+        f"{file_data.get('docstring', '').splitlines()[0].strip()}"
+        for file_path, file_data in analysis_data.get("files", {}).items()
+        if file_data.get("docstring")
     ]
     modules_map += "\n".join(modules_map_items)
 
@@ -395,7 +397,7 @@ def generate_dynamic_sections(analysis_data):
     dependencies_map = "## 12. Dependencies Map\n\n"
     dependencies_map_items = [
         f"*   `{dep}`"
-        for dep in analysis_data["imports"]
+        for dep in analysis_data.get("imports", [])
     ]
     dependencies_map += "\n".join(dependencies_map_items)
 
@@ -430,7 +432,7 @@ def generate_project_description():
 
     # Fallback to original logic if AI service is not available
     try:
-        with open("readme.md", "r", encoding="utf-8") as f:
+        with open(README_FILE, "r", encoding="utf-8") as f:
             first_line = f.readline()
             project_name = first_line.split(":")[0].replace("# 1. ", "").strip()
     except (IOError, IndexError):
@@ -466,7 +468,7 @@ def generate_project_map(analysis_data):
 
     project_map = "```\n"
 
-    for file in sorted(analysis_data["files"].keys()):
+    for file in sorted(analysis_data.get("files", {}).keys()):
         project_map += f"{file}\n"
 
     project_map += "```"
@@ -534,16 +536,19 @@ def generate_readme_content(version, analysis_data, what_changed):
     history_start_marker = "## 14. Version History"
     history_end_marker = "## 15. Contacts"
     try:
-        with open("readme.md", "r", encoding="utf-8") as f:
+        with open(README_FILE, "r", encoding="utf-8") as f:
             existing_content = f.read()
             history_start_index = existing_content.find(history_start_marker)
             history_end_index = existing_content.find(history_end_marker)
+
             if history_start_index != -1 and history_end_index != -1:
-                existing_history = existing_content[history_start_index + len(history_start_marker):history_end_index]
+                # Extract the content between the markers, excluding the markers themselves
+                existing_history = existing_content[history_start_index + len(history_start_marker):history_end_index].strip()
             else:
                 existing_history = ""
     except FileNotFoundError:
         existing_history = ""
+
 
     new_entry = (
         f"## Version {version}\n"
@@ -554,7 +559,7 @@ def generate_readme_content(version, analysis_data, what_changed):
         f"### What's Possibly Next\n{suggest_next_steps(analysis_data)}\n"
     )
 
-    content += f"{history_start_marker}\n{new_entry}\n{existing_history}\n"
+    content += f"{history_start_marker}\n{new_entry}\n\n{existing_history}\n"
 
     # Contacts and Copyright
     content += "## 15. Contacts\n\n"
@@ -569,7 +574,7 @@ def generate_readme_content(version, analysis_data, what_changed):
 def update_readme(content):
     """Update the readme.md file with the new content."""
 
-    with open("readme.md", "w", encoding="utf-8") as f:
+    with open(README_FILE, "w", encoding="utf-8") as f:
         f.write(content)
 
 def main_gui(test_mode=False):
@@ -584,7 +589,7 @@ def main_gui(test_mode=False):
         analysis_data, _ = _analyze_codebase()
         readme_content = generate_readme_content(version, analysis_data, what_changed)
         update_readme(readme_content)
-        save_version(version)
+        save_version(str(version))
         print("GUI test mode complete.")
         return
 
@@ -673,10 +678,10 @@ def main_cli(cli_args):
     update_readme(readme_content)
 
     # Save the new version
-    save_version(version)
+    save_version(str(version))
 
     # Update the __previous_code_state__ in the readme.md file
-    with open("readme.md", "r+", encoding="utf-8") as f:
+    with open(README_FILE, "r+", encoding="utf-8") as f:
         content = f.read()
         state_string = json.dumps(new_code_state, indent=4)
         # Use a robust regex to find and replace the state block

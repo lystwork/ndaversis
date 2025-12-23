@@ -3,6 +3,8 @@ import os
 import sys
 import json
 import ast
+from argparse import Namespace
+from unittest.mock import patch
 
 # Add the root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -15,10 +17,23 @@ from ndaversis import (
     _process_python_file,
     generate_readme_content,
     get_version,
+    main_cli,
 )
 
 class TestNdaversis(unittest.TestCase):
     """Test suite for the ndaversis script."""
+
+    def setUp(self):
+        """Set up the test environment."""
+        self.test_readme_path = "test_readme.md"
+        # Create a dummy readme file
+        with open(self.test_readme_path, "w", encoding="utf-8") as f:
+            f.write("# 1. Test Readme\n\n## 14. Version History\n\n## 15. Contacts\n")
+
+    def tearDown(self):
+        """Tear down the test environment."""
+        if os.path.exists(self.test_readme_path):
+            os.remove(self.test_readme_path)
 
     def test_version_increment(self):
         """Test the increment methods of the Version class."""
@@ -34,6 +49,7 @@ class TestNdaversis(unittest.TestCase):
         v.increment_major()
         self.assertEqual(str(v), "2.0.0")
 
+    @patch('ndaversis.README_FILE', 'test_readme.md')
     def test_save_version(self):
         """Test that the version is correctly saved to a file."""
         # Create a separate file for the save_version function to modify
@@ -56,6 +72,7 @@ class TestNdaversis(unittest.TestCase):
         # Clean up the dummy file
         os.remove(test_file_path)
 
+    @patch('ndaversis.README_FILE', 'test_readme.md')
     def test_process_python_file(self):
         """Test the processing of a single Python file."""
         # Create a dummy file to be analyzed
@@ -94,6 +111,7 @@ class TestNdaversis(unittest.TestCase):
         # Clean up the dummy file
         os.remove(dummy_file_path)
 
+    @patch('ndaversis.README_FILE', 'test_readme.md')
     def test_analyze_codebase(self):
         """Test the codebase analysis functionality."""
         # Create a dummy file to be analyzed
@@ -139,34 +157,26 @@ class TestNdaversis(unittest.TestCase):
         self.assertIn("- Added classes: NewClass", summary)
         self.assertIn("- Removed classes: OldClass", summary)
 
-    def test_readme_content_generator(self):
-        """Test the generation of README content."""
+    @patch('ndaversis.README_FILE', 'test_readme.md')
+    def test_readme_update_integration(self):
+        """Integration test for the README update process."""
+        # Set up the CLI arguments
+        cli_args = Namespace(major=False, minor=False, patch=True)
+
         # Get the current version
-        version = get_version()
+        initial_version = get_version()
+        # Run the main CLI function
+        main_cli(cli_args)
 
-        # Define a minimal analysis data structure
-        analysis_data = {
-            "imports": ["os", "sys"],
-            "functions": {
-                "test_func": {
-                    "docstring": "Use Case: A test function for the README.",
-                    "args": [],
-                }
-            },
-            "classes": {},
-            "files": {"ndaversis.py": {"docstring": "A test file."}},
-        }
+        # Read the updated README
+        with open(self.test_readme_path, "r", encoding="utf-8") as f:
+            content = f.read()
 
-        # Generate the README content
-        readme_content = generate_readme_content(version, analysis_data, "Initial version.")
-
-        # Check for key sections in the generated content
-        self.assertIn("# 1. NDAVERSIS: Agentic Semantic Version Info System", readme_content)
-        self.assertIn("## 2. Description Summary", readme_content)
-        self.assertIn("## 3. Use Cases", readme_content)
-        self.assertIn("## 13. Last Version Summary", readme_content)
-        self.assertIn("## 14. Version History", readme_content)
-        self.assertIn(f"The last version is `{version}`.", readme_content)
+        # Check that the version history is updated
+        self.assertIn(f"## Version {initial_version.major}.{initial_version.minor}.{initial_version.patch + 1}", content)
+        # Check that other dynamic sections are present
+        self.assertIn("## 2. Description Summary", content)
+        self.assertIn("## 13. Last Version Summary", content)
 
 if __name__ == '__main__':
     unittest.main()
