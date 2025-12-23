@@ -31,14 +31,20 @@ class TestNdaversis(unittest.TestCase):
     def setUp(self):
         """Set up the test environment."""
         self.test_readme_path = "test_readme.md"
+        self.test_ndaversis_path = "test_ndaversis.py"
         # Create a dummy readme file
         with open(self.test_readme_path, "w", encoding="utf-8") as f:
             f.write("# 1. Test Readme\n\n## 14. Version History\n\n## 15. Contacts\n")
+        # Create a dummy ndaversis file
+        with open(self.test_ndaversis_path, "w", encoding="utf-8") as f:
+            f.write('__version__ = "0.1.0"')
 
     def tearDown(self):
         """Tear down the test environment."""
         if os.path.exists(self.test_readme_path):
             os.remove(self.test_readme_path)
+        if os.path.exists(self.test_ndaversis_path):
+            os.remove(self.test_ndaversis_path)
 
     def test_version_increment(self):
         """Test the increment methods of the Version class."""
@@ -54,28 +60,12 @@ class TestNdaversis(unittest.TestCase):
         v.increment_major()
         self.assertEqual(str(v), "2.0.0")
 
-    @patch('ndaversis.README_FILE', 'test_readme.md')
     def test_save_version(self):
         """Test that the version is correctly saved to a file."""
-        # Create a separate file for the save_version function to modify
-        test_file_path = "test_version_file.py"
-        with open(test_file_path, "w", encoding="utf-8") as f:
-            f.write('__version__ = "0.1.0"')
-
-        # Overwrite the `__file__` attribute in the `ndaversis` module
-        import ndaversis
-        ndaversis.__file__ = test_file_path
-
-        # Call the function to save the new version
-        save_version("0.2.0")
-
-        # Read the file and check if the version was updated
-        with open(test_file_path, "r", encoding="utf-8") as f:
+        save_version("0.2.0", self.test_ndaversis_path)
+        with open(self.test_ndaversis_path, "r", encoding="utf-8") as f:
             content = f.read()
             self.assertIn('__version__ = "0.2.0"', content)
-
-        # Clean up the dummy file
-        os.remove(test_file_path)
 
     @patch('ndaversis.README_FILE', 'test_readme.md')
     def test_process_python_file(self):
@@ -163,25 +153,26 @@ class TestNdaversis(unittest.TestCase):
         self.assertIn("- Removed classes: OldClass", summary)
 
     @patch('ndaversis.README_FILE', 'test_readme.md')
+    @patch('ndaversis.__file__', 'test_ndaversis.py')
     def test_readme_update_integration(self):
         """Integration test for the README update process."""
-        # Set up the CLI arguments
         cli_args = Namespace(major=False, minor=False, patch=True)
 
-        # Get the current version
-        initial_version = get_version()
-        # Run the main CLI function
-        main_cli(cli_args)
+        # The dummy file is created with 0.1.0 in setUp
+        # We patch __version__ so get_version() returns the correct starting version for the test
+        with patch('ndaversis.__version__', "0.1.0"):
+            main_cli(cli_args)
 
-        # Read the updated README
         with open(self.test_readme_path, "r", encoding="utf-8") as f:
-            content = f.read()
+            readme_content = f.read()
+        with open(self.test_ndaversis_path, "r", encoding="utf-8") as f:
+            ndaversis_content = f.read()
 
-        # Check that the version history is updated
-        self.assertIn(f"## Version {initial_version.major}.{initial_version.minor}.{initial_version.patch + 1}", content)
+        self.assertIn("## Version 0.1.1", readme_content)
+        self.assertIn('__version__ = "0.1.1"', ndaversis_content)
         # Check that other dynamic sections are present
-        self.assertIn("## 2. Description Summary", content)
-        self.assertIn("## 13. Last Version Summary", content)
+        self.assertIn("## 2. Description Summary", readme_content)
+        self.assertIn("## 13. Last Version Summary", readme_content)
 
     @patch('os.getenv')
     def test_get_ai_service(self, mock_getenv):
