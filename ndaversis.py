@@ -9,6 +9,9 @@ import sys
 import ast
 import json
 import google.generativeai as genai
+import openai
+import anthropic
+from deepseek import DeepSeekAPI
 
 README_FILE = "readme.md"
 
@@ -35,18 +38,88 @@ class GeminiService(AIService):
         response = self.model.generate_content(full_prompt)
         return response.text
 
+class ChatGPTService(AIService):
+    """An AI service that uses the OpenAI ChatGPT API."""
+    def __init__(self, api_key):
+        super().__init__()
+        self.client = openai.OpenAI(api_key=api_key)
+
+    def generate_content(self, prompt, analysis_data):
+        """Generate content using the ChatGPT API."""
+        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
+        response = self.client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": full_prompt}]
+        )
+        return response.choices[0].message.content
+
+class ClaudeService(AIService):
+    """An AI service that uses the Anthropic Claude API."""
+    def __init__(self, api_key):
+        super().__init__()
+        self.client = anthropic.Anthropic(api_key=api_key)
+
+    def generate_content(self, prompt, analysis_data):
+        """Generate content using the Claude API."""
+        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
+        message = self.client.messages.create(
+            model="claude-3-opus-20240229",
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": full_prompt,
+                }
+            ],
+        )
+        return message.content
+
+class DeepSeekService(AIService):
+    """An AI service that uses the DeepSeek API."""
+    def __init__(self, api_key):
+        super().__init__()
+        self.client = DeepSeekAPI(api_key=api_key)
+
+    def generate_content(self, prompt, analysis_data):
+        """Generate content using the DeepSeek API."""
+        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
+        response = self.client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": full_prompt}]
+        )
+        return response.choices[0].message.content
+
 def get_ai_service(config):
     """Factory function to get an AI service instance."""
     if not config:
         return None
     provider = config.get("ai_provider")
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        print("GEMINI_API_KEY environment variable not found. AI service disabled.")
-        return None
+    api_key = None
 
     if provider == "gemini":
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("GEMINI_API_KEY environment variable not found. AI service disabled.")
+            return None
         return GeminiService(api_key)
+    elif provider == "chatgpt":
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            print("OPENAI_API_KEY environment variable not found. AI service disabled.")
+            return None
+        return ChatGPTService(api_key)
+    elif provider == "claude":
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            print("ANTHROPIC_API_KEY environment variable not found. AI service disabled.")
+            return None
+        return ClaudeService(api_key)
+    elif provider == "deepseek":
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            print("DEEPSEEK_API_KEY environment variable not found. AI service disabled.")
+            return None
+        return DeepSeekService(api_key)
     # Add other providers here
     return None
 
@@ -58,7 +131,7 @@ COPYRIGHT_TEXT = (
     "All rights belong to their respective owners."
 )
 
-__version__ = "0.0.29"
+__version__ = "0.0.32"
 def load_previous_code_state():
     """Load the previous code state from the readme.md file."""
     try:
@@ -75,11 +148,17 @@ def load_previous_code_state():
     except (IOError, json.JSONDecodeError):
         return {}
 
+def load_ai_config():
+    """Load AI configuration from config.json."""
+    try:
+        with open("config.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (IOError, json.JSONDecodeError):
+        return {}
+
 __previous_code_state__ = load_previous_code_state()
 
-AI_CONFIG = {
-  "ai_provider": "gemini"
-}
+AI_CONFIG = load_ai_config()
 
 class Version:
     """A class to represent a semantic version."""
