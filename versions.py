@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long,consider-using-join
 """A module for managing semantic versioning."""
 import os
 import re
@@ -7,18 +8,65 @@ import argparse
 import sys
 import ast
 import json
+import google.generativeai as genai
+
+# pylint: disable=too-few-public-methods
+class AIService:
+    """Base class for AI services."""
+    def __init__(self):
+        pass
+
+    def generate_content(self, prompt, analysis_data):
+        """Generate content using the AI service."""
+        raise NotImplementedError
+
+class GeminiService(AIService):
+    """An AI service that uses the Google Gemini API."""
+    def __init__(self, api_key):
+        super().__init__()
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
+
+    def generate_content(self, prompt, analysis_data):
+        """Generate content using the Gemini API."""
+        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
+        response = self.model.generate_content(full_prompt)
+        return response.text
+
+def get_ai_service(config):
+    """Factory function to get an AI service instance."""
+    if not config:
+        return None
+    provider = config.get("ai_provider")
+    api_key = config.get("api_key")
+    if not api_key or api_key == "YOUR_API_KEY_HERE":
+        print("API key not found or is a placeholder. AI service disabled.")
+        return None
+
+    if provider == "gemini":
+        return GeminiService(api_key)
+    # Add other providers here
+    return None
+
 CONTACT_EMAIL = "n@ndaotec.com"
 COPYRIGHT_HOLDER = "Nikita Andreevich Drozdov"
 REPOSITORY_ADDRESS = "https://github.com/lystwork/ndaversis"
-COPYRIGHT_TEXT = "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. All rights belong to their respective owners."
+COPYRIGHT_TEXT = (
+    "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
+    "All rights belong to their respective owners."
+)
 
-__version__ = "0.0.18"
+__version__ = "0.0.21"
 def load_previous_code_state():
     """Load the previous code state from the readme.md file."""
     try:
         with open("readme.md", "r", encoding="utf-8") as f:
             content = f.read()
-            match = re.search(r"<!-- AUTO-CODE-STATE-START -->(.*?)<!-- AUTO-CODE-STATE-END -->", content, re.DOTALL)
+            match = re.search(
+                r"<!-- AUTO-CODE-STATE-START -->(.*?)<!-- AUTO-CODE-STATE-END -->",
+                content,
+                re.DOTALL
+            )
             if match:
                 return json.loads(match.group(1))
             return {}
@@ -26,6 +74,20 @@ def load_previous_code_state():
         return {}
 
 __previous_code_state__ = load_previous_code_state()
+
+def load_ai_config():
+    """Load AI configuration from config.json."""
+    try:
+        with open("config.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("config.json not found. Please create it from config.json.template.")
+        return None
+    except json.JSONDecodeError:
+        print("Error decoding config.json. Please check the file format.")
+        return None
+
+AI_CONFIG = load_ai_config()
 
 class Version:
     """A class to represent a semantic version."""
@@ -58,18 +120,53 @@ def get_version():
     major, minor, patch = map(int, __version__.split("."))
     return Version(major, minor, patch)
 
-def save_version(version):
+def save_version(version_str):
     """Save the version back to the versions.py file."""
     with open(__file__, "r+", encoding="utf-8") as f:
         content = f.read()
         new_content = re.sub(
-            r"__version__ = \".*\"",
-            f"__version__ = \"{version}\"",
+            r'__version__ = "0.0.21"',
+            f'__version__ = "{version_str}"',
             content
         )
         f.seek(0)
         f.write(new_content)
         f.truncate()
+
+def _process_python_file(filepath, features, method_names):
+    """Process a single Python file to extract features."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        code = f.read()
+    try:
+        tree = ast.parse(code)
+        module_docstring = ast.get_docstring(tree) or ""
+        features["files"][filepath] = {"docstring": module_docstring}
+        # First pass: Get classes and their methods
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                methods = {
+                    item.name: [arg.arg for arg in item.args.args if arg.arg != "self"]
+                    for item in node.body if isinstance(item, ast.FunctionDef)
+                }
+                method_names.update(methods.keys())
+                features["classes"][node.name] = {"methods": methods}
+
+        # Second pass: Get imports and top-level functions
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                features["imports"].update(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                features["imports"].add(node.module)
+            elif isinstance(node, ast.FunctionDef) and node.name not in method_names:
+                docstring = ast.get_docstring(node)
+                features["functions"][node.name] = {
+                    "args": [arg.arg for arg in node.args.args],
+                    "docstring": docstring if docstring else ""
+                }
+    except SyntaxError:
+        # Ignore files with syntax errors
+        pass
+    return code
 
 def _analyze_codebase():
     """Analyze the codebase to identify key features and return a structured dictionary."""
@@ -77,71 +174,21 @@ def _analyze_codebase():
         "imports": set(),
         "classes": {},
         "functions": {},
+        "files": {},
     }
     method_names = set()
+    last_code = "" # To return a representative code sample
     for root, _, files in os.walk("."):
         if ".git" in root:
             continue
         for file in files:
             if file.endswith(".py"):
-                with open(os.path.join(root, file), "r", encoding="utf-8") as f:
-                    code = f.read()
-                    try:
-                        tree = ast.parse(code)
-                        # First pass: Get classes and their methods
-                        for node in ast.walk(tree):
-                            if isinstance(node, ast.ClassDef):
-                                methods = {}
-                                for item in node.body:
-                                    if isinstance(item, ast.FunctionDef):
-                                        method_names.add(item.name)
-                                        func_args = [arg.arg for arg in item.args.args if arg.arg != "self"]
-                                        methods[item.name] = func_args
-                                features["classes"][node.name] = {"methods": methods}
+                filepath = os.path.join(root, file)
+                last_code = _process_python_file(filepath, features, method_names)
 
-                        # Second pass: Get imports and top-level functions
-                        for node in ast.walk(tree):
-                            if isinstance(node, ast.Import):
-                                for alias in node.names:
-                                    features["imports"].add(alias.name)
-                            elif isinstance(node, ast.ImportFrom):
-                                if node.module:
-                                    features["imports"].add(node.module)
-                            elif isinstance(node, ast.FunctionDef):
-                                # Only add if it's not a method we've already processed
-                                if node.name not in method_names:
-                                    func_args = [arg.arg for arg in node.args.args]
-                                    features["functions"][node.name] = func_args
-                    except SyntaxError:
-                        # Ignore files with syntax errors
-                        continue
-    # First pass: Get classes and their methods
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            methods = {}
-            for item in node.body:
-                if isinstance(item, ast.FunctionDef):
-                    method_names.add(item.name)
-                    func_args = [arg.arg for arg in item.args.args if arg.arg != "self"]
-                    methods[item.name] = func_args
-            features["classes"][node.name] = {"methods": methods}
-
-    # Second pass: Get imports and top-level functions
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                features["imports"].add(alias.name)
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                features["imports"].add(node.module)
-        elif isinstance(node, ast.FunctionDef):
-            # Only add if it's not a method we've already processed
-            if node.name not in method_names:
-                func_args = [arg.arg for arg in node.args.args]
-                features["functions"][node.name] = func_args
 
     features["imports"] = sorted(list(features["imports"]))
-    return features, code
+    return features, last_code
 
 
 def suggest_next_steps(analysis_data):
@@ -155,34 +202,59 @@ def suggest_next_steps(analysis_data):
         suggestions.append("consider modularizing the codebase to improve maintainability")
 
     if not suggestions:
-        return "The project is in a good state, and the next steps will be determined by user feedback."
+        return (
+            "The project is in a good state, and the next steps will be "
+            "determined by user feedback."
+        )
 
     return f"The next steps for the project could be to {', '.join(suggestions)}."
 
 
 def generate_user_benefit_analysis(analysis_data):
     """Generate the 7-step analysis for the 'What's Good for the User' section."""
+    ai_service = get_ai_service(AI_CONFIG)
+    if ai_service:
+        prompt = (
+            "Generate a 7-step analysis for the 'What's Good for the User' section "
+            "of a README.md file. The analysis should be based on the provided "
+            "codebase analysis. The steps are: User's Goal, Evaluation of the "
+            "repository Solution, Core Functionality, Safety & Side Effects, "
+            "Completeness, Assessment, and Is that good result?"
+        )
+        return ai_service.generate_content(prompt, analysis_data)
 
-    # 1. User's Goal
-    user_goal = "The user wants a fully automated and dynamically updated README.md that accurately reflects the state of the repository."
-
-    # 2. Evaluation of the repository Solution
-    evaluation = "The solution successfully meets the user's goal by implementing a robust system for auto-generating the README.md from the codebase."
-
-    # 3. Core Functionality
-    core_functionality = f"The core functionality is the dynamic generation of the README.md, which now includes {len(analysis_data['functions'])} functions and {len(analysis_data['classes'])} classes."
-
-    # 4. Safety & Side Effects
-    safety = "The solution is safe and has no unintended side effects. The primary side effect is that the README.md is now entirely managed by the script, which is the intended outcome."
-
-    # 5. Completeness
-    completeness = "The solution is complete and addresses all the user's requirements. It provides a comprehensive and fully automated README generation process."
-
-    # 6. Assessment
-    assessment = "The solution is a well-designed and effective implementation that not only meets the user's needs but also improves the overall quality of the project's documentation."
-
-    # 7. Is that good result?
-    is_good_result = "Yes, this is an excellent result that provides significant value to the user by automating a critical part of the development workflow."
+    # Fallback to original logic if AI service is not available
+    user_goal = (
+        "The user wants a fully automated and dynamically updated README.md "
+        "that accurately reflects the state of the repository."
+    )
+    evaluation = (
+        "The solution successfully meets the user's goal by implementing a robust "
+        "system for auto-generating the README.md from the codebase."
+    )
+    core_functionality = (
+        f"The core functionality is the dynamic generation of the README.md, "
+        f"which now includes {len(analysis_data['functions'])} functions and "
+        f"{len(analysis_data['classes'])} classes."
+    )
+    safety = (
+        "The solution is safe and has no unintended side effects. The primary "
+        "side effect is that the README.md is now entirely managed by the "
+        "script, which is the intended outcome."
+    )
+    completeness = (
+        "The solution is complete and addresses all the user's requirements. "
+        "It provides a comprehensive and fully automated README generation process."
+    )
+    assessment = (
+        "The solution is a well-designed and effective implementation that not "
+        "only meets the user's needs but also improves the overall quality of "
+        "the project's documentation."
+    )
+    is_good_result = (
+        "Yes, this is an excellent result that provides significant value to the "
+        "user by automating a critical part of the development workflow."
+    )
 
     return (
         f"### 1. User's Goal\n{user_goal}\n\n"
@@ -250,38 +322,60 @@ def generate_change_summary(old_state, new_state):
     return "\n".join(summary)
 
 
+def _generate_section(title, analysis_data, prefix, format_str):
+    """Helper function to generate a section of the README."""
+    content = f"## {title}\n\n"
+    items = []
+    for func_name, func_data in analysis_data["functions"].items():
+        if func_data["docstring"] and prefix in func_data["docstring"]:
+            items.append(
+                format_str.format(
+                    name=func_name.replace('_', ' ').title(),
+                    doc=func_data['docstring'].split(prefix)[1].strip()
+                )
+            )
+    content += "".join(items)
+    return content
+
 def generate_dynamic_sections(analysis_data):
     """Generate the dynamic sections of the README file."""
 
-    # Use Cases
-    use_cases = "## 3. Use Cases\n\n"
-    for func_name, func_data in analysis_data["functions"].items():
-        if func_data["docstring"] and "Use Case:" in func_data["docstring"]:
-            use_cases += f"*   **{func_name.replace('_', ' ').title()}**: {func_data['docstring'].split('Use Case:')[1].strip()}\n"
+    use_cases = _generate_section(
+        "3. Use Cases",
+        analysis_data,
+        "Use Case:",
+        "*   **{name}**: {doc}\n"
+    )
 
-    # User Stories
-    user_stories = "## 4. User Stories\n\n"
-    for func_name, func_data in analysis_data["functions"].items():
-        if func_data["docstring"] and "User Story:" in func_data["docstring"]:
-            user_stories += f"*   **As a user,** I want to be able to {func_name.replace('_', ' ')}, so that {func_data['docstring'].split('User Story:')[1].strip()}.\n"
+    user_stories = _generate_section(
+        "4. User Stories",
+        analysis_data,
+        "User Story:",
+        "*   **As a user,** I want to be able to {name}, so that {doc}.\n"
+    )
 
-    # FAQ
-    faq = "## 5. FAQ\n\n"
-    for func_name, func_data in analysis_data["functions"].items():
-        if func_data["docstring"] and "FAQ:" in func_data["docstring"]:
-            faq += f"**Q: {func_name.replace('_', ' ').title()}?**\n**A:** {func_data['docstring'].split('FAQ:')[1].strip()}\n\n"
+    faq = _generate_section(
+        "5. FAQ",
+        analysis_data,
+        "FAQ:",
+        "**Q: {name}?**\n**A:** {doc}\n\n"
+    )
 
-    # How To
-    how_to = "## 6. How To\n\n"
-    for func_name, func_data in analysis_data["functions"].items():
-        if func_data["docstring"] and "How To:" in func_data["docstring"]:
-            how_to += f"### {func_name.replace('_', ' ').title()}\n\n{func_data['docstring'].split('How To:')[1].strip()}\n\n"
+    how_to = _generate_section(
+        "6. How To",
+        analysis_data,
+        "How To:",
+        "### {name}\n\n{doc}\n\n"
+    )
 
-    # Features
-    features = "## 7. Features\n\n"
-    for func_name, func_data in analysis_data["functions"].items():
-        if func_data["docstring"]:
-            features += f"*   **{func_name.replace('_', ' ').title()}**: {func_data['docstring'].splitlines()[0].strip()}\n"
+    features_str = "## 7. Features\n\n"
+    features_str += "".join(
+        f"*   **{func_name.replace('_', ' ').title()}**: "
+        f"{func_data['docstring'].splitlines()[0].strip()}\n"
+        for func_name, func_data in analysis_data["functions"].items()
+        if func_data["docstring"]
+    )
+
 
     # Requirements
     requirements = "## 8. Requirements\n\n*   Python 3.6+\n"
@@ -289,38 +383,76 @@ def generate_dynamic_sections(analysis_data):
         requirements += "*   `tkinter` (for the GUI, usually included with Python)\n"
 
     # Install
-    install = "## 9. Install\n\nNo installation is required. Simply clone or download the repository and run the `versions.py` script.\n"
+    install = (
+        "## 9. Install\n\nNo installation is required. Simply clone or "
+        "download the repository and run the `versions.py` script.\n"
+    )
 
     # Project Map is generated separately
 
     # Modules Map
     modules_map = "## 11. Modules Map\n\n"
-    for file_path, file_data in analysis_data["files"].items():
-        if file_data["docstring"]:
-            modules_map += f"*   `{os.path.basename(file_path)}`: {file_data['docstring'].splitlines()[0].strip()}\n"
+    modules_map_items = [
+        f"*   `{os.path.basename(file_path)}`: "
+        f"{file_data['docstring'].splitlines()[0].strip()}"
+        for file_path, file_data in analysis_data["files"].items()
+        if file_data["docstring"]
+    ]
+    modules_map += "\n".join(modules_map_items)
+
 
     # Dependencies Map
     dependencies_map = "## 12. Dependencies Map\n\n"
-    for dep in analysis_data["imports"]:
-        dependencies_map += f"*   `{dep}`\n"
+    dependencies_map_items = [
+        f"*   `{dep}`"
+        for dep in analysis_data["imports"]
+    ]
+    dependencies_map += "\n".join(dependencies_map_items)
 
-    return use_cases + user_stories + faq + how_to + features + requirements + install + modules_map + dependencies_map
+
+    return "\n".join(
+        [
+            use_cases,
+            user_stories,
+            faq,
+            how_to,
+            features_str,
+            requirements,
+            install,
+            modules_map,
+            dependencies_map,
+        ]
+    )
 
 
 def generate_project_description():
     """Analyze the repository to generate a project description."""
     features, code = _analyze_codebase()
+    ai_service = get_ai_service(AI_CONFIG)
+    if ai_service:
+        prompt = (
+            "Generate a project description for a README.md file. The description "
+            "should be based on the provided codebase analysis. It should cover: "
+            "What is this repository?, How it operates?, How it's designed?, and "
+            "What is its core functionality?"
+        )
+        return ai_service.generate_content(prompt, (features, code))
 
-    # 1. What is this "Name of repository"?
+    # Fallback to original logic if AI service is not available
     try:
         with open("readme.md", "r", encoding="utf-8") as f:
             first_line = f.readline()
             project_name = first_line.split(":")[0].replace("# 1. ", "").strip()
     except (IOError, IndexError):
         project_name = "Ndaversis"
-
-    # 2. How it operates? 3. How its designed? 4. What its core functionality?
-    core_functionality = "manage semantic versioning for software projects"
+    core_functionality = (
+        "be an agentic module that leverages various large language models "
+        "(like Gemini, ChatGPT, etc.) for self-development and intelligent "
+        "content creation, with the user being able to choose the AI model. "
+        "It also automates README creation and updates, ensuring it's always "
+        "self-updating with the most recent and accurate information, "
+        "alongside managing semantic versioning"
+    )
     design = "monolithic, self-contained Python wrapper"
     operation = "operates independently of any version control system like Git"
 
@@ -427,7 +559,8 @@ def generate_readme_content(version, analysis_data, what_changed):
         f"## Version {version}\n"
         f"### Goals\n{infer_goals_from_summary(what_changed)}\n\n"
         f"### What Changed\n{what_changed}\n\n"
-        f"### What's Good for the User\n{generate_user_benefit_analysis(analysis_data)}\n\n"
+        f"### What's Good for the User\n"
+        f"{generate_user_benefit_analysis(analysis_data)}\n\n"
         f"### What's Possibly Next\n{suggest_next_steps(analysis_data)}\n"
     )
 
@@ -497,6 +630,23 @@ def main_gui():
     root.mainloop()
 
 
+def install_pre_commit_hook():
+    """Installs a pre-commit hook to automate README and version updates."""
+    hook_script = """
+#!/bin/sh
+# Automatically update the version and README on commit.
+python3 versions.py cli --patch
+git add versions.py readme.md
+"""
+    hook_path = os.path.join(".git", "hooks", "pre-commit")
+    try:
+        with open(hook_path, "w", encoding="utf-8") as f:
+            f.write(hook_script)
+        os.chmod(hook_path, 0o755)
+        print("Successfully installed pre-commit hook.")
+    except IOError as e:
+        print(f"Error installing pre-commit hook: {e}")
+
 def main_cli(cli_args):
     """Run the command-line interface."""
     version = get_version()
@@ -530,7 +680,10 @@ def main_cli(cli_args):
         # Use a robust regex to find and replace the state block
         new_content = re.sub(
             r"<!-- AUTO-CODE-STATE-START -->.*?<!-- AUTO-CODE-STATE-END -->",
-            f"<!-- AUTO-CODE-STATE-START -->\n{state_string}\n<!-- AUTO-CODE-STATE-END -->",
+            (
+                f"<!-- AUTO-CODE-STATE-START -->\n{state_string}\n"
+                f"<!-- AUTO-CODE-STATE-END -->"
+            ),
             content,
             flags=re.DOTALL
         )
@@ -549,6 +702,8 @@ if __name__ == "__main__":
 
     subparsers.add_parser("gui", help="Run the GUI")
     cli_parser = subparsers.add_parser("cli", help="Run the command-line interface")
+    install_parser = subparsers.add_parser("install-hook", help="Install the pre-commit hook")
+
 
     group = cli_parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--major", action="store_true", help="Increment major version")
@@ -563,5 +718,7 @@ if __name__ == "__main__":
             main_gui()
         elif args.command == "cli":
             main_cli(args)
+        elif args.command == "install-hook":
+            install_pre_commit_hook()
         else:
             parser.print_help()
