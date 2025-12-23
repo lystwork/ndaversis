@@ -38,9 +38,9 @@ def get_ai_service(config):
     if not config:
         return None
     provider = config.get("ai_provider")
-    api_key = config.get("api_key")
-    if not api_key or api_key == "YOUR_API_KEY_HERE":
-        print("API key not found or is a placeholder. AI service disabled.")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("GEMINI_API_KEY environment variable not found. AI service disabled.")
         return None
 
     if provider == "gemini":
@@ -75,19 +75,9 @@ def load_previous_code_state():
 
 __previous_code_state__ = load_previous_code_state()
 
-def load_ai_config():
-    """Load AI configuration from config.json."""
-    try:
-        with open("config.json", "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print("config.json not found. Please create it from config.json.template.")
-        return None
-    except json.JSONDecodeError:
-        print("Error decoding config.json. Please check the file format.")
-        return None
-
-AI_CONFIG = load_ai_config()
+AI_CONFIG = {
+  "ai_provider": "gemini"
+}
 
 class Version:
     """A class to represent a semantic version."""
@@ -121,11 +111,11 @@ def get_version():
     return Version(major, minor, patch)
 
 def save_version(version_str):
-    """Save the version back to the versions.py file."""
+    """Save the version back to the ndaversis.py file."""
     with open(__file__, "r+", encoding="utf-8") as f:
         content = f.read()
         new_content = re.sub(
-            r'__version__ = "0.0.24"',
+            r'__version__ = "\d+\.\d+\.\d+"',
             f'__version__ = "{version_str}"',
             content
         )
@@ -385,7 +375,7 @@ def generate_dynamic_sections(analysis_data):
     # Install
     install = (
         "## 9. Install\n\nNo installation is required. Simply clone or "
-        "download the repository and run the `versions.py` script.\n"
+        "download the repository and run the `ndaversis.py` script.\n"
     )
 
     # Project Map is generated separately
@@ -647,8 +637,8 @@ def install_pre_commit_hook():
     hook_script = """
 #!/bin/sh
 # Automatically update the version and README on commit.
-python3 versions.py cli --patch
-git add versions.py readme.md
+python3 ndaversis.py cli --patch
+git add ndaversis.py readme.md
 """
     hook_path = os.path.join(".git", "hooks", "pre-commit")
     try:
