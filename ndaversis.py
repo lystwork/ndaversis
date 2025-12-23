@@ -8,60 +8,74 @@ import argparse
 import sys
 import ast
 import json
-import google.generativeai as genai
+import google.genai as genai
 import openai
 import anthropic
 from deepseek import DeepSeekAPI
 
 README_FILE = "readme.md"
 
+
 # pylint: disable=too-few-public-methods
 class AIService:
     """Base class for AI services."""
+
     def __init__(self):
         pass
+
+    def _create_full_prompt(self, prompt, analysis_data):
+        """Creates the full prompt with code analysis data."""
+        return f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
 
     def generate_content(self, prompt, analysis_data):
         """Generate content using the AI service."""
         raise NotImplementedError
 
+
 class GeminiService(AIService):
     """An AI service that uses the Google Gemini API."""
+
     def __init__(self, api_key):
         super().__init__()
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.client = genai.Client(api_key=api_key)
+        self.model_name = "gemini-1.0-pro"
 
     def generate_content(self, prompt, analysis_data):
         """Generate content using the Gemini API."""
-        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
-        response = self.model.generate_content(full_prompt)
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
+        response = self.client.generate_content(
+            model=f"models/{self.model_name}",
+            contents=full_prompt,
+        )
         return response.text
+
 
 class ChatGPTService(AIService):
     """An AI service that uses the OpenAI ChatGPT API."""
+
     def __init__(self, api_key):
         super().__init__()
         self.client = openai.OpenAI(api_key=api_key)
 
     def generate_content(self, prompt, analysis_data):
         """Generate content using the ChatGPT API."""
-        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": full_prompt}]
+            model="gpt-3.5-turbo", messages=[{"role": "user", "content": full_prompt}]
         )
         return response.choices[0].message.content
 
+
 class ClaudeService(AIService):
     """An AI service that uses the Anthropic Claude API."""
+
     def __init__(self, api_key):
         super().__init__()
         self.client = anthropic.Anthropic(api_key=api_key)
 
     def generate_content(self, prompt, analysis_data):
         """Generate content using the Claude API."""
-        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
         message = self.client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
@@ -74,20 +88,22 @@ class ClaudeService(AIService):
         )
         return message.content
 
+
 class DeepSeekService(AIService):
     """An AI service that uses the DeepSeek API."""
+
     def __init__(self, api_key):
         super().__init__()
         self.client = DeepSeekAPI(api_key=api_key)
 
     def generate_content(self, prompt, analysis_data):
         """Generate content using the DeepSeek API."""
-        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
         response = self.client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[{"role": "user", "content": full_prompt}]
+            model="deepseek-chat", messages=[{"role": "user", "content": full_prompt}]
         )
         return response.choices[0].message.content
+
 
 def get_ai_service(config):
     """Factory function to get an AI service instance.
@@ -113,17 +129,22 @@ def get_ai_service(config):
     elif provider == "claude":
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            print("ANTHROPIC_API_KEY environment variable not found. AI service disabled.")
+            print(
+                "ANTHROPIC_API_KEY environment variable not found. AI service disabled."
+            )
             return None
         return ClaudeService(api_key)
     elif provider == "deepseek":
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
-            print("DEEPSEEK_API_KEY environment variable not found. AI service disabled.")
+            print(
+                "DEEPSEEK_API_KEY environment variable not found. AI service disabled."
+            )
             return None
         return DeepSeekService(api_key)
     # Add other providers here
     return None
+
 
 CONTACT_EMAIL = "n@ndaotec.com"
 COPYRIGHT_HOLDER = "Nikita Andreevich Drozdov"
@@ -134,6 +155,8 @@ COPYRIGHT_TEXT = (
 )
 
 __version__ = "0.0.31"
+
+
 def load_previous_code_state():
     """Load the previous code state from the readme.md file.
     User Story: As a developer, I want to be able to load the previous code state so that I can compare it with the current state.
@@ -144,13 +167,15 @@ def load_previous_code_state():
             match = re.search(
                 r"<!-- AUTO-CODE-STATE-START -->(.*?)<!-- AUTO-CODE-STATE-END -->",
                 content,
-                re.DOTALL
+                re.DOTALL,
             )
             if match:
                 return json.loads(match.group(1).strip())
             return {}
-    except (IOError, json.JSONDecodeError):
+    except (FileNotFoundError, IOError, json.JSONDecodeError) as e:
+        print(f"Error loading previous code state from {README_FILE}: {e}")
         return {}
+
 
 def load_ai_config():
     """Load AI configuration from config.json.
@@ -160,15 +185,19 @@ def load_ai_config():
     try:
         with open("config.json", "r", encoding="utf-8") as f:
             return json.load(f)
-    except (IOError, json.JSONDecodeError):
+    except (FileNotFoundError, IOError, json.JSONDecodeError) as e:
+        print(f"Error loading AI configuration from config.json: {e}")
         return {}
+
 
 __previous_code_state__ = load_previous_code_state()
 
 AI_CONFIG = load_ai_config()
 
+
 class Version:
     """A class to represent a semantic version."""
+
     def __init__(self, major=0, minor=0, patch=0):
         self.major = major
         self.minor = minor
@@ -193,12 +222,14 @@ class Version:
         """Increment the patch version."""
         self.patch += 1
 
+
 def get_version():
     """Get the current version from the __version__ variable.
     How To: Get the current version of the project.
     """
     major, minor, patch = map(int, __version__.split("."))
     return Version(major, minor, patch)
+
 
 def save_version(version_str, filepath=None):
     """Save the version back to the ndaversis.py file."""
@@ -207,13 +238,12 @@ def save_version(version_str, filepath=None):
     with open(filepath, "r+", encoding="utf-8") as f:
         content = f.read()
         new_content = re.sub(
-            r'__version__ = "\d+\.\d+\.\d+"',
-            f'__version__ = "{version_str}"',
-            content
+            r'__version__ = "\d+\.\d+\.\d+"', f'__version__ = "{version_str}"', content
         )
         f.seek(0)
         f.write(new_content)
         f.truncate()
+
 
 def _process_python_file(filepath, features, method_names):
     """Process a single Python file to extract features."""
@@ -228,7 +258,8 @@ def _process_python_file(filepath, features, method_names):
             if isinstance(node, ast.ClassDef):
                 methods = {
                     item.name: [arg.arg for arg in item.args.args if arg.arg != "self"]
-                    for item in node.body if isinstance(item, ast.FunctionDef)
+                    for item in node.body
+                    if isinstance(item, ast.FunctionDef)
                 }
                 method_names.update(methods.keys())
                 features["classes"][node.name] = {"methods": methods}
@@ -243,12 +274,13 @@ def _process_python_file(filepath, features, method_names):
                 docstring = ast.get_docstring(node)
                 features["functions"][node.name] = {
                     "args": [arg.arg for arg in node.args.args],
-                    "docstring": docstring if docstring else ""
+                    "docstring": docstring if docstring else "",
                 }
     except SyntaxError:
         # Ignore files with syntax errors
         pass
     return code
+
 
 def _analyze_codebase():
     """Analyze the codebase to identify key features and return a structured dictionary."""
@@ -259,7 +291,7 @@ def _analyze_codebase():
         "files": {},
     }
     method_names = set()
-    last_code = "" # To return a representative code sample
+    last_code = ""  # To return a representative code sample
     for root, _, files in os.walk("."):
         if ".git" in root:
             continue
@@ -267,7 +299,6 @@ def _analyze_codebase():
             if file.endswith(".py"):
                 filepath = os.path.join(root, file)
                 last_code = _process_python_file(filepath, features, method_names)
-
 
     features["imports"] = sorted(list(features["imports"]))
     return features, last_code
@@ -281,7 +312,9 @@ def suggest_next_steps(analysis_data):
     if "tkinter" in analysis_data["imports"] and "argparse" in analysis_data["imports"]:
         suggestions.append("enhance the GUI and CLI with more features")
     if len(analysis_data["functions"]) > 15:
-        suggestions.append("consider modularizing the codebase to improve maintainability")
+        suggestions.append(
+            "consider modularizing the codebase to improve maintainability"
+        )
 
     if not suggestions:
         return (
@@ -348,6 +381,7 @@ def generate_user_benefit_analysis(analysis_data):
         f"### 7. Is that good result?\n{is_good_result}\n"
     )
 
+
 def infer_goals_from_summary(change_summary):
     """Infer the goals of the changes from the change summary."""
     goals = []
@@ -386,7 +420,9 @@ def generate_change_summary(old_state, new_state):
     if added_functions:
         summary.append(f"- Added functions: {', '.join(sorted(list(added_functions)))}")
     if removed_functions:
-        summary.append(f"- Removed functions: {', '.join(sorted(list(removed_functions)))}")
+        summary.append(
+            f"- Removed functions: {', '.join(sorted(list(removed_functions)))}"
+        )
 
     # Compare classes
     old_classes = old_state.get("classes", {})
@@ -412,51 +448,43 @@ def _generate_section(title, analysis_data, prefix, format_str):
         if func_data.get("docstring") and prefix in func_data["docstring"]:
             items.append(
                 format_str.format(
-                    name=func_name.replace('_', ' ').title(),
-                    doc=func_data['docstring'].split(prefix)[1].strip()
+                    name=func_name.replace("_", " ").title(),
+                    doc=func_data["docstring"].split(prefix)[1].strip(),
                 )
             )
     content += "".join(items)
     return content
 
+
 def generate_dynamic_sections(analysis_data):
     """Generate the dynamic sections of the README file."""
 
     use_cases = _generate_section(
-        "3. Use Cases",
-        analysis_data,
-        "Use Case:",
-        "*   **{name}**: {doc}\n"
+        "3. Use Cases", analysis_data, "Use Case:", "*   **{name}**: {doc}\n"
     )
 
     user_stories = _generate_section(
         "4. User Stories",
         analysis_data,
         "User Story:",
-        "*   **As a user,** I want to be able to {name}, so that {doc}.\n"
+        "*   **As a user,** I want to be able to {name}, so that {doc}.\n",
     )
 
     faq = _generate_section(
-        "5. FAQ",
-        analysis_data,
-        "FAQ:",
-        "**Q: {name}?**\n**A:** {doc}\n\n"
+        "5. FAQ", analysis_data, "FAQ:", "**Q: {name}?**\n**A:** {doc}\n\n"
     )
 
     how_to = _generate_section(
-        "6. How To",
-        analysis_data,
-        "How To:",
-        "### {name}\n\n{doc}\n\n"
+        "6. How To", analysis_data, "How To:", "### {name}\n\n{doc}\n\n"
     )
 
     features_str = "## 7. Features\n\n"
     features_str += "".join(
         f"*   **{func_name.replace('_', ' ').title()}**: {func_data.get('docstring', '').splitlines()[0].strip().split(': ')[1]}\n"
         for func_name, func_data in analysis_data["functions"].items()
-        if func_data.get("docstring") and ': ' in func_data.get('docstring', '').splitlines()[0]
+        if func_data.get("docstring")
+        and ": " in func_data.get("docstring", "").splitlines()[0]
     )
-
 
     # Requirements
     requirements = "## 8. Requirements\n\n*   Python 3.6+\n"
@@ -481,7 +509,6 @@ def generate_dynamic_sections(analysis_data):
     ]
     modules_map += "\n".join(modules_map_items)
 
-
     # Dependencies Map
     dependencies_map = "## 12. Dependencies Map\n\n"
     stdlib_modules = set(sys.stdlib_module_names)
@@ -491,7 +518,6 @@ def generate_dynamic_sections(analysis_data):
         if dep not in stdlib_modules
     ]
     dependencies_map += "\n".join(dependencies_map_items)
-
 
     return "\n".join(
         [
@@ -554,6 +580,7 @@ def generate_project_description():
         "providing a simple and robust interface for version management."
     )
 
+
 def generate_project_map(analysis_data):
     """Generate a markdown tree of the project structure."""
 
@@ -584,15 +611,15 @@ def analyze_repository():
                 except (IOError, UnicodeDecodeError):
                     pass
     return (
-        f'\n\n'
-        f'---\n'
-        f'*This summary is auto-generated and reflects the state of the repository at '
-        f'the time of the last version update.*\n\n'
-        f'**Repository Analysis:**\n'
-        f'- **Total Files:** {total_files}\n'
-        f'- **Python Files:** {py_files}\n'
-        f'- **Total Python Lines:** {py_lines}\n'
-        f'---\n'
+        f"\n\n"
+        f"---\n"
+        f"*This summary is auto-generated and reflects the state of the repository at "
+        f"the time of the last version update.*\n\n"
+        f"**Repository Analysis:**\n"
+        f"- **Total Files:** {total_files}\n"
+        f"- **Python Files:** {py_files}\n"
+        f"- **Total Python Lines:** {py_lines}\n"
+        f"---\n"
     )
 
 
@@ -642,12 +669,13 @@ def generate_readme_content(version, analysis_data, what_changed):
 
             if history_start_index != -1 and history_end_index != -1:
                 # Extract the content between the markers, excluding the markers themselves
-                existing_history = existing_content[history_start_index + len(history_start_marker):history_end_index].strip()
+                existing_history = existing_content[
+                    history_start_index + len(history_start_marker) : history_end_index
+                ].strip()
             else:
                 existing_history = ""
     except FileNotFoundError:
         existing_history = ""
-
 
     new_entry = (
         f"## Version {version}\n"
@@ -675,6 +703,7 @@ def update_readme(content):
 
     with open(README_FILE, "w", encoding="utf-8") as f:
         f.write(content)
+
 
 def main_gui(test_mode=False):
     """Run the tkinter GUI."""
@@ -721,15 +750,21 @@ def main_gui(test_mode=False):
         root.destroy()
 
     major_button = tk.Button(
-        root, text="Increment Major", command=lambda: update_and_close(version.increment_major)
+        root,
+        text="Increment Major",
+        command=lambda: update_and_close(version.increment_major),
     )
     major_button.pack()
     minor_button = tk.Button(
-        root, text="Increment Minor", command=lambda: update_and_close(version.increment_minor)
+        root,
+        text="Increment Minor",
+        command=lambda: update_and_close(version.increment_minor),
     )
     minor_button.pack()
     patch_button = tk.Button(
-        root, text="Increment Patch", command=lambda: update_and_close(version.increment_patch)
+        root,
+        text="Increment Patch",
+        command=lambda: update_and_close(version.increment_patch),
     )
     patch_button.pack()
 
@@ -752,6 +787,7 @@ git add ndaversis.py readme.md
         print("Successfully installed pre-commit hook.")
     except IOError as e:
         print(f"Error installing pre-commit hook: {e}")
+
 
 def main_cli(cli_args):
     """Run the command-line interface."""
@@ -791,7 +827,7 @@ def main_cli(cli_args):
                 f"<!-- AUTO-CODE-STATE-END -->"
             ),
             content,
-            flags=re.DOTALL
+            flags=re.DOTALL,
         )
         # If the block doesn't exist, append it to the end of the file
         if "<!-- AUTO-CODE-STATE-START -->" not in new_content:
@@ -802,15 +838,19 @@ def main_cli(cli_args):
 
     print(f"Version updated to {version}")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Version Manager")
     subparsers = parser.add_subparsers(dest="command")
 
     gui_parser = subparsers.add_parser("gui", help="Run the GUI")
-    gui_parser.add_argument("--test", action="store_true", help="Run the GUI in test mode")
+    gui_parser.add_argument(
+        "--test", action="store_true", help="Run the GUI in test mode"
+    )
     cli_parser = subparsers.add_parser("cli", help="Run the command-line interface")
-    install_parser = subparsers.add_parser("install-hook", help="Install the pre-commit hook")
-
+    install_parser = subparsers.add_parser(
+        "install-hook", help="Install the pre-commit hook"
+    )
 
     group = cli_parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--major", action="store_true", help="Increment major version")
