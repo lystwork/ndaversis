@@ -133,7 +133,7 @@ COPYRIGHT_TEXT = (
     "All rights belong to their respective owners."
 )
 
-__version__ = "0.0.30"
+__version__ = "0.0.31"
 def load_previous_code_state():
     """Load the previous code state from the readme.md file.
     User Story: As a developer, I want to be able to load the previous code state so that I can compare it with the current state.
@@ -465,8 +465,8 @@ def generate_dynamic_sections(analysis_data):
 
     # Install
     install = (
-        "## 9. Install\n\nNo installation is required. Simply clone or "
-        "download the repository and run the `ndaversis.py` script.\n"
+        "## 9. Install\n\nTo install the required dependencies, run the following command:\n\n"
+        "```\npip install -r requirements.txt\n```\n"
     )
 
     # Project Map is generated separately
@@ -595,9 +595,9 @@ def analyze_repository():
         f'---\n'
     )
 
-def generate_readme_content(version, analysis_data, what_changed):
-    """Generate the entire content of the README file."""
 
+def _create_description_summary():
+    """Creates the description summary section of the README."""
     project_name = "NDAVERSIS: Agentic Semantic Version Info System"
 
     # Title and Description
@@ -606,6 +606,14 @@ def generate_readme_content(version, analysis_data, what_changed):
     content += "<!-- AUTO-DESCRIPTION-START -->\n"
     content += f"{generate_project_description()}\n"
     content += "<!-- AUTO-DESCRIPTION-END -->\n\n"
+    return content
+
+
+def generate_readme_content(version, analysis_data, what_changed):
+    """Generate the entire content of the README file."""
+
+    # Title and Description
+    content = _create_description_summary()
 
     # Summary
     content += "<!-- AUTO-SUMMARY-START -->\n"

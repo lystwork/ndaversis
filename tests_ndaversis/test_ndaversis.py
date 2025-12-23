@@ -23,6 +23,7 @@ from ndaversis import (
     ChatGPTService,
     ClaudeService,
     DeepSeekService,
+    _create_description_summary,
 )
 
 class TestNdaversis(unittest.TestCase):
@@ -208,6 +209,14 @@ class TestNdaversis(unittest.TestCase):
         config = {"ai_provider": "gemini"}
         service = get_ai_service(config)
         self.assertIsNone(service)
+
+    def test_create_description_summary(self):
+        """Test the _create_description_summary function."""
+        summary = _create_description_summary()
+        self.assertIn("# 1. NDAVERSIS: Agentic Semantic Version Info System", summary)
+        self.assertIn("## 2. Description Summary", summary)
+        self.assertIn("<!-- AUTO-DESCRIPTION-START -->", summary)
+        self.assertIn("<!-- AUTO-DESCRIPTION-END -->", summary)
 
 if __name__ == '__main__':
     unittest.main()
