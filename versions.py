@@ -8,7 +8,46 @@ import argparse
 import sys
 import ast
 import json
-from ai_services import get_ai_service
+import google.generativeai as genai
+
+# pylint: disable=too-few-public-methods
+class AIService:
+    """Base class for AI services."""
+    def __init__(self):
+        pass
+
+    def generate_content(self, prompt, analysis_data):
+        """Generate content using the AI service."""
+        raise NotImplementedError
+
+class GeminiService(AIService):
+    """An AI service that uses the Google Gemini API."""
+    def __init__(self, api_key):
+        super().__init__()
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
+
+    def generate_content(self, prompt, analysis_data):
+        """Generate content using the Gemini API."""
+        full_prompt = f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
+        response = self.model.generate_content(full_prompt)
+        return response.text
+
+def get_ai_service(config):
+    """Factory function to get an AI service instance."""
+    if not config:
+        return None
+    provider = config.get("ai_provider")
+    api_key = config.get("api_key")
+    if not api_key or api_key == "YOUR_API_KEY_HERE":
+        print("API key not found or is a placeholder. AI service disabled.")
+        return None
+
+    if provider == "gemini":
+        return GeminiService(api_key)
+    # Add other providers here
+    return None
+
 CONTACT_EMAIL = "n@ndaotec.com"
 COPYRIGHT_HOLDER = "Nikita Andreevich Drozdov"
 REPOSITORY_ADDRESS = "https://github.com/lystwork/ndaversis"
@@ -17,7 +56,7 @@ COPYRIGHT_TEXT = (
     "All rights belong to their respective owners."
 )
 
-__version__ = "0.0.20"
+__version__ = "0.0.21"
 def load_previous_code_state():
     """Load the previous code state from the readme.md file."""
     try:
@@ -86,7 +125,7 @@ def save_version(version_str):
     with open(__file__, "r+", encoding="utf-8") as f:
         content = f.read()
         new_content = re.sub(
-            r'__version__ = "0.0.20"',
+            r'__version__ = "0.0.21"',
             f'__version__ = "{version_str}"',
             content
         )
