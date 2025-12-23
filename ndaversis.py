@@ -90,7 +90,9 @@ class DeepSeekService(AIService):
         return response.choices[0].message.content
 
 def get_ai_service(config):
-    """Factory function to get an AI service instance."""
+    """Factory function to get an AI service instance.
+    Use Case: This function is used to get an AI service instance based on the provided configuration.
+    """
     if not config:
         return None
     provider = config.get("ai_provider")
@@ -131,9 +133,11 @@ COPYRIGHT_TEXT = (
     "All rights belong to their respective owners."
 )
 
-__version__ = "0.0.32"
+__version__ = "0.0.30"
 def load_previous_code_state():
-    """Load the previous code state from the readme.md file."""
+    """Load the previous code state from the readme.md file.
+    User Story: As a developer, I want to be able to load the previous code state so that I can compare it with the current state.
+    """
     try:
         with open(README_FILE, "r", encoding="utf-8") as f:
             content = f.read()
@@ -149,7 +153,10 @@ def load_previous_code_state():
         return {}
 
 def load_ai_config():
-    """Load AI configuration from config.json."""
+    """Load AI configuration from config.json.
+    FAQ: How do I configure the AI provider?
+    A: You can configure the AI provider by creating a `config.json` file in the root of the repository.
+    """
     try:
         with open("config.json", "r", encoding="utf-8") as f:
             return json.load(f)
@@ -187,13 +194,17 @@ class Version:
         self.patch += 1
 
 def get_version():
-    """Get the current version from the __version__ variable."""
+    """Get the current version from the __version__ variable.
+    How To: Get the current version of the project.
+    """
     major, minor, patch = map(int, __version__.split("."))
     return Version(major, minor, patch)
 
-def save_version(version_str):
+def save_version(version_str, filepath=None):
     """Save the version back to the ndaversis.py file."""
-    with open(__file__, "r+", encoding="utf-8") as f:
+    if filepath is None:
+        filepath = __file__
+    with open(filepath, "r+", encoding="utf-8") as f:
         content = f.read()
         new_content = re.sub(
             r'__version__ = "\d+\.\d+\.\d+"',
@@ -441,10 +452,9 @@ def generate_dynamic_sections(analysis_data):
 
     features_str = "## 7. Features\n\n"
     features_str += "".join(
-        f"*   **{func_name.replace('_', ' ').title()}**: "
-        f"{func_data.get('docstring', '').splitlines()[0].strip()}\n"
+        f"*   **{func_name.replace('_', ' ').title()}**: {func_data.get('docstring', '').splitlines()[0].strip().split(': ')[1]}\n"
         for func_name, func_data in analysis_data["functions"].items()
-        if func_data.get("docstring")
+        if func_data.get("docstring") and ': ' in func_data.get('docstring', '').splitlines()[0]
     )
 
 
@@ -474,9 +484,11 @@ def generate_dynamic_sections(analysis_data):
 
     # Dependencies Map
     dependencies_map = "## 12. Dependencies Map\n\n"
+    stdlib_modules = set(sys.stdlib_module_names)
     dependencies_map_items = [
         f"*   `{dep}`"
         for dep in analysis_data.get("imports", [])
+        if dep not in stdlib_modules
     ]
     dependencies_map += "\n".join(dependencies_map_items)
 
