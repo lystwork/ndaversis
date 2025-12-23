@@ -56,7 +56,7 @@ COPYRIGHT_TEXT = (
     "All rights belong to their respective owners."
 )
 
-__version__ = "0.0.21"
+__version__ = "0.0.24"
 def load_previous_code_state():
     """Load the previous code state from the readme.md file."""
     try:
@@ -125,7 +125,7 @@ def save_version(version_str):
     with open(__file__, "r+", encoding="utf-8") as f:
         content = f.read()
         new_content = re.sub(
-            r'__version__ = "0.0.21"',
+            r'__version__ = "0.0.24"',
             f'__version__ = "{version_str}"',
             content
         )
@@ -582,9 +582,21 @@ def update_readme(content):
     with open("readme.md", "w", encoding="utf-8") as f:
         f.write(content)
 
-def main_gui():
+def main_gui(test_mode=False):
     """Run the tkinter GUI."""
     version = get_version()
+
+    if test_mode:
+        # In test mode, we don't create a GUI.
+        # We just call the core logic directly.
+        what_changed = "GUI test mode"
+        version.increment_patch()
+        analysis_data, _ = _analyze_codebase()
+        readme_content = generate_readme_content(version, analysis_data, what_changed)
+        update_readme(readme_content)
+        save_version(version)
+        print("GUI test mode complete.")
+        return
 
     root = tk.Tk()
     root.title(f"Version Manager - Current Version: {version}")
@@ -609,7 +621,7 @@ def main_gui():
         update_readme(readme_content)
 
         # Save the new version
-        save_version(version)
+        save_version(str(version))
 
         messagebox.showinfo("Success", f"Version updated to {version}")
         root.destroy()
@@ -700,7 +712,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Version Manager")
     subparsers = parser.add_subparsers(dest="command")
 
-    subparsers.add_parser("gui", help="Run the GUI")
+    gui_parser = subparsers.add_parser("gui", help="Run the GUI")
+    gui_parser.add_argument("--test", action="store_true", help="Run the GUI in test mode")
     cli_parser = subparsers.add_parser("cli", help="Run the command-line interface")
     install_parser = subparsers.add_parser("install-hook", help="Install the pre-commit hook")
 
@@ -715,7 +728,7 @@ if __name__ == "__main__":
     else:
         args = parser.parse_args()
         if args.command == "gui":
-            main_gui()
+            main_gui(test_mode=args.test)
         elif args.command == "cli":
             main_cli(args)
         elif args.command == "install-hook":
