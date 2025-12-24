@@ -110,8 +110,8 @@ class GeminiService(AIService):
             api_key (str): The API key for the Google Gemini service.
         """
         super().__init__()
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-pro")
+        self.client = genai.Client(api_key=api_key)
+        self.model = "gemini-1.5-flash"
 
     def generate_content(self, prompt: str, analysis_data: dict) -> str:
         """
@@ -125,7 +125,10 @@ class GeminiService(AIService):
             str: The generated content from the Gemini API.
         """
         full_prompt = self._create_full_prompt(prompt, analysis_data)
-        response = self.model.generate_content(full_prompt)
+        response = self.client.generate_content(
+            model=self.model,
+            contents=full_prompt,
+        )
         return response.text
 
 class ChatGPTService(AIService):
