@@ -1,5 +1,27 @@
-# pylint: disable=line-too-long,consider-using-join,too-many-instance-attributes
-"""A module for managing semantic versioning."""
+"""
+Ndaversis: Agentic Semantic Version Information System.
+
+This module provides a self-contained, monolithic solution for managing
+semantic versioning, generating comprehensive README documentation, and leveraging
+AI for intelligent content creation. It is designed to be used as an agentic
+module, capable of self-development and providing both a command-line interface
+(CLI) and a graphical user interface (GUI).
+
+The script can analyze a Python codebase, generate summaries of changes,
+and dynamically update the README.md file with detailed information, including
+Use Cases, User Stories, and diagrams in Mermaid syntax. It supports multiple
+AI providers (such as Google Gemini, OpenAI's ChatGPT, Anthropic's Claude, and
+DeepSeek) for content generation, which can be configured through a `config.json`
+file.
+
+Core features include:
+- Automated semantic versioning (major, minor, patch).
+- Dynamic README.md generation with AI-powered content.
+- Generation of UML Use Case and BPMN diagrams in Mermaid syntax.
+- CLI and GUI for user interaction.
+- Health checks to ensure the environment is correctly configured.
+- A pre-commit hook to automate version and README updates.
+"""
 import os
 import re
 import tkinter as tk
@@ -8,6 +30,7 @@ import argparse
 import sys
 import ast
 import json
+from typing import Optional
 import google.generativeai as genai
 import openai
 import anthropic
@@ -27,26 +50,80 @@ __version__ = "0.0.31"
 
 # --- AI Service Classes ---
 class AIService:
-    """Base class for AI services."""
-    def __init__(self):
-        pass
+    """
+    Abstract base class for AI services.
 
-    def _create_full_prompt(self, prompt, analysis_data):
-        """Creates the full prompt with code analysis data."""
+    This class defines the interface for different AI service implementations,
+    providing a common structure for generating content based on a prompt and
+    code analysis data.
+    """
+
+    def __init__(self) -> None:
+        """Initializes the AIService."""
+
+    def _create_full_prompt(self, prompt: str, analysis_data: dict) -> str:
+        """
+        Creates the full prompt with code analysis data.
+
+        Args:
+            prompt (str): The base prompt for the AI service.
+            analysis_data (dict): A dictionary containing codebase
+                                            analysis data.
+
+        Returns:
+            str: The complete prompt including the analysis data.
+        """
         return f"{prompt}\n\nCode Analysis:\n{json.dumps(analysis_data, indent=2)}"
 
-    def generate_content(self, prompt, analysis_data):
-        """Generate content using the AI service."""
-        raise NotImplementedError
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        """
+        Generate content using the AI service.
+
+        This method must be implemented by subclasses.
+
+        Args:
+            prompt (str): The prompt to send to the AI service.
+            analysis_data (dict): The code analysis data.
+
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
+
+        Returns:
+            str: The generated content from the AI service.
+        """
+        raise NotImplementedError("This method must be implemented by a subclass.")
 
 class GeminiService(AIService):
-    """An AI service that uses the Google Gemini API."""
-    def __init__(self, api_key):
+    """
+    An AI service that uses the Google Gemini API.
+
+    This class interacts with the Google Gemini API to generate content based on
+    prompts and codebase analysis. It requires a valid API key for
+    authentication.
+    """
+
+    def __init__(self, api_key: str) -> None:
+        """
+        Initializes the GeminiService.
+
+        Args:
+            api_key (str): The API key for the Google Gemini service.
+        """
         super().__init__()
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel("gemini-pro")
 
-    def generate_content(self, prompt, analysis_data):
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        """
+        Generates content using the Google Gemini API.
+
+        Args:
+            prompt (str): The prompt to send to the Gemini API.
+            analysis_data (dict): The code analysis data.
+
+        Returns:
+            str: The generated content from the Gemini API.
+        """
         full_prompt = self._create_full_prompt(prompt, analysis_data)
         response = self.model.generate_content(full_prompt)
         return response.text
@@ -65,27 +142,73 @@ class ChatGPTService(AIService):
         return response.choices[0].message.content
 
 class ClaudeService(AIService):
-    """An AI service that uses the Anthropic Claude API."""
-    def __init__(self, api_key):
+    """
+    An AI service that uses the Anthropic Claude API.
+
+    This class interacts with the Anthropic Claude API to generate content.
+    It requires a valid API key for authentication.
+    """
+
+    def __init__(self, api_key: str) -> None:
+        """
+        Initializes the ClaudeService.
+
+        Args:
+            api_key (str): The API key for the Anthropic service.
+        """
         super().__init__()
         self.client = anthropic.Anthropic(api_key=api_key)
 
-    def generate_content(self, prompt, analysis_data):
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        """
+        Generates content using the Anthropic Claude API.
+
+        Args:
+            prompt (str): The prompt to send to the Claude API.
+            analysis_data (dict): The code analysis data.
+
+        Returns:
+            str: The generated content from the Claude API.
+        """
         full_prompt = self._create_full_prompt(prompt, analysis_data)
         message = self.client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=1024,
             messages=[{"role": "user", "content": full_prompt}],
         )
-        return message.content
+        if message.content:
+            return message.content[0].text
+        return ""
 
 class DeepSeekService(AIService):
-    """An AI service that uses the DeepSeek API."""
-    def __init__(self, api_key):
+    """
+    An AI service that uses the DeepSeek API.
+
+    This class interacts with the DeepSeek API to generate content.
+    It requires a valid API key for authentication.
+    """
+
+    def __init__(self, api_key: str) -> None:
+        """
+        Initializes the DeepSeekService.
+
+        Args:
+            api_key (str): The API key for the DeepSeek service.
+        """
         super().__init__()
         self.client = DeepSeekAPI(api_key=api_key)
 
-    def generate_content(self, prompt, analysis_data):
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        """
+        Generates content using the DeepSeek API.
+
+        Args:
+            prompt (str): The prompt to send to the DeepSeek API.
+            analysis_data (dict): The code analysis data.
+
+        Returns:
+            str: The generated content from the DeepSeek API.
+        """
         full_prompt = self._create_full_prompt(prompt, analysis_data)
         response = self.client.chat.completions.create(
             model="deepseek-chat", messages=[{"role": "user", "content": full_prompt}]
@@ -94,60 +217,138 @@ class DeepSeekService(AIService):
 
 # --- Version Class ---
 class Version:
-    """A class to represent a semantic version."""
-    def __init__(self, major=0, minor=0, patch=0):
-        self.major = major
-        self.minor = minor
-        self.patch = patch
+    """
+    A class to represent a semantic version.
 
-    def __str__(self):
+    Attributes:
+        major (int): The major version number.
+        minor (int): The minor version number.
+        patch (int): The patch version number.
+    """
+
+    def __init__(self, major: int = 0, minor: int = 0, patch: int = 0) -> None:
+        """
+        Initializes the Version object.
+
+        Args:
+            major (int): The major version number.
+            minor (int): The minor version number.
+            patch (int): The patch version number.
+        """
+        self.major: int = major
+        self.minor: int = minor
+        self.patch: int = patch
+
+    def __str__(self) -> str:
+        """
+        Returns the string representation of the version.
+
+        Returns:
+            str: The version string in "major.minor.patch" format.
+        """
         return f"{self.major}.{self.minor}.{self.patch}"
 
-    def increment_major(self):
+    def increment_major(self) -> None:
+        """Increments the major version and resets minor and patch versions."""
         self.major += 1
         self.minor = 0
         self.patch = 0
 
-    def increment_minor(self):
+    def increment_minor(self) -> None:
+        """Increments the minor version and resets the patch version."""
         self.minor += 1
         self.patch = 0
 
-    def increment_patch(self):
+    def increment_patch(self) -> None:
+        """Increments the patch version."""
         self.patch += 1
 
 # --- Main Application Class ---
 class Ndaversis:
-    """The main class for the Ndaversis application."""
-    def __init__(self):
-        self.version = self.get_version()
-        self.ai_config = self.load_ai_config()
-        self.previous_code_state = self.load_previous_code_state()
-        self.ai_service = self.get_ai_service()
+    """
+    The main class for the Ndaversis application.
 
-    def get_version(self):
-        """Get the current version from the __version__ variable."""
+    This class encapsulates the core functionality of the application, including
+    version management, codebase analysis, README generation, and AI service
+    integration.
+
+    Attributes:
+        version (Version): The current version of the project.
+        ai_config (dict): The AI provider configuration.
+        previous_code_state (dict): The code state from the last run.
+        ai_service (Optional[AIService]): The AI service instance.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initializes the Ndaversis application.
+
+        This method sets up the initial state by loading the version,
+        AI configuration, and the previous code state, and then initializes
+        the AI service.
+        """
+        self.version: Version = self.get_version()
+        self.ai_config: dict = self.load_ai_config()
+        self.previous_code_state: dict = self.load_previous_code_state()
+        self.ai_service: Optional[AIService] = self.get_ai_service()
+
+    def get_version(self) -> Version:
+        """
+        Get the current version from the `__version__` variable.
+
+        This method reads the `__version__` string, parses it, and returns a
+        `Version` object.
+
+        Returns:
+            Version: A `Version` object representing the current version.
+        """
         major, minor, patch = map(int, __version__.split("."))
         return Version(major, minor, patch)
 
-    def save_version(self, version_str, filepath=None):
-        """Save the version back to the ndaversis.py file."""
+    def save_version(self, version_str: str, filepath: Optional[str] = None) -> None:
+        """
+        Save the version back to the ndaversis.py file.
+
+        This method updates the `__version__` string in the specified file
+        (or the current file by default) with the new version.
+
+        Args:
+            version_str (str): The new version string to save.
+            filepath (Optional[str]): The path to the file to update.
+                                     Defaults to the current file.
+        """
         if filepath is None:
             filepath = __file__
         with open(filepath, "r+", encoding="utf-8") as f:
             content = f.read()
             new_content = re.sub(
-                r'__version__ = "\d+\.\d+\.\d+"', f'__version__ = "{version_str}"', content
+                r'__version__ = "\d+\.\d+\.\d+"',
+                f'__version__ = "{version_str}"',
+                content,
             )
             f.seek(0)
             f.write(new_content)
             f.truncate()
 
-    def load_ai_config(self):
-        """Load AI configuration from config.json."""
+    def load_ai_config(self) -> dict:
+        """
+        Load AI configuration from config.json.
+
+        This method reads the `config.json` file and returns the configuration
+        as a dictionary. It handles potential errors like the file not being
+        found or being invalid JSON.
+
+        Returns:
+            dict: The AI configuration, or an empty dictionary if
+                            an error occurs.
+        """
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except (FileNotFoundError, IOError, json.JSONDecodeError) as e:
+        except FileNotFoundError:
+            print(f"Configuration file '{CONFIG_FILE}' not found. AI service disabled.")
+            return {}
+        except (IOError, json.JSONDecodeError) as e:
             print(f"Error loading AI configuration from {CONFIG_FILE}: {e}")
             return {}
 
@@ -183,22 +384,12 @@ class Ndaversis:
 
         return None
 
-    def load_previous_code_state(self):
-        """Load the previous code state from the readme.md file."""
-        try:
-            with open(README_FILE, "r", encoding="utf-8") as f:
-                content = f.read()
-                match = re.search(
-                    r"<!-- AUTO-CODE-STATE-START -->(.*?)<!-- AUTO-CODE-STATE-END -->",
-                    content,
-                    re.DOTALL,
-                )
-                if match:
-                    return json.loads(match.group(1).strip())
-                return {}
-        except (FileNotFoundError, IOError, json.JSONDecodeError) as e:
-            print(f"Error loading previous code state from {README_FILE}: {e}")
-            return {}
+    def load_previous_code_state(self) -> dict:
+        """
+        This method is deprecated and now returns an empty dictionary.
+        The functionality to track code state in the README has been removed.
+        """
+        return {}
 
     def _process_python_file(self, filepath, features, method_names):
         """Process a single Python file to extract features."""
@@ -269,6 +460,75 @@ class Ndaversis:
 
         return "\n".join(summary) if summary else "No significant changes detected."
 
+    def _generate_use_cases_prompt(self) -> str:
+        """
+        Generates a prompt for creating comprehensive Use Cases.
+
+        Returns:
+            str: The prompt for the AI service.
+        """
+        return (
+            "As a Senior Business Analyst, create a set of comprehensive Use Cases "
+            "based on the provided codebase analysis. For each Use Case, "
+            "provide a clear title, a detailed description of the user's goal, "
+            "the primary actor, and the sequence of events. Ensure the Use Cases "
+            "cover all key functionalities of the application."
+        )
+
+    def _generate_user_stories_prompt(self) -> str:
+        """
+        Generates a prompt for creating comprehensive User Stories.
+
+        Returns:
+            str: The prompt for the AI service.
+        """
+        return (
+            "As a Senior Product Manager, create a set of comprehensive User Stories "
+            "based on the provided codebase analysis. Each User Story should "
+            "follow the format: 'As a [user type], I want [an action] so that "
+            "[a benefit].' Ensure the User Stories are detailed, actionable, and "
+            "cover all key user interactions with the application."
+        )
+
+    def generate_use_case_diagram(self, analysis_data: dict) -> str:
+        """
+        Generates a UML Use Case diagram in Mermaid syntax.
+
+        Args:
+            analysis_data (dict): The code analysis data.
+
+        Returns:
+            str: The Mermaid syntax for the Use Case diagram.
+        """
+        if self.ai_service:
+            prompt = (
+                "Generate a UML Use Case diagram in Mermaid syntax based on the "
+                "provided codebase analysis. The diagram should include actors "
+                "and use cases that represent the key functionalities of the "
+                "application."
+            )
+            return self.ai_service.generate_content(prompt, analysis_data)
+        return ""
+
+    def generate_bpmn_diagram(self, analysis_data: dict) -> str:
+        """
+        Generates a BPMN diagram in Mermaid syntax.
+
+        Args:
+            analysis_data (dict): The code analysis data.
+
+        Returns:
+            str: The Mermaid syntax for the BPMN diagram.
+        """
+        if self.ai_service:
+            prompt = (
+                "Generate a BPMN diagram in Mermaid syntax based on the "
+                "provided codebase analysis. The diagram should illustrate the "
+                "key business processes and workflows of the application."
+            )
+            return self.ai_service.generate_content(prompt, analysis_data)
+        return ""
+
     def _generate_section(self, title, analysis_data, prefix, format_str):
         """Helper function to generate a section of the README."""
         content = f"## {title}\n\n"
@@ -286,15 +546,32 @@ class Ndaversis:
 
     def generate_dynamic_sections(self, analysis_data):
         """Generate the dynamic sections of the README file."""
-        use_cases = self._generate_section(
-            "3. Use Cases", analysis_data, "Use Case:", "*   **{name}**: {doc}\n"
-        )
-        user_stories = self._generate_section(
-            "4. User Stories",
-            analysis_data,
-            "User Story:",
-            "*   **As a user,** I want to be able to {name}, so that {doc}.\n",
-        )
+        use_cases = "## 3. Use Cases\n\n"
+        if self.ai_service:
+            use_cases += self.ai_service.generate_content(
+                self._generate_use_cases_prompt(), analysis_data
+            )
+            use_cases += "\n\n### Use Case Diagram\n\n"
+            use_cases += f"```mermaid\n{self.generate_use_case_diagram(analysis_data)}\n```\n"
+        else:
+            use_cases += self._generate_section(
+                "3. Use Cases", analysis_data, "Use Case:", "*   **{name}**: {doc}\n"
+            )
+
+        user_stories = "## 4. User Stories\n\n"
+        if self.ai_service:
+            user_stories += self.ai_service.generate_content(
+                self._generate_user_stories_prompt(), analysis_data
+            )
+            user_stories += "\n\n### BPMN Diagram\n\n"
+            user_stories += f"```mermaid\n{self.generate_bpmn_diagram(analysis_data)}\n```\n"
+        else:
+            user_stories += self._generate_section(
+                "4. User Stories",
+                analysis_data,
+                "User Story:",
+                "*   **As a user,** I want to be able to {name}, so that {doc}.\n",
+            )
         faq = self._generate_section(
             "5. FAQ", analysis_data, "FAQ:", "**Q: {name}?**\n**A:** {doc}\n\n"
         )
@@ -554,30 +831,20 @@ class Ndaversis:
     def main_cli(self, cli_args):
         """Run the command-line interface."""
         new_code_state, _ = self._analyze_codebase()
-        change_summary = self.generate_change_summary(self.previous_code_state, new_code_state)
+        change_summary = "Version update"
 
-        if cli_args.major: self.version.increment_major()
-        elif cli_args.minor: self.version.increment_minor()
-        elif cli_args.patch: self.version.increment_patch()
+        if cli_args.major:
+            self.version.increment_major()
+        elif cli_args.minor:
+            self.version.increment_minor()
+        elif cli_args.patch:
+            self.version.increment_patch()
 
-        readme_content = self.generate_readme_content(str(self.version), new_code_state, change_summary)
+        readme_content = self.generate_readme_content(
+            str(self.version), new_code_state, change_summary
+        )
         self.update_readme(readme_content)
         self.save_version(str(self.version))
-
-        with open(README_FILE, "r+", encoding="utf-8") as f:
-            content = f.read()
-            state_string = json.dumps(new_code_state, indent=4)
-            new_content = re.sub(
-                r"<!-- AUTO-CODE-STATE-START -->.*?<!-- AUTO-CODE-STATE-END -->",
-                f"<!-- AUTO-CODE-STATE-START -->\n{state_string}\n<!-- AUTO-CODE-STATE-END -->",
-                content,
-                flags=re.DOTALL,
-            )
-            if "<!-- AUTO-CODE-STATE-START -->" not in new_content:
-                new_content += f"\n<!-- AUTO-CODE-STATE-START -->\n{state_string}\n<!-- AUTO-CODE-STATE-END -->"
-            f.seek(0)
-            f.write(new_content)
-            f.truncate()
 
         print(f"Version updated to {self.version}")
 

@@ -142,5 +142,59 @@ class TestNdaversis(unittest.TestCase):
             self.app.health_check()
             mock_print.assert_any_call(f"- Configuration file '{self.test_config_path}' not found.")
 
+    @patch('builtins.print')
+    def test_load_ai_config_file_not_found(self, mock_print):
+        """Test that load_ai_config handles a missing file."""
+        os.remove(self.test_config_path)
+        # Re-load config now that the file is removed.
+        config = self.app.load_ai_config()
+        self.assertEqual(config, {})
+        mock_print.assert_called_with(
+            f"Configuration file '{self.test_config_path}' not found. AI service disabled."
+        )
+
+    def test_generate_use_case_diagram(self):
+        """Test the generate_use_case_diagram method."""
+        with patch.object(self.app, 'ai_service') as mock_ai_service:
+            mock_ai_service.generate_content.return_value = "Test Use Case Diagram"
+            diagram = self.app.generate_use_case_diagram({})
+            self.assertEqual(diagram, "Test Use Case Diagram")
+            mock_ai_service.generate_content.assert_called_once()
+
+    def test_generate_bpmn_diagram(self):
+        """Test the generate_bpmn_diagram method."""
+        with patch.object(self.app, 'ai_service') as mock_ai_service:
+            mock_ai_service.generate_content.return_value = "Test BPMN Diagram"
+            diagram = self.app.generate_bpmn_diagram({})
+            self.assertEqual(diagram, "Test BPMN Diagram")
+            mock_ai_service.generate_content.assert_called_once()
+
+    @patch('ndaversis.Ndaversis.generate_use_case_diagram')
+    @patch('ndaversis.Ndaversis.generate_bpmn_diagram')
+    def test_generate_dynamic_sections_with_ai(
+        self, mock_generate_bpmn_diagram, mock_generate_use_case_diagram
+    ):
+        """Test the generate_dynamic_sections method with AI service."""
+        with patch.object(self.app, 'ai_service') as mock_ai_service:
+            mock_ai_service.generate_content.side_effect = [
+                "Test Use Cases",
+                "Test User Stories",
+            ]
+            mock_generate_use_case_diagram.return_value = "Test Use Case Diagram"
+            mock_generate_bpmn_diagram.return_value = "Test BPMN Diagram"
+
+            analysis_data = {"functions": {}, "classes": {}, "imports": []}
+            sections = self.app.generate_dynamic_sections(analysis_data)
+
+            self.assertIn("## 3. Use Cases", sections)
+            self.assertIn("Test Use Cases", sections)
+            self.assertIn("### Use Case Diagram", sections)
+            self.assertIn("```mermaid\nTest Use Case Diagram\n```", sections)
+
+            self.assertIn("## 4. User Stories", sections)
+            self.assertIn("Test User Stories", sections)
+            self.assertIn("### BPMN Diagram", sections)
+            self.assertIn("```mermaid\nTest BPMN Diagram\n```", sections)
+
 if __name__ == '__main__':
     unittest.main()
