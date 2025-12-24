@@ -31,14 +31,17 @@ import sys
 import ast
 import json
 from typing import Optional
-import google.generativeai as genai
-import openai
-import anthropic
-from deepseek import DeepSeekAPI
+# import google.generativeai as genai
+# import openai
+# import anthropic
+# from deepseek import DeepSeekAPI
+
+import difflib
 
 # --- Constants ---
 README_FILE = "readme.md"
 CONFIG_FILE = "config.json"
+STATE_FILE = "ndaversis_state.json"
 CONTACT_EMAIL = "n@ndaotec.com"
 COPYRIGHT_HOLDER = "Nikita Andreevich Drozdov"
 REPOSITORY_ADDRESS = "https://github.com/lystwork/ndaversis"
@@ -437,28 +440,53 @@ class Ndaversis:
         features["imports"] = sorted(list(features["imports"]))
         return features, last_code
 
+    def _capture_repo_state(self, path="."):
+        """Capture the state of all files in the repository."""
+        state = {}
+        for root, dirs, files in os.walk(path):
+            # Exclude specified directories
+            if '.git' in dirs:
+                dirs.remove('.git')
+            if 'tests_ndaversis' in dirs:
+                dirs.remove('tests_ndaversis')
+            if '__pycache__' in dirs:
+                dirs.remove('__pycache__')
+
+            for file in files:
+                filepath = os.path.join(root, file)
+                try:
+                    with open(filepath, "r", encoding="utf-8") as f:
+                        state[filepath] = f.read()
+                except (IOError, UnicodeDecodeError):
+                    pass
+        return state
+
+    def _generate_diff(self, old_state, new_state):
+        """Generate a diff between two repository states."""
+        diff = []
+        all_files = set(old_state.keys()) | set(new_state.keys())
+        for file in sorted(all_files):
+            if file not in old_state:
+                diff.append(f"Added file: {file}\n--- CODE ---\n{new_state[file]}\n")
+            elif file not in new_state:
+                diff.append(f"Removed file: {file}\n")
+            elif old_state[file] != new_state[file]:
+                diff.append(f"Modified file: {file}\n")
+                diff.append("--- DIFF ---")
+                diff.extend(
+                    difflib.unified_diff(
+                        old_state[file].splitlines(keepends=True),
+                        new_state[file].splitlines(keepends=True),
+                        fromfile=f"a/{file}",
+                        tofile=f"b/{file}",
+                    )
+                )
+                diff.append("\n")
+        return "\n".join(diff)
+
     def generate_change_summary(self, old_state, new_state):
         """Compare two code states and generate a summary of changes."""
-        summary = []
-        old_imports, new_imports = set(old_state.get("imports", [])), set(new_state.get("imports", []))
-        if added := sorted(list(new_imports - old_imports)):
-            summary.append(f"- Added imports: {', '.join(added)}")
-        if removed := sorted(list(old_imports - new_imports)):
-            summary.append(f"- Removed imports: {', '.join(removed)}")
-
-        old_funcs, new_funcs = old_state.get("functions", {}), new_state.get("functions", {})
-        if added := sorted(list(set(new_funcs.keys()) - set(old_funcs.keys()))):
-            summary.append(f"- Added functions: {', '.join(added)}")
-        if removed := sorted(list(set(old_funcs.keys()) - set(new_funcs.keys()))):
-            summary.append(f"- Removed functions: {', '.join(removed)}")
-
-        old_classes, new_classes = old_state.get("classes", {}), new_state.get("classes", {})
-        if added := sorted(list(set(new_classes.keys()) - set(old_classes.keys()))):
-            summary.append(f"- Added classes: {', '.join(added)}")
-        if removed := sorted(list(set(old_classes.keys()) - set(new_classes.keys()))):
-            summary.append(f"- Removed classes: {', '.join(removed)}")
-
-        return "\n".join(summary) if summary else "No significant changes detected."
+        return self._generate_diff(old_state, new_state)
 
     def _generate_use_cases_prompt(self) -> str:
         """
@@ -830,9 +858,18 @@ class Ndaversis:
 
     def main_cli(self, cli_args):
         """Run the command-line interface."""
-        new_code_state, _ = self._analyze_codebase()
-        change_summary = "Version update"
+        # Load the previous state
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                old_state = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            old_state = {}
 
+        # Capture the new state and generate a diff
+        new_state = self._capture_repo_state()
+        change_summary = self.generate_change_summary(old_state, new_state)
+
+        # Update version
         if cli_args.major:
             self.version.increment_major()
         elif cli_args.minor:
@@ -840,10 +877,15 @@ class Ndaversis:
         elif cli_args.patch:
             self.version.increment_patch()
 
+        # Generate and update the README
         readme_content = self.generate_readme_content(
-            str(self.version), new_code_state, change_summary
+            str(self.version), self._analyze_codebase()[0], change_summary
         )
         self.update_readme(readme_content)
+
+        # Save the new state and version
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(new_state, f, indent=2)
         self.save_version(str(self.version))
 
         print(f"Version updated to {self.version}")

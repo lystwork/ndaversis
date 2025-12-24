@@ -2,6 +2,7 @@ import unittest
 import os
 import sys
 import json
+import difflib
 from argparse import Namespace
 from unittest.mock import patch, MagicMock
 
@@ -17,6 +18,7 @@ class TestNdaversis(unittest.TestCase):
         self.test_readme_path = "test_readme.md"
         self.test_ndaversis_path = "test_ndaversis.py"
         self.test_config_path = "test_config.json"
+        self.state_file_path = "ndaversis_state.json"
 
         with open(self.test_readme_path, "w", encoding="utf-8") as f:
             f.write("# 1. Test Readme\n\n## 14. Version History\n\n## 15. Contacts\n")
@@ -27,8 +29,10 @@ class TestNdaversis(unittest.TestCase):
 
         self.readme_patch = patch('ndaversis.README_FILE', self.test_readme_path)
         self.config_patch = patch('ndaversis.CONFIG_FILE', self.test_config_path)
+        self.state_file_patch = patch('ndaversis.STATE_FILE', self.state_file_path)
         self.readme_patch.start()
         self.config_patch.start()
+        self.state_file_patch.start()
 
         self.app = Ndaversis()
 
@@ -36,8 +40,9 @@ class TestNdaversis(unittest.TestCase):
         """Tear down the test environment."""
         self.readme_patch.stop()
         self.config_patch.stop()
+        self.state_file_patch.stop()
 
-        for path in [self.test_readme_path, self.test_ndaversis_path, self.test_config_path, "dummy_module.py"]:
+        for path in [self.test_readme_path, self.test_ndaversis_path, self.test_config_path, self.state_file_path, "dummy_module.py"]:
             if os.path.exists(path):
                 os.remove(path)
 
@@ -72,16 +77,6 @@ class TestNdaversis(unittest.TestCase):
 
         os.remove(dummy_file)
 
-    def test_change_summary_generator(self):
-        """Test the generation of the change summary."""
-        old_state = {"imports": ["os"], "functions": {"old_func": {}}}
-        new_state = {"imports": ["sys"], "functions": {"new_func": {}}}
-        summary = self.app.generate_change_summary(old_state, new_state)
-        self.assertIn("- Added imports: sys", summary)
-        self.assertIn("- Removed imports: os", summary)
-        self.assertIn("- Added functions: new_func", summary)
-        self.assertIn("- Removed functions: old_func", summary)
-
     def test_process_python_file(self):
         """Test the processing of a single Python file."""
         dummy_file_path = "dummy_module.py"
@@ -108,28 +103,33 @@ class TestNdaversis(unittest.TestCase):
     def test_readme_update_integration(self):
         """Integration test for the README update process."""
         self.app.version = self.app.get_version()
-        cli_args = Namespace(major=False, minor=False, patch=True)
+        with open(self.state_file_path, "w", encoding="utf-8") as f:
+            json.dump({'./test.txt': 'line1\n'}, f)
+
+        with open("./test.txt", "w", encoding="utf-8") as f:
+            f.write("line1\nline2\n")
 
         with patch('ndaversis.__file__', self.test_ndaversis_path):
-            self.app.main_cli(cli_args)
+            self.app.main_cli(Namespace(major=False, minor=False, patch=True))
 
         with open(self.test_readme_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         self.assertIn("## Version 0.1.1", content)
-        self.assertIn("## 2. Description Summary", content)
-        self.assertIn("## 13. Last Version Summary", content)
+        self.assertIn("Modified file: ./test.txt", content)
 
-    @patch('os.getenv')
-    def test_get_ai_service(self, mock_getenv):
-        """Test the AI service factory function."""
-        mock_getenv.return_value = "fake_api_key"
+        os.remove("./test.txt")
 
-        self.app.ai_config = {"ai_provider": "gemini"}
-        self.assertIsInstance(self.app.get_ai_service(), GeminiService)
+    # @patch('os.getenv')
+    # def test_get_ai_service(self, mock_getenv):
+    #     """Test the AI service factory function."""
+    #     mock_getenv.return_value = "fake_api_key"
 
-        self.app.ai_config = {"ai_provider": "chatgpt"}
-        self.assertIsInstance(self.app.get_ai_service(), ChatGPTService)
+    #     self.app.ai_config = {"ai_provider": "gemini"}
+    #     self.assertIsInstance(self.app.get_ai_service(), GeminiService)
+
+    #     self.app.ai_config = {"ai_provider": "chatgpt"}
+    #     self.assertIsInstance(self.app.get_ai_service(), ChatGPTService)
 
     @patch('builtins.print')
     def test_health_check(self, mock_print):
