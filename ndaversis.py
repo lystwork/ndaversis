@@ -30,6 +30,8 @@ import argparse
 import sys
 import ast
 import json
+import datetime
+import getpass
 from typing import Optional
 # import google.generativeai as genai
 # import openai
@@ -42,6 +44,7 @@ import difflib
 README_FILE = "readme.md"
 CONFIG_FILE = "config.json"
 STATE_FILE = "ndaversis_state.json"
+LOGS_FILE = "ndaversis_logs.py"
 CONTACT_EMAIL = "n@ndaotec.com"
 COPYRIGHT_HOLDER = "Nikita Andreevich Drozdov"
 REPOSITORY_ADDRESS = "https://github.com/lystwork/ndaversis"
@@ -49,7 +52,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.31"
+__version__ = "0.0.32"
 
 # --- AI Service Classes ---
 class AIService:
@@ -518,6 +521,37 @@ class Ndaversis:
             "cover all key user interactions with the application."
         )
 
+    def _generate_repo_synthesis_prompt(self) -> str:
+        """
+        Generates a prompt for synthesizing the repository's main goal and tasks.
+
+        Returns:
+            str: The prompt for the AI service.
+        """
+        return (
+            "Based on the provided codebase analysis, synthesize the following:\n"
+            "1. Main Goal: A one-sentence description of the primary purpose of this repository.\n"
+            "2. Core Tasks: A list of the main technical tasks or functions this repository performs.\n"
+            "Return the result in a clear, concise format."
+        )
+
+    def _generate_version_bump_prompt(self, change_summary: str) -> str:
+        """
+        Generates a prompt for suggesting a version bump based on changes.
+
+        Args:
+            change_summary (str): A summary of the changes made.
+
+        Returns:
+            str: The prompt for the AI service.
+        """
+        return (
+            f"Based on the following change summary, suggest the most appropriate "
+            f"semantic version bump (major, minor, or patch):\n\n"
+            f"{change_summary}\n\n"
+            f"Reply with ONLY the word 'major', 'minor', or 'patch'."
+        )
+
     def generate_use_case_diagram(self, analysis_data: dict) -> str:
         """
         Generates a UML Use Case diagram in Mermaid syntax.
@@ -713,7 +747,15 @@ class Ndaversis:
                             py_lines += len(f.readlines())
                     except (IOError, UnicodeDecodeError):
                         pass
-        return (
+
+        synthesis = ""
+        if self.ai_service:
+            features, code = self._analyze_codebase()
+            synthesis = self.ai_service.generate_content(
+                self._generate_repo_synthesis_prompt(), (features, code)
+            )
+
+        summary = (
             f"\n\n"
             f"---\n"
             f"*This summary is auto-generated and reflects the state of the repository at "
@@ -722,13 +764,60 @@ class Ndaversis:
             f"- **Total Files:** {total_files}\n"
             f"- **Python Files:** {py_files}\n"
             f"- **Total Python Lines:** {py_lines}\n"
-            f"---\n"
         )
+        if synthesis:
+            summary += f"\n**Goal & Tasks synthesis:**\n{synthesis}\n"
+        summary += f"---\n"
+        return summary
+
+    def suggest_version_bump(self, change_summary):
+        """Suggest a version bump based on the change summary."""
+        if not self.ai_service or not change_summary:
+            return "patch"
+        suggestion = self.ai_service.generate_content(
+            self._generate_version_bump_prompt(change_summary), {}
+        ).strip().lower()
+        if suggestion in ["major", "minor", "patch"]:
+            return suggestion
+        return "patch"
+
+    def update_changelog(self, version, change_summary):
+        """Update the ndaversis_logs.py file with the new entry."""
+        author = getpass.getuser()
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        new_entry = {
+            "version": str(version),
+            "timestamp": timestamp,
+            "author": author,
+            "summary": change_summary
+        }
+        
+        logs = []
+        if os.path.exists(LOGS_FILE):
+            try:
+                with open(LOGS_FILE, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    # Basic extraction of the LOGS list
+                    match = re.search(r"LOGS = (\[.*\])", content, re.DOTALL)
+                    if match:
+                        logs = eval(match.group(1))
+            except Exception as e:
+                print(f"Error reading logs: {e}")
+        
+        logs.insert(0, new_entry)
+        
+        with open(LOGS_FILE, "w", encoding="utf-8") as f:
+            f.write(f'# Ndaversis Change Logs\n\nLOGS = [\n')
+            for entry in logs:
+                f.write(f'    {json.dumps(entry, ensure_ascii=False)},\n')
+            f.write(f']\n')
 
     def _create_description_summary(self):
         """Creates the description summary section of the README."""
         project_name = "NDAVERSIS: Agentic Semantic Version Info System"
         content = f"# 1. {project_name}\n\n"
+        content += f"**Current Version:** `{self.version}`\n\n"
         content += "## 2. Description Summary\n\n"
         content += "<!-- AUTO-DESCRIPTION-START -->\n"
         content += f"{self.generate_project_description()}\n"
@@ -876,6 +965,15 @@ class Ndaversis:
             self.version.increment_minor()
         elif cli_args.patch:
             self.version.increment_patch()
+        else:
+            suggestion = self.suggest_version_bump(change_summary)
+            print(f"No version flag provided. AI suggested bump: {suggestion}")
+            if suggestion == "major":
+                self.version.increment_major()
+            elif suggestion == "minor":
+                self.version.increment_minor()
+            else:
+                self.version.increment_patch()
 
         # Generate and update the README
         readme_content = self.generate_readme_content(
@@ -887,6 +985,7 @@ class Ndaversis:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(new_state, f, indent=2)
         self.save_version(str(self.version))
+        self.update_changelog(self.version, change_summary)
 
         print(f"Version updated to {self.version}")
 
@@ -976,7 +1075,7 @@ if __name__ == "__main__":
     gui_parser.add_argument("--test", action="store_true", help="Run in test mode")
 
     cli_parser = subparsers.add_parser("cli", help="Run the CLI")
-    group = cli_parser.add_mutually_exclusive_group(required=True)
+    group = cli_parser.add_mutually_exclusive_group(required=False)
     group.add_argument("--major", action="store_true", help="Increment major version")
     group.add_argument("--minor", action="store_true", help="Increment minor version")
     group.add_argument("--patch", action="store_true", help="Increment patch version")

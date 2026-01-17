@@ -19,6 +19,7 @@ class TestNdaversis(unittest.TestCase):
         self.test_ndaversis_path = "test_ndaversis.py"
         self.test_config_path = "test_config.json"
         self.state_file_path = "ndaversis_state.json"
+        self.test_logs_path = "test_ndaversis_logs.py"
 
         with open(self.test_readme_path, "w", encoding="utf-8") as f:
             f.write("# 1. Test Readme\n\n## 14. Version History\n\n## 15. Contacts\n")
@@ -30,9 +31,11 @@ class TestNdaversis(unittest.TestCase):
         self.readme_patch = patch('ndaversis.README_FILE', self.test_readme_path)
         self.config_patch = patch('ndaversis.CONFIG_FILE', self.test_config_path)
         self.state_file_patch = patch('ndaversis.STATE_FILE', self.state_file_path)
+        self.logs_file_patch = patch('ndaversis.LOGS_FILE', self.test_logs_path)
         self.readme_patch.start()
         self.config_patch.start()
         self.state_file_patch.start()
+        self.logs_file_patch.start()
 
         self.app = Ndaversis()
 
@@ -41,8 +44,9 @@ class TestNdaversis(unittest.TestCase):
         self.readme_patch.stop()
         self.config_patch.stop()
         self.state_file_patch.stop()
+        self.logs_file_patch.stop()
 
-        for path in [self.test_readme_path, self.test_ndaversis_path, self.test_config_path, self.state_file_path, "dummy_module.py"]:
+        for path in [self.test_readme_path, self.test_ndaversis_path, self.test_config_path, self.state_file_path, self.test_logs_path, "dummy_module.py"]:
             if os.path.exists(path):
                 os.remove(path)
 
@@ -195,6 +199,47 @@ class TestNdaversis(unittest.TestCase):
             self.assertIn("Test User Stories", sections)
             self.assertIn("### BPMN Diagram", sections)
             self.assertIn("```mermaid\nTest BPMN Diagram\n```", sections)
+
+    def test_suggest_version_bump(self):
+        """Test the suggest_version_bump method."""
+        with patch.object(self.app, 'ai_service') as mock_ai_service:
+            mock_ai_service.generate_content.return_value = "minor"
+            suggestion = self.app.suggest_version_bump("Some changes")
+            self.assertEqual(suggestion, "minor")
+            
+            mock_ai_service.generate_content.return_value = "invalid"
+            suggestion = self.app.suggest_version_bump("Some changes")
+            self.assertEqual(suggestion, "patch")
+
+    def test_update_changelog(self):
+        """Test the update_changelog method."""
+        self.app.update_changelog("1.0.0", "Initial release")
+        self.assertTrue(os.path.exists(self.test_logs_path))
+        
+        with open(self.test_logs_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            self.assertIn('"version": "1.0.0"', content)
+            self.assertIn('"summary": "Initial release"', content)
+        
+        # Test appending
+        self.app.update_changelog("1.1.0", "New feature")
+        with open(self.test_logs_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            self.assertIn('"version": "1.1.0"', content)
+            self.assertIn('"version": "1.0.0"', content)
+
+    @patch('ndaversis.Ndaversis.suggest_version_bump', return_value="minor")
+    @patch('ndaversis.Ndaversis.update_changelog')
+    @patch('ndaversis.__version__', "0.1.0")
+    def test_cli_auto_versioning(self, mock_update_changelog, mock_suggest_bump):
+        """Test CLI auto-versioning when no flag is provided."""
+        self.app.version = self.app.get_version()
+        with patch('ndaversis.__file__', self.test_ndaversis_path):
+            # No major/minor/patch flags
+            self.app.main_cli(Namespace(major=False, minor=False, patch=False))
+            
+        self.assertEqual(str(self.app.version), "0.2.0")
+        mock_update_changelog.assert_called_once()
 
 if __name__ == '__main__':
     unittest.main()
