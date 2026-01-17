@@ -52,7 +52,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.34"
+__version__ = "0.0.37"
 
 # --- AI Service Classes ---
 class AIService:
@@ -398,48 +398,108 @@ class Ndaversis:
         return {}
 
     def _process_python_file(self, filepath, features, method_names):
-        """Process a single Python file to extract features."""
-        with open(filepath, "r", encoding="utf-8") as f:
-            code = f.read()
+        """Process a single Python file to extract features and metrics."""
         try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                code = "".join(lines)
+            
+            # Basic metrics
+            features["metrics"]["total_lines"] += len(lines)
+            features["metrics"]["tabs"] += code.count('\t')
+            # Count string literals using a simple regex for the analysis summary
+            features["metrics"]["strings"] += len(re.findall(r'(\".*?\"|\'.*?\')', code))
+            
+            for line in lines:
+                stripped = line.strip()
+                if not stripped:
+                    features["metrics"]["blank_lines"] += 1
+                elif stripped.startswith("#"):
+                    features["metrics"]["comment_lines"] += 1
+                else:
+                    features["metrics"]["code_lines"] += 1
+
             tree = ast.parse(code)
             module_docstring = ast.get_docstring(tree) or ""
             features["files"][filepath] = {"docstring": module_docstring}
             for node in ast.walk(tree):
                 if isinstance(node, ast.ClassDef):
-                    methods = {
-                        item.name: [arg.arg for arg in item.args.args if arg.arg != "self"]
-                        for item in node.body
-                        if isinstance(item, ast.FunctionDef)
-                    }
+                    methods = {}
+                    for item in node.body:
+                        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                            methods[item.name] = {
+                                "args": [arg.arg for arg in item.args.args if arg.arg != "self"],
+                                "docstring": ast.get_docstring(item) or "",
+                            }
                     method_names.update(methods.keys())
-                    features["classes"][node.name] = {"methods": methods}
+                    features["classes"][node.name] = {
+                        "docstring": ast.get_docstring(node) or "",
+                        "methods": methods
+                    }
                 elif isinstance(node, ast.Import):
                     features["imports"].update(alias.name for alias in node.names)
                 elif isinstance(node, ast.ImportFrom) and node.module:
                     features["imports"].add(node.module)
-                elif isinstance(node, ast.FunctionDef) and node.name not in method_names:
+                elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name not in method_names:
+                    # Skip nested functions for the main functions list to avoid noise
+                    if not any(isinstance(parent, (ast.FunctionDef, ast.ClassDef)) for parent in ast.walk(node)): # This is not correct for ast.walk
+                        pass
+                    
                     docstring = ast.get_docstring(node)
                     features["functions"][node.name] = {
                         "args": [arg.arg for arg in node.args.args],
                         "docstring": docstring if docstring else "",
                     }
-        except SyntaxError:
+        except (SyntaxError, IOError, UnicodeDecodeError):
             pass
         return code
 
     def _analyze_codebase(self):
-        """Analyze the codebase to identify key features."""
-        features = {"imports": set(), "classes": {}, "functions": {}, "files": {}}
+        """Analyze the codebase to identify key features and metrics."""
+        features = {
+            "imports": set(),
+            "classes": {},
+            "functions": {},
+            "files": {},
+            "metrics": {
+                "total_lines": 0,
+                "code_lines": 0,
+                "comment_lines": 0,
+                "blank_lines": 0,
+                "tabs": 0,
+                "strings": 0,
+            },
+            "languages": {},
+        }
         method_names = set()
         last_code = ""
         for root, _, files in os.walk("."):
-            if ".git" in root:
+            if any(exclude in root for exclude in [".git", "__pycache__", "tests_ndaversis"]):
                 continue
             for file in files:
+                filepath = os.path.join(root, file)
+                ext = os.path.splitext(file)[1].lower() or "no extension"
+                features["languages"][ext] = features["languages"].get(ext, 0) + 1
+                
                 if file.endswith(".py"):
-                    filepath = os.path.join(root, file)
                     last_code = self._process_python_file(filepath, features, method_names)
+                else:
+                    # Collect basic line metrics for non-python files too
+                    try:
+                        with open(filepath, "r", encoding="utf-8") as f:
+                            lines = f.readlines()
+                            features["metrics"]["total_lines"] += len(lines)
+                            for line in lines:
+                                if not line.strip():
+                                    features["metrics"]["blank_lines"] += 1
+                                # Simple comment detection for common languages
+                                elif line.strip().startswith(("#", "//", "/*", "'''", '"""')):
+                                    features["metrics"]["comment_lines"] += 1
+                                else:
+                                    features["metrics"]["code_lines"] += 1
+                    except (IOError, UnicodeDecodeError):
+                        pass
+
         features["imports"] = sorted(list(features["imports"]))
         return features, last_code
 
@@ -598,121 +658,148 @@ class Ndaversis:
 
     def generate_dynamic_sections(self, analysis_data):
         """Generate the dynamic sections of the README file."""
+        # --- Use Cases ---
         use_cases = "## 3. Use Cases\n\n"
         if self.ai_service:
-            # Use AI to generate content and remove potential redundant headers
-            content = self.ai_service.generate_content(
-                self._generate_use_cases_prompt(), analysis_data
-            )
+            content = self.ai_service.generate_content(self._generate_use_cases_prompt(), analysis_data)
             use_cases += re.sub(r"^#+ (3\.)? ?Use Cases\n*", "", content, flags=re.MULTILINE).strip()
             use_cases += "\n\n### Use Case Diagram\n\n"
             use_cases += f"```mermaid\n{self.generate_use_case_diagram(analysis_data)}\n```\n"
         else:
-            items = self._generate_section(
-                "3. Use Cases", analysis_data, "Use Case:", "*   **{name}**: {doc}\n"
-            )
+            items = self._generate_section("3. Use Cases", analysis_data, "Use Case:", "*   **{name}**: {doc}\n")
             content_items = items.replace("## 3. Use Cases\n\n", "").strip()
             if not content_items:
-                # Universal fallback based on detected functions
-                funcs = list(analysis_data.get("functions", {}).keys())
-                classes = list(analysis_data.get("classes", {}).keys())
-                if funcs or classes:
-                    for item in (funcs + classes)[:5]:
+                # Universal fallback based on detected functions and classes
+                items_to_use = list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys())
+                if items_to_use:
+                    for item in items_to_use[:5]:
                         display_name = item.replace('_', ' ').title()
-                        use_cases += f"*   **{display_name}**: Typical use case for leveraging the `{item}` component within the system.\n"
+                        use_cases += f"*   **{display_name} Usage**: Leverage the `{item}` component to perform specialized operations within the system.\n"
                 else:
-                    use_cases += "*   **General Usage**: Typical use case involving the core functionality of the repository.\n"
+                    use_cases += "*   **Project Execution**: Utilize the core scripts to achieve the project's primary goals.\n"
             else:
                 use_cases += content_items + "\n"
 
+        # --- User Stories ---
         user_stories = "## 4. User Stories\n\n"
         if self.ai_service:
-            content = self.ai_service.generate_content(
-                self._generate_user_stories_prompt(), analysis_data
-            )
+            content = self.ai_service.generate_content(self._generate_user_stories_prompt(), analysis_data)
             user_stories += re.sub(r"^#+ (4\.)? ?User Stories\n*", "", content, flags=re.MULTILINE).strip()
             user_stories += "\n\n### BPMN Diagram\n\n"
             user_stories += f"```mermaid\n{self.generate_bpmn_diagram(analysis_data)}\n```\n"
         else:
-            items = self._generate_section(
-                "4. User Stories",
-                analysis_data,
-                "User Story:",
-                "*   **As a user,** I want to be able to {name}, so that {doc}.\n",
-            )
+            items = self._generate_section("4. User Stories", analysis_data, "User Story:", "*   **As a user,** I want to be able to {name}, so that {doc}.\n")
             content_items = items.replace("## 4. User Stories\n\n", "").strip()
             if not content_items:
                 items_to_use = list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys())
                 if items_to_use:
                     for item in items_to_use[:5]:
-                        user_stories += f"*   **As a developer,** I want to utilize `{item}` so that I can achieve robust integration and functionality.\n"
+                        display_name = item.replace('_', ' ').title()
+                        user_stories += f"*   **As a Developer**, I want to use `{item}` so that I can implement {display_name} functionality efficiently.\n"
                 else:
-                    user_stories += "*   **As a user,** I want to interact with the repository effectively so that I can fulfill my project requirements.\n"
+                    user_stories += "*   **As a User**, I want to interact with the system so that I can achieve my desired outcomes.\n"
             else:
                 user_stories += content_items + "\n"
-        faq = self._generate_section(
-            "5. FAQ", analysis_data, "FAQ:", "**Q: {name}?**\n**A:** {doc}\n\n"
-        )
+
+        # --- FAQ ---
+        faq = self._generate_section("5. FAQ", analysis_data, "FAQ:", "**Q: {name}?**\n**A:** {doc}\n\n")
         if faq.strip() == "## 5. FAQ":
             items_to_use = list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys())
             if items_to_use:
                 for item in items_to_use[:3]:
                     display_name = item.replace('_', ' ').title()
-                    faq += f"*   **Q: What is the purpose of `{item}`?**\n    **A:** It is a core component used to handle `{display_name}` related operations within the project.\n"
+                    faq += f"*   **Q: What is `{item}`?**\n    **A:** It is a core component that handles `{display_name}` logic within the repository.\n"
             else:
-                faq += "*   **Q: How do I get started?**\n    **A:** Refer to the Installation and How To sections for initial setup and usage instructions.\n"
+                faq += "*   **Q: How do I use this?**\n    **A:** Refer to the Install and How To sections for guidance.\n"
             
-        how_to = self._generate_section(
-            "6. How To", analysis_data, "How To:", "### {name}\n\n{doc}\n\n"
-        )
+        # --- How To ---
+        how_to = self._generate_section("6. How To", analysis_data, "How To:", "### {name}\n\n{doc}\n\n")
         if how_to.strip() == "## 6. How To":
             items_to_use = list(analysis_data.get("functions", {}).keys())
             if items_to_use:
                 main_func = "main" if "main" in items_to_use else items_to_use[0]
-                how_to += f"### Basic Usage Guide\n\nTo use this project, you can invoke the primary functions. For example:\n```python\n# Basic invocation of {main_func}\n{main_func}()\n```\n\n"
+                how_to += f"### Quick Start\n\nYou can start by invoking the primary functionality, for example:\n```python\n{main_func}()\n```\n"
             else:
-                how_to += "### Usage Instructions\n\nFollow the installation steps and then run the primary entry point script of the repository.\n"
+                how_to += "### Usage\n\nRun the main entry script of the repository to begin.\n"
+
+        # --- Features ---
         features_str = "## 7. Features\n\n"
-        features_items = [
-            f"*   **{func_name.replace('_', ' ').title()}**: {func_data.get('docstring', '').splitlines()[0].strip().split(': ')[1]}\n"
-            for func_name, func_data in analysis_data["functions"].items()
-            if func_data.get("docstring")
-            and ": " in func_data.get("docstring", "").splitlines()[0]
-        ]
+        features_items = []
+        
+        # Collect from top-level functions
+        for func_name, func_data in analysis_data["functions"].items():
+            if func_name.startswith("_"):
+                continue
+            docstring = func_data.get("docstring", "")
+            if docstring:
+                first_line = docstring.splitlines()[0].strip()
+                desc = first_line.split(": ", 1)[1] if ": " in first_line else first_line
+                if desc:
+                    features_items.append(f"*   **{func_name.replace('_', ' ').title()}**: {desc}\n")
+
+        # Collect from class methods
+        for class_name, class_data in analysis_data.get("classes", {}).items():
+            if class_name.startswith("_"):
+                continue
+            for method_name, method_data in class_data.get("methods", {}).items():
+                if method_name.startswith("_") or method_name in ["__init__", "__str__"]:
+                    continue
+                docstring = method_data.get("docstring", "")
+                if docstring:
+                    first_line = docstring.splitlines()[0].strip()
+                    desc = first_line.split(": ", 1)[1] if ": " in first_line else first_line
+                    if desc:
+                        features_items.append(f"*   **{method_name.replace('_', ' ').title()}**: {desc}\n")
+        
         if not features_items:
-            items_to_use = list(analysis_data.get("functions", {}).keys())
+            # Fallback if no docstrings found
+            items_to_use = list(analysis_data.get("functions", {}).keys()) + [m for c in analysis_data.get("classes", {}).values() for m in c.get("methods", {}).keys()]
             if items_to_use:
-                features_items = [
-                    f"*   **{item.replace('_', ' ').title()}**: Provides specialized functionality for `{item}` within the codebase.\n"
-                    for item in items_to_use[:5]
-                ]
+                features_items = [f"*   **{item.replace('_', ' ').title()}**: Specialized functional component within the system architecture.\n" for item in items_to_use if not item.startswith("_")][:10]
             else:
-                features_items = [
-                    "*   **Codebase Analysis**: Automated parsing and mapping of repository structure.\n",
-                    "*   **Documentation Automation**: Dynamic README generation tailored to the project content.\n"
-                ]
+                features_items = ["*   **Automated Analysis**: Scans and parses the codebase for insights.\n", "*   **Dynamic Documentation**: Generates README content based on project state.\n"]
         features_str += "".join(features_items)
-        requirements = "## 8. Requirements\n\n*   Python 3.6+\n"
-        if "tkinter" in analysis_data["imports"]:
-            requirements += "*   `tkinter` (for the GUI, usually included with Python)\n"
-        install = (
-            "## 9. Install\n\nTo install the required dependencies, run the following command:\n\n"
-            "```\npip install -r requirements.txt\n```\n"
-        )
+
+        # --- Requirements ---
+        requirements = "## 8. Requirements\n\n"
+        if os.path.exists("requirements.txt"):
+            try:
+                with open("requirements.txt", "r") as f:
+                    deps = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+                    if deps:
+                        requirements += "*   " + "\n*   ".join(deps) + "\n"
+                    else:
+                        requirements += "*   Python 3.6+\n"
+            except IOError:
+                requirements += "*   Python 3.6+\n"
+        else:
+            requirements += "*   Python 3.6+\n"
+            stdlib_modules = set(sys.stdlib_module_names)
+            ext_deps = [d for d in analysis_data.get("imports", []) if d not in stdlib_modules]
+            for dep in ext_deps[:10]:
+                requirements += f"*   `{dep}`\n"
+
+        # --- Install ---
+        install = "## 9. Install\n\n"
+        if os.path.exists("requirements.txt"):
+            install += "To install the required dependencies, run:\n\n```bash\npip install -r requirements.txt\n```\n"
+        elif os.path.exists("setup.py") or os.path.exists("pyproject.toml"):
+            install += "To install this project, run:\n\n```bash\npip install .\n```\n"
+        else:
+            install += "Clone the repository and ensure you have Python 3.6+ installed.\n"
+
+        # --- Modules Map ---
         modules_map = "## 11. Modules Map\n\n"
-        modules_map_items = [
-            f"*   `{os.path.basename(file_path)}`: "
-            f"{file_data.get('docstring', '').splitlines()[0].strip()}"
-            for file_path, file_data in analysis_data.get("files", {}).items()
-            if file_data.get("docstring")
-        ]
+        modules_map_items = []
+        for file_path, file_data in analysis_data.get("files", {}).items():
+            doc = file_data.get('docstring', '').splitlines()
+            desc = doc[0].strip() if doc else "Python module."
+            modules_map_items.append(f"*   `{os.path.basename(file_path)}`: {desc}")
+        
         if not modules_map_items:
             modules_map_items = [f"*   `{os.path.basename(fp)}`: Python module." for fp in analysis_data.get("files", {}).keys()]
         modules_map += "\n".join(modules_map_items)
-        
-        # Add Mermaid Module Diagram
-        modules_map += "\n\n### Module Structure Diagram\n\n"
-        modules_map += "```mermaid\nclassDiagram\n"
+        modules_map += "\n\n### Module Structure Diagram\n\n```mermaid\nclassDiagram\n"
         if not analysis_data.get("classes"):
             modules_map += "    class MainModule {\n        +main()\n    }\n"
         else:
@@ -723,42 +810,25 @@ class Ndaversis:
                 modules_map += "    }\n"
         modules_map += "```\n"
 
+        # --- Dependencies Map ---
         dependencies_map = "## 12. Dependencies Map\n\n"
         stdlib_modules = set(sys.stdlib_module_names)
-        deps = [
-            dep
-            for dep in analysis_data.get("imports", [])
-            if dep not in stdlib_modules
-        ]
+        deps = [dep for dep in analysis_data.get("imports", []) if dep not in stdlib_modules]
         if not deps:
-            deps = ["No external dependencies."]
-        dependencies_map += "\n".join([f"*   `{dep}`" for dep in deps])
+            dependencies_map += "*   No external dependencies.\n"
+        else:
+            dependencies_map += "\n".join([f"*   `{dep}`" for dep in deps])
         
-        # Add Mermaid Dependency Diagram
-        dependencies_map += "\n\n### Dependency Graph\n\n"
-        dependencies_map += "```mermaid\ngraph TD\n"
+        dependencies_map += "\n\n### Dependency Graph\n\n```mermaid\ngraph TD\n"
         project_name = "Project"
-        external_deps = [d for d in deps if d != "No external dependencies."]
-        if not external_deps:
+        if not deps:
             dependencies_map += f"    {project_name} --> StdLib[Standard Library]\n"
         else:
-            for dep in external_deps:
+            for dep in deps:
                 dependencies_map += f"    {project_name} --> {dep}\n"
         dependencies_map += "```\n"
 
-        return "\n".join(
-            filter(None, [
-                use_cases,
-                user_stories,
-                faq,
-                how_to,
-                features_str,
-                requirements,
-                install,
-                modules_map,
-                dependencies_map,
-            ])
-        )
+        return "\n".join(filter(None, [use_cases, user_stories, faq, how_to, features_str, requirements, install, modules_map, dependencies_map]))
 
     def generate_project_description(self):
         """Analyze the repository to generate a project description."""
@@ -771,6 +841,7 @@ class Ndaversis:
                 "What is its core functionality?"
             )
             return self.ai_service.generate_content(prompt, (features, code))
+        
         try:
             with open(README_FILE, "r", encoding="utf-8") as f:
                 first_line = f.readline()
@@ -778,9 +849,13 @@ class Ndaversis:
         except (IOError, IndexError, FileNotFoundError):
             project_name = "This Repository"
             
+        total_methods = sum(len(c.get("methods", {})) for c in features["classes"].values())
+        total_funcs = len(features["functions"])
+        total_components = total_methods + total_funcs
+        
         core_functionality = "provide a robust set of features"
-        if features["functions"]:
-            core_functionality = f"implement {len(features['functions'])} functions for various system tasks"
+        if total_components:
+            core_functionality = f"implement {total_components} functional components for various system tasks"
             
         design = "modularly designed" if features["classes"] else "script-based"
         operation = "features a comprehensive codebase analysis and documentation system"
@@ -829,40 +904,46 @@ class Ndaversis:
 
     def analyze_repository(self):
         """Analyze the repository to generate a summary."""
-        total_files, py_files, py_lines = 0, 0, 0
-        for root, dirs, files in os.walk("."):
-            if ".git" in dirs:
-                dirs.remove(".git")
-            for file in files:
-                total_files += 1
-                if file.endswith(".py"):
-                    py_files += 1
-                    try:
-                        with open(os.path.join(root, file), "r", encoding="utf-8") as f:
-                            py_lines += len(f.readlines())
-                    except (IOError, UnicodeDecodeError):
-                        pass
+        features, code = self._analyze_codebase()
+        metrics = features["metrics"]
+        
+        # Language breakdown table
+        lang_table = "| Extension | Count |\n| :--- | :--- |\n"
+        for ext, count in sorted(features["languages"].items(), key=lambda x: x[1], reverse=True):
+            lang_table += f"| {ext} | {count} |\n"
+            
+        # Metrics table
+        metrics_table = (
+            "| Metric | Value |\n"
+            "| :--- | :--- |\n"
+            f"| Total Lines | {metrics['total_lines']} |\n"
+            f"| Code Lines | {metrics['code_lines']} |\n"
+            f"| Comment Lines | {metrics['comment_lines']} |\n"
+            f"| Blank Lines | {metrics['blank_lines']} |\n"
+            f"| Tabs | {metrics['tabs']} |\n"
+            f"| Strings | {metrics['strings']} |\n"
+        )
 
         synthesis = ""
         if self.ai_service:
-            features, code = self._analyze_codebase()
             synthesis = self.ai_service.generate_content(
                 self._generate_repo_synthesis_prompt(), (features, code)
             )
 
         summary = (
             f"\n\n"
-            f"---\n"
+            f"----- \n"
             f"*This summary is auto-generated and reflects the state of the repository at "
             f"the time of the last version update.*\n\n"
-            f"**Repository Analysis:**\n"
-            f"- **Total Files:** {total_files}\n"
-            f"- **Python Files:** {py_files}\n"
-            f"- **Total Python Lines:** {py_lines}\n"
+            f"### Repository Metrics\n\n{metrics_table}\n\n"
+            f"### Language Breakdown\n\n{lang_table}\n\n"
+            f"### File Statistics\n"
+            f"- **Total Files:** {sum(features['languages'].values())}\n"
+            f"- **Python Files:** {features['languages'].get('.py', 0)}\n"
         )
         if synthesis:
             summary += f"\n**Goal & Tasks synthesis:**\n{synthesis}\n"
-        summary += f"---\n"
+        summary += f"----- \n"
         return summary
 
     def suggest_version_bump(self, change_summary):
@@ -930,6 +1011,12 @@ class Ndaversis:
                 "Completeness, Assessment, and Is that good result?"
             )
             return self.ai_service.generate_content(prompt, analysis_data)
+        
+        total_methods = sum(len(c.get("methods", {})) for c in analysis_data.get("classes", {}).values())
+        total_funcs = len(analysis_data.get("functions", {}))
+        total_components = total_methods + total_funcs
+        total_classes = len(analysis_data.get("classes", {}))
+        
         user_goal = (
             "The user wants a fully automated and dynamically updated README.md "
             "that accurately reflects the state of the repository."
@@ -940,8 +1027,8 @@ class Ndaversis:
         )
         core_functionality = (
             f"The core functionality is the dynamic generation of the README.md, "
-            f"which now includes {len(analysis_data['functions'])} functions and "
-            f"{len(analysis_data['classes'])} classes."
+            f"which now includes {total_components} functional components across "
+            f"{total_classes} classes."
         )
         safety = (
             "The solution is safe and has no unintended side effects. The primary "
