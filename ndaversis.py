@@ -52,7 +52,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.37"
+__version__ = "0.0.38"
 
 # --- AI Service Classes ---
 class AIService:
@@ -670,13 +670,13 @@ class Ndaversis:
             content_items = items.replace("## 3. Use Cases\n\n", "").strip()
             if not content_items:
                 # Universal fallback based on detected functions and classes
-                items_to_use = list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys())
+                items_to_use = [item for item in list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys()) if not item.startswith("_")]
                 if items_to_use:
                     for item in items_to_use[:5]:
                         display_name = item.replace('_', ' ').title()
-                        use_cases += f"*   **{display_name} Usage**: Leverage the `{item}` component to perform specialized operations within the system.\n"
+                        use_cases += f"*   **Automate {display_name}**: Keep the documentation for `{item}` updated automatically without any manual intervention.\n"
                 else:
-                    use_cases += "*   **Project Execution**: Utilize the core scripts to achieve the project's primary goals.\n"
+                    use_cases += "*   **Set and Forget Documentation**: Use this tool to ensure your project's README and versioning always reflect the latest code changes.\n"
             else:
                 use_cases += content_items + "\n"
 
@@ -691,39 +691,48 @@ class Ndaversis:
             items = self._generate_section("4. User Stories", analysis_data, "User Story:", "*   **As a user,** I want to be able to {name}, so that {doc}.\n")
             content_items = items.replace("## 4. User Stories\n\n", "").strip()
             if not content_items:
-                items_to_use = list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys())
+                items_to_use = [item for item in list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys()) if not item.startswith("_")]
                 if items_to_use:
                     for item in items_to_use[:5]:
                         display_name = item.replace('_', ' ').title()
-                        user_stories += f"*   **As a Developer**, I want to use `{item}` so that I can implement {display_name} functionality efficiently.\n"
+                        user_stories += f"*   **Efficiency Loop**: As a developer, I want my `{item}` functionality to be documented automatically so I can focus on building features instead of writing docs.\n"
                 else:
-                    user_stories += "*   **As a User**, I want to interact with the system so that I can achieve my desired outcomes.\n"
+                    user_stories += "*   **Peace of Mind**: As a project maintainer, I want my versioning and README to stay in sync with my code automatically so I never have to worry about stale information.\n"
             else:
                 user_stories += content_items + "\n"
 
         # --- FAQ ---
-        faq = self._generate_section("5. FAQ", analysis_data, "FAQ:", "**Q: {name}?**\n**A:** {doc}\n\n")
-        if faq.strip() == "## 5. FAQ":
-            items_to_use = list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys())
-            if items_to_use:
-                for item in items_to_use[:3]:
-                    display_name = item.replace('_', ' ').title()
-                    faq += f"*   **Q: What is `{item}`?**\n    **A:** It is a core component that handles `{display_name}` logic within the repository.\n"
-            else:
-                faq += "*   **Q: How do I use this?**\n    **A:** Refer to the Install and How To sections for guidance.\n"
+        faq = "## 5. FAQ\n\n"
+        faq_items = self._generate_section("5. FAQ", analysis_data, "FAQ:", "**Q: {name}?**\n**A:** {doc}\n\n").replace("## 5. FAQ\n\n", "").strip()
+        if not faq_items:
+            faq += (
+                "*   **Q: Will this work without an internet connection?**\n"
+                "    **A:** Yes, the core analysis and documentation logic works entirely offline.\n"
+                "*   **Q: Does it actually update my code's version?**\n"
+                "    **A:** Absolutely. It scans and updates your version strings automatically based on your changes.\n"
+                "*   **Q: Is it really 'set and forget'?**\n"
+                "    **A:** That's the goal. Integrate it once (e.g., via pre-commit hook), and let it handle the rest.\n"
+            )
+        else:
+            faq += faq_items + "\n"
             
         # --- How To ---
         how_to = self._generate_section("6. How To", analysis_data, "How To:", "### {name}\n\n{doc}\n\n")
         if how_to.strip() == "## 6. How To":
-            items_to_use = list(analysis_data.get("functions", {}).keys())
-            if items_to_use:
-                main_func = "main" if "main" in items_to_use else items_to_use[0]
-                how_to += f"### Quick Start\n\nYou can start by invoking the primary functionality, for example:\n```python\n{main_func}()\n```\n"
-            else:
-                how_to += "### Usage\n\nRun the main entry script of the repository to begin.\n"
+            how_to += (
+                "### Simple Automation\n\n"
+                "The easiest way to use this is to run it once per update. It will analyze your code, "
+                "suggest or bump the version, and refresh your README instantly.\n\n"
+                "```bash\npython ndaversis.py cli --patch\n```\n\n"
+                "For true 'set and forget', install the pre-commit hook:\n\n"
+                "```bash\npython ndaversis.py install-hook\n```\n"
+            )
 
         # --- Features ---
         features_str = "## 7. Features\n\n"
+        # Prepend the main value proposition
+        features_str += "*   **Set-and-Forget Automation**: Managed semantic versioning and README updates without manual effort.\n"
+        
         features_items = []
         
         # Collect from top-level functions
@@ -835,10 +844,11 @@ class Ndaversis:
         features, code = self._analyze_codebase()
         if self.ai_service:
             prompt = (
-                "Generate a project description for a README.md file. The description "
-                "should be based on the provided codebase analysis. It should cover: "
-                "What is this repository?, How it operates?, How it's designed?, and "
-                "What is its core functionality?"
+                "Generate a human-readable project description for a README.md file. "
+                "Emphasize the 'set-and-forget' paradigm: automatically creating an "
+                "actual README with semantic versioning inside the code project so "
+                "the user never has to change it manually when the project changes. "
+                "The description should be useful for a human developer, not just a technical summary."
             )
             return self.ai_service.generate_content(prompt, (features, code))
         
@@ -853,22 +863,13 @@ class Ndaversis:
         total_funcs = len(features["functions"])
         total_components = total_methods + total_funcs
         
-        core_functionality = "provide a robust set of features"
-        if total_components:
-            core_functionality = f"implement {total_components} functional components for various system tasks"
-            
-        design = "modularly designed" if features["classes"] else "script-based"
-        operation = "features a comprehensive codebase analysis and documentation system"
-        
-        if "tkinter" in features["imports"]:
-            operation += ", including a graphical user interface"
-        if "argparse" in features["imports"]:
-            operation += " and a command-line interface"
-            
         return (
-            f"{project_name} is a {design} solution designed to {core_functionality}. "
-            f"It {operation}. This tool is built to be easily integrated and self-updating, "
-            "providing a streamlined experience for project management and development."
+            f"**{project_name}** is designed with a simple goal: to let you **'set and forget'** "
+            f"your documentation and versioning. It automatically generates and maintains an "
+            f"accurate README.md and manages semantic versioning directly within your code, "
+            f"ensuring your project info is always up-to-date even as you change the code. "
+            f"Whether you have an internet connection or not, it works locally to keep your "
+            f"repository professional and informative with zero manual effort."
         )
 
     def generate_project_map(self):
@@ -1005,10 +1006,10 @@ class Ndaversis:
         if self.ai_service:
             prompt = (
                 "Generate a 7-step analysis for the 'What's Good for the User' section "
-                "of a README.md file. The analysis should be based on the provided "
-                "codebase analysis. The steps are: User's Goal, Evaluation of the "
-                "repository Solution, Core Functionality, Safety & Side Effects, "
-                "Completeness, Assessment, and Is that good result?"
+                "of a README.md file. Emphasize the 'set-and-forget' automation "
+                "value proposition and human utility. The steps are: User's Goal, "
+                "Evaluation of the repository Solution, Core Functionality, "
+                "Safety & Side Effects, Completeness, Assessment, and Is that good result?"
             )
             return self.ai_service.generate_content(prompt, analysis_data)
         
@@ -1018,35 +1019,32 @@ class Ndaversis:
         total_classes = len(analysis_data.get("classes", {}))
         
         user_goal = (
-            "The user wants a fully automated and dynamically updated README.md "
-            "that accurately reflects the state of the repository."
+            "The user wants an effortless way to keep project documentation and "
+            "versioning accurate without manual updates every time the code changes."
         )
         evaluation = (
-            "The solution successfully meets the user's goal by implementing a robust "
-            "system for auto-generating the README.md from the codebase."
+            "The solution provides true automation, scanning the codebase locally to "
+            "refresh the README and manage semantic versioning instantly."
         )
         core_functionality = (
-            f"The core functionality is the dynamic generation of the README.md, "
-            f"which now includes {total_components} functional components across "
-            f"{total_classes} classes."
+            f"Automated maintenance of {total_components} functional components across "
+            f"{total_classes} classes, keeping the repository's identity in sync with its code."
         )
         safety = (
-            "The solution is safe and has no unintended side effects. The primary "
-            "side effect is that the README.md is now entirely managed by the "
-            "script, which is the intended outcome."
+            "The script operates safely on local files, with the only major 'side effect' "
+            "being that you'll have more time to focus on actual development."
         )
         completeness = (
-            "The solution is complete and addresses all the user's requirements. "
-            "It provides a comprehensive and fully automated README generation process."
+            "It addresses the complete lifecycle of project metadata—from version bumps "
+            "to detailed feature extraction—all in one place."
         )
         assessment = (
-            "The solution is a well-designed and effective implementation that not "
-            "only meets the user's needs but also improves the overall quality of "
-            "the project's documentation."
+            "This is a high-utility automation tool that transforms the chore of "
+            "documentation into a 'set and forget' background process."
         )
         is_good_result = (
-            "Yes, this is an excellent result that provides significant value to the "
-            "user by automating a critical part of the development workflow."
+            "Yes, it's a fantastic result for any developer who values their time "
+            "and wants their project to always appear up-to-date and professional."
         )
         return (
             f"### 1. User's Goal\n{user_goal}\n\n"
@@ -1061,33 +1059,27 @@ class Ndaversis:
     def infer_goals_from_summary(self, change_summary):
         """Infer the goals of the changes from the change summary."""
         goals = []
-        if "Added functions" in change_summary or "Added classes" in change_summary:
-            goals.append("enhance functionality")
-        if "Removed functions" in change_summary or "Removed classes" in change_summary:
-            goals.append("refactor and simplify the codebase")
-        if "Added imports" in change_summary or "Removed imports" in change_summary:
-            goals.append("update dependencies and manage imports")
+        if "Added file" in change_summary or "New feature" in change_summary:
+            goals.append("expand the project's capabilities with new components")
+        if "Modified file" in change_summary or "Improved logic" in change_summary:
+            goals.append("refine existing features for better performance and reliability")
+        if "Removed file" in change_summary or "Cleanup" in change_summary:
+            goals.append("clean up the codebase and remove obsolete parts")
         if not goals:
-            return "The main goal was to address minor updates and improvements."
-        return f"The main goals of this update were to {', '.join(goals)}."
+            return "Address minor updates and keep the repository information current."
+        return f"The main goals were to {', '.join(goals)}."
 
     def suggest_next_steps(self, analysis_data):
         """Suggest next steps for the project."""
         suggestions = []
         if not any("test" in func for func in analysis_data["functions"]):
-            suggestions.append("add a dedicated test suite to improve robustness")
-        if "tkinter" in analysis_data["imports"] and "argparse" in analysis_data["imports"]:
-            suggestions.append("enhance the GUI and CLI with more features")
+            suggestions.append("improve robustness by adding a dedicated test suite")
         if len(analysis_data["functions"]) > 15:
-            suggestions.append(
-                "consider modularizing the codebase to improve maintainability"
-            )
+            suggestions.append("consider modularizing the code to keep it maintainable as it grows")
+        
         if not suggestions:
-            return (
-                "The project is in a good state, and the next steps will be "
-                "determined by user feedback."
-            )
-        return f"The next steps for the project could be to {', '.join(suggestions)}."
+            return "Continue building great features and let Ndaversis handle the documentation updates automatically."
+        return f"Moving forward, you might want to {', '.join(suggestions)}."
 
     def generate_readme_content(self, version, analysis_data, what_changed):
         """Generate the entire content of the README file."""
