@@ -241,5 +241,55 @@ class TestNdaversis(unittest.TestCase):
         self.assertEqual(str(self.app.version), "0.2.0")
         mock_update_changelog.assert_called_once()
 
+    def test_generate_project_map(self):
+        """Test the generate_project_map method."""
+        # Create some dummy files
+        with open("dummy1.txt", "w") as f: f.write("test")
+        with open("dummy2.py", "w") as f: f.write("test")
+        
+        project_map = self.app.generate_project_map()
+        self.assertIn("./dummy1.txt", project_map)
+        self.assertIn("./dummy2.py", project_map)
+        
+        os.remove("dummy1.txt")
+        os.remove("dummy2.py")
+
+    def test_generate_diff_concise(self):
+        """Test the concise diff generation."""
+        old_state = {"file1.txt": "content1", "file2.txt": "content2"}
+        new_state = {"file1.txt": "content1_mod", "file3.txt": "content3"}
+        
+        diff = self.app.generate_change_summary(old_state, new_state)
+        self.assertIn("Modified file: file1.txt", diff)
+        self.assertIn("Added file: file3.txt", diff)
+        self.assertIn("Removed file: file2.txt", diff)
+        self.assertNotIn("content1_mod", diff) # Should not include content
+
+    def test_readme_sections_and_diagrams(self):
+        """Test that all required sections and Mermaid diagrams are present."""
+        analysis_data = {
+            "functions": {"my_func": {"docstring": "test: doc"}},
+            "classes": {"MyClass": {"methods": {"my_method": {}}}},
+            "imports": ["os", "sys", "requests"],
+            "files": {"ndaversis.py": {"docstring": "main module"}}
+        }
+        what_changed = "Modified file: ndaversis.py"
+        content = self.app.generate_readme_content("0.1.0", analysis_data, what_changed)
+        
+        # Check Sections
+        for i in range(2, 15):
+            self.assertIn(f"## {i}.", content)
+            
+        # Check Diagrams
+        self.assertIn("```mermaid\ngraph TD", content) # Project Map / Dependency Graph
+        self.assertIn("```mermaid\nclassDiagram", content) # Modules Map
+        
+        # Check Fallbacks (using no docstrings for some sections)
+        analysis_empty = {"functions": {}, "classes": {}, "imports": [], "files": {}}
+        content_fallback = self.app.generate_readme_content("0.1.0", analysis_empty, what_changed)
+        self.assertIn("Project Management", content_fallback)
+        self.assertIn("As a maintainer", content_fallback)
+        self.assertIn("## 13. Last Version Summary", content_fallback)
+
 if __name__ == '__main__':
     unittest.main()

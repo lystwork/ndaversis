@@ -52,7 +52,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.32"
+__version__ = "0.0.34"
 
 # --- AI Service Classes ---
 class AIService:
@@ -465,27 +465,17 @@ class Ndaversis:
         return state
 
     def _generate_diff(self, old_state, new_state):
-        """Generate a diff between two repository states."""
+        """Generate a concise diff between two repository states."""
         diff = []
         all_files = set(old_state.keys()) | set(new_state.keys())
         for file in sorted(all_files):
             if file not in old_state:
-                diff.append(f"Added file: {file}\n--- CODE ---\n{new_state[file]}\n")
+                diff.append(f"Added file: {file}")
             elif file not in new_state:
-                diff.append(f"Removed file: {file}\n")
+                diff.append(f"Removed file: {file}")
             elif old_state[file] != new_state[file]:
-                diff.append(f"Modified file: {file}\n")
-                diff.append("--- DIFF ---")
-                diff.extend(
-                    difflib.unified_diff(
-                        old_state[file].splitlines(keepends=True),
-                        new_state[file].splitlines(keepends=True),
-                        fromfile=f"a/{file}",
-                        tofile=f"b/{file}",
-                    )
-                )
-                diff.append("\n")
-        return "\n".join(diff)
+                diff.append(f"Modified file: {file}")
+        return "\n".join(diff) if diff else "No significant changes detected."
 
     def generate_change_summary(self, old_state, new_state):
         """Compare two code states and generate a summary of changes."""
@@ -610,43 +600,81 @@ class Ndaversis:
         """Generate the dynamic sections of the README file."""
         use_cases = "## 3. Use Cases\n\n"
         if self.ai_service:
-            use_cases += self.ai_service.generate_content(
+            # Use AI to generate content and remove potential redundant headers
+            content = self.ai_service.generate_content(
                 self._generate_use_cases_prompt(), analysis_data
             )
+            use_cases += re.sub(r"^#+ (3\.)? ?Use Cases\n*", "", content, flags=re.MULTILINE).strip()
             use_cases += "\n\n### Use Case Diagram\n\n"
             use_cases += f"```mermaid\n{self.generate_use_case_diagram(analysis_data)}\n```\n"
         else:
-            use_cases += self._generate_section(
+            items = self._generate_section(
                 "3. Use Cases", analysis_data, "Use Case:", "*   **{name}**: {doc}\n"
             )
+            content_items = items.replace("## 3. Use Cases\n\n", "").strip()
+            if not content_items:
+                # Fallback: Use functions if available, otherwise generic
+                if analysis_data.get("functions"):
+                    for func in list(analysis_data["functions"].keys())[:3]:
+                        use_cases += f"*   **{func.replace('_', ' ').title()}**: Typical use case for leveraging the `{func}` functionality.\n"
+                else:
+                    use_cases += "*   **Project Management**: Typical use case for managing project versions and documentation.\n"
+                    use_cases += "*   **Automation**: Automating daily routines and repository maintenance.\n"
+            else:
+                use_cases += content_items + "\n"
 
         user_stories = "## 4. User Stories\n\n"
         if self.ai_service:
-            user_stories += self.ai_service.generate_content(
+            content = self.ai_service.generate_content(
                 self._generate_user_stories_prompt(), analysis_data
             )
+            user_stories += re.sub(r"^#+ (4\.)? ?User Stories\n*", "", content, flags=re.MULTILINE).strip()
             user_stories += "\n\n### BPMN Diagram\n\n"
             user_stories += f"```mermaid\n{self.generate_bpmn_diagram(analysis_data)}\n```\n"
         else:
-            user_stories += self._generate_section(
+            items = self._generate_section(
                 "4. User Stories",
                 analysis_data,
                 "User Story:",
                 "*   **As a user,** I want to be able to {name}, so that {doc}.\n",
             )
+            content_items = items.replace("## 4. User Stories\n\n", "").strip()
+            if not content_items:
+                if analysis_data.get("functions"):
+                    for func in list(analysis_data["functions"].keys())[:3]:
+                        user_stories += f"*   **As a developer,** I want to use `{func}` so that I can improve the project automation.\n"
+                else:
+                    user_stories += "*   **As a user,** I want to automate my documentation so that it's always up to date.\n"
+                    user_stories += "*   **As a maintainer,** I want semantic versioning so that users know what changed.\n"
+            else:
+                user_stories += content_items + "\n"
         faq = self._generate_section(
             "5. FAQ", analysis_data, "FAQ:", "**Q: {name}?**\n**A:** {doc}\n\n"
         )
+        if faq.strip() == "## 5. FAQ":
+            faq += "*   **Q: How does the versioning work?**\n    **A:** It uses semantic versioning (major.minor.patch) and can automate bumps based on code changes.\n"
+            faq += "*   **Q: Can I use different AI providers?**\n    **A:** Yes, it supports Gemini, ChatGPT, Claude, and DeepSeek via `config.json`.\n"
+            
         how_to = self._generate_section(
             "6. How To", analysis_data, "How To:", "### {name}\n\n{doc}\n\n"
         )
+        if how_to.strip() == "## 6. How To":
+            how_to += "### Basic CLI Usage\n\nRun the following command to bump the patch version and update the README:\n```bash\npython ndaversis.py cli --patch\n```\n\n"
+            how_to += "### GUI Usage\n\nSimply run the script without arguments to open the graphical interface:\n```bash\npython ndaversis.py\n```\n"
         features_str = "## 7. Features\n\n"
-        features_str += "".join(
+        features_items = [
             f"*   **{func_name.replace('_', ' ').title()}**: {func_data.get('docstring', '').splitlines()[0].strip().split(': ')[1]}\n"
             for func_name, func_data in analysis_data["functions"].items()
             if func_data.get("docstring")
             and ": " in func_data.get("docstring", "").splitlines()[0]
-        )
+        ]
+        if not features_items:
+            features_items = [
+                "*   **Automated Versioning**: Programmatic management of semantic versions.\n",
+                "*   **README Generation**: Dynamic update of project documentation based on code analysis.\n",
+                "*   **AI Integration**: Intelligent content generation using various LLMs.\n"
+            ]
+        features_str += "".join(features_items)
         requirements = "## 8. Requirements\n\n*   Python 3.6+\n"
         if "tkinter" in analysis_data["imports"]:
             requirements += "*   `tkinter` (for the GUI, usually included with Python)\n"
@@ -661,17 +689,48 @@ class Ndaversis:
             for file_path, file_data in analysis_data.get("files", {}).items()
             if file_data.get("docstring")
         ]
+        if not modules_map_items:
+            modules_map_items = [f"*   `{os.path.basename(fp)}`: Python module." for fp in analysis_data.get("files", {}).keys()]
         modules_map += "\n".join(modules_map_items)
+        
+        # Add Mermaid Module Diagram
+        modules_map += "\n\n### Module Structure Diagram\n\n"
+        modules_map += "```mermaid\nclassDiagram\n"
+        if not analysis_data.get("classes"):
+            modules_map += "    class MainModule {\n        +main()\n    }\n"
+        else:
+            for class_name, class_data in analysis_data.get("classes", {}).items():
+                modules_map += f"    class {class_name} {{\n"
+                for method in class_data.get("methods", {}).keys():
+                    modules_map += f"        +{method}()\n"
+                modules_map += "    }\n"
+        modules_map += "```\n"
+
         dependencies_map = "## 12. Dependencies Map\n\n"
         stdlib_modules = set(sys.stdlib_module_names)
-        dependencies_map_items = [
-            f"*   `{dep}`"
+        deps = [
+            dep
             for dep in analysis_data.get("imports", [])
             if dep not in stdlib_modules
         ]
-        dependencies_map += "\n".join(dependencies_map_items)
+        if not deps:
+            deps = ["No external dependencies."]
+        dependencies_map += "\n".join([f"*   `{dep}`" for dep in deps])
+        
+        # Add Mermaid Dependency Diagram
+        dependencies_map += "\n\n### Dependency Graph\n\n"
+        dependencies_map += "```mermaid\ngraph TD\n"
+        project_name = "Project"
+        external_deps = [d for d in deps if d != "No external dependencies."]
+        if not external_deps:
+            dependencies_map += f"    {project_name} --> StdLib[Standard Library]\n"
+        else:
+            for dep in external_deps:
+                dependencies_map += f"    {project_name} --> {dep}\n"
+        dependencies_map += "```\n"
+
         return "\n".join(
-            [
+            filter(None, [
                 use_cases,
                 user_stories,
                 faq,
@@ -681,7 +740,7 @@ class Ndaversis:
                 install,
                 modules_map,
                 dependencies_map,
-            ]
+            ])
         )
 
     def generate_project_description(self):
@@ -724,11 +783,34 @@ class Ndaversis:
             "providing a simple and robust interface for version management."
         )
 
-    def generate_project_map(self, analysis_data):
-        """Generate a markdown tree of the project structure."""
+    def generate_project_map(self):
+        """Generate a markdown tree of the project structure with a Mermaid diagram."""
         project_map = "```\n"
-        for file in sorted(analysis_data.get("files", {}).keys()):
-            project_map += f"{file}\n"
+        files_list = []
+        for root, dirs, files in os.walk("."):
+            if ".git" in root or "__pycache__" in root or "tests_ndaversis" in root:
+                continue
+            for file in sorted(files):
+                filepath = os.path.join(root, file)
+                display_path = filepath if filepath.startswith("./") else f"./{filepath.lstrip('./')}"
+                project_map += f"{display_path}\n"
+                files_list.append(display_path)
+        project_map += "```\n\n### Project Structure Diagram\n\n"
+        
+        # Add Mermaid Project Diagram
+        project_map += "```mermaid\ngraph TD\n"
+        project_map += "    Root[./]\n"
+        for f in files_list:
+            if "/" in f.lstrip("./"):
+                parts = f.lstrip("./").split("/")
+                current = "Root"
+                for i, part in enumerate(parts):
+                    node_id = f"node_{'_'.join(parts[:i+1]).replace('.', '_')}"
+                    project_map += f"    {current} --> {node_id}[\"{part}\"]\n"
+                    current = node_id
+            else:
+                node_id = f"node_{f.lstrip('./').replace('.', '_')}"
+                project_map += f"    Root --> {node_id}[\"{f.lstrip('./')}\"]\n"
         project_map += "```"
         return project_map
 
@@ -915,9 +997,12 @@ class Ndaversis:
         content += "<!-- AUTO-SUMMARY-END -->\n\n"
         content += f"{self.generate_dynamic_sections(analysis_data)}\n"
         content += "## 10. Project Map\n\n"
-        content += f"{self.generate_project_map(analysis_data)}\n\n"
+        content += f"{self.generate_project_map()}\n\n"
         content += "## 13. Last Version Summary\n\n"
-        content += f"The last version is `{version}`. Summary: {what_changed}\n\n"
+        content += f"The last version is `{version}`. Summary of major changes:\n"
+        # Make the summary a bit more descriptive if it's just a list of files
+        descriptive_summary = what_changed.replace("Added file:", "New feature added:").replace("Modified file:", "Improved logic in:").replace("Removed file:", "Cleanup in:")
+        content += f"{descriptive_summary}\n\n"
         history_start_marker, history_end_marker = "## 14. Version History", "## 15. Contacts"
         try:
             with open(README_FILE, "r", encoding="utf-8") as f:
