@@ -613,13 +613,15 @@ class Ndaversis:
             )
             content_items = items.replace("## 3. Use Cases\n\n", "").strip()
             if not content_items:
-                # Fallback: Use functions if available, otherwise generic
-                if analysis_data.get("functions"):
-                    for func in list(analysis_data["functions"].keys())[:3]:
-                        use_cases += f"*   **{func.replace('_', ' ').title()}**: Typical use case for leveraging the `{func}` functionality.\n"
+                # Universal fallback based on detected functions
+                funcs = list(analysis_data.get("functions", {}).keys())
+                classes = list(analysis_data.get("classes", {}).keys())
+                if funcs or classes:
+                    for item in (funcs + classes)[:5]:
+                        display_name = item.replace('_', ' ').title()
+                        use_cases += f"*   **{display_name}**: Typical use case for leveraging the `{item}` component within the system.\n"
                 else:
-                    use_cases += "*   **Project Management**: Typical use case for managing project versions and documentation.\n"
-                    use_cases += "*   **Automation**: Automating daily routines and repository maintenance.\n"
+                    use_cases += "*   **General Usage**: Typical use case involving the core functionality of the repository.\n"
             else:
                 use_cases += content_items + "\n"
 
@@ -640,27 +642,36 @@ class Ndaversis:
             )
             content_items = items.replace("## 4. User Stories\n\n", "").strip()
             if not content_items:
-                if analysis_data.get("functions"):
-                    for func in list(analysis_data["functions"].keys())[:3]:
-                        user_stories += f"*   **As a developer,** I want to use `{func}` so that I can improve the project automation.\n"
+                items_to_use = list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys())
+                if items_to_use:
+                    for item in items_to_use[:5]:
+                        user_stories += f"*   **As a developer,** I want to utilize `{item}` so that I can achieve robust integration and functionality.\n"
                 else:
-                    user_stories += "*   **As a user,** I want to automate my documentation so that it's always up to date.\n"
-                    user_stories += "*   **As a maintainer,** I want semantic versioning so that users know what changed.\n"
+                    user_stories += "*   **As a user,** I want to interact with the repository effectively so that I can fulfill my project requirements.\n"
             else:
                 user_stories += content_items + "\n"
         faq = self._generate_section(
             "5. FAQ", analysis_data, "FAQ:", "**Q: {name}?**\n**A:** {doc}\n\n"
         )
         if faq.strip() == "## 5. FAQ":
-            faq += "*   **Q: How does the versioning work?**\n    **A:** It uses semantic versioning (major.minor.patch) and can automate bumps based on code changes.\n"
-            faq += "*   **Q: Can I use different AI providers?**\n    **A:** Yes, it supports Gemini, ChatGPT, Claude, and DeepSeek via `config.json`.\n"
+            items_to_use = list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys())
+            if items_to_use:
+                for item in items_to_use[:3]:
+                    display_name = item.replace('_', ' ').title()
+                    faq += f"*   **Q: What is the purpose of `{item}`?**\n    **A:** It is a core component used to handle `{display_name}` related operations within the project.\n"
+            else:
+                faq += "*   **Q: How do I get started?**\n    **A:** Refer to the Installation and How To sections for initial setup and usage instructions.\n"
             
         how_to = self._generate_section(
             "6. How To", analysis_data, "How To:", "### {name}\n\n{doc}\n\n"
         )
         if how_to.strip() == "## 6. How To":
-            how_to += "### Basic CLI Usage\n\nRun the following command to bump the patch version and update the README:\n```bash\npython ndaversis.py cli --patch\n```\n\n"
-            how_to += "### GUI Usage\n\nSimply run the script without arguments to open the graphical interface:\n```bash\npython ndaversis.py\n```\n"
+            items_to_use = list(analysis_data.get("functions", {}).keys())
+            if items_to_use:
+                main_func = "main" if "main" in items_to_use else items_to_use[0]
+                how_to += f"### Basic Usage Guide\n\nTo use this project, you can invoke the primary functions. For example:\n```python\n# Basic invocation of {main_func}\n{main_func}()\n```\n\n"
+            else:
+                how_to += "### Usage Instructions\n\nFollow the installation steps and then run the primary entry point script of the repository.\n"
         features_str = "## 7. Features\n\n"
         features_items = [
             f"*   **{func_name.replace('_', ' ').title()}**: {func_data.get('docstring', '').splitlines()[0].strip().split(': ')[1]}\n"
@@ -669,11 +680,17 @@ class Ndaversis:
             and ": " in func_data.get("docstring", "").splitlines()[0]
         ]
         if not features_items:
-            features_items = [
-                "*   **Automated Versioning**: Programmatic management of semantic versions.\n",
-                "*   **README Generation**: Dynamic update of project documentation based on code analysis.\n",
-                "*   **AI Integration**: Intelligent content generation using various LLMs.\n"
-            ]
+            items_to_use = list(analysis_data.get("functions", {}).keys())
+            if items_to_use:
+                features_items = [
+                    f"*   **{item.replace('_', ' ').title()}**: Provides specialized functionality for `{item}` within the codebase.\n"
+                    for item in items_to_use[:5]
+                ]
+            else:
+                features_items = [
+                    "*   **Codebase Analysis**: Automated parsing and mapping of repository structure.\n",
+                    "*   **Documentation Automation**: Dynamic README generation tailored to the project content.\n"
+                ]
         features_str += "".join(features_items)
         requirements = "## 8. Requirements\n\n*   Python 3.6+\n"
         if "tkinter" in analysis_data["imports"]:
@@ -758,29 +775,25 @@ class Ndaversis:
             with open(README_FILE, "r", encoding="utf-8") as f:
                 first_line = f.readline()
                 project_name = first_line.split(":")[0].replace("# 1. ", "").strip()
-        except (IOError, IndexError):
-            project_name = "Ndaversis"
-        core_functionality = (
-            "be an agentic module that leverages various large language models "
-            "(like Gemini, ChatGPT, etc.) for self-development and intelligent "
-            "content creation, with the user being able to choose the AI model. "
-            "It also automates README creation and updates, ensuring it's always "
-            "self-updating with the most recent and accurate information, "
-            "alongside managing semantic versioning"
-        )
-        design = "monolithic, self-contained Python wrapper"
-        operation = "operates independently of any version control system like Git"
-        if "tkinter" in features["imports"] and "argparse" in features["imports"]:
-            operation += ", and offers both a GUI and a CLI for user interaction"
-        if "save_version" in features["functions"] and "__version__" in code:
-            operation += (
-                ". The core functionality is encapsulated within a single script, "
-                "which programmatically modifies itself to update the project's version"
-            )
+        except (IOError, IndexError, FileNotFoundError):
+            project_name = "This Repository"
+            
+        core_functionality = "provide a robust set of features"
+        if features["functions"]:
+            core_functionality = f"implement {len(features['functions'])} functions for various system tasks"
+            
+        design = "modularly designed" if features["classes"] else "script-based"
+        operation = "features a comprehensive codebase analysis and documentation system"
+        
+        if "tkinter" in features["imports"]:
+            operation += ", including a graphical user interface"
+        if "argparse" in features["imports"]:
+            operation += " and a command-line interface"
+            
         return (
-            f"{project_name} is a {design} designed to {core_functionality}. "
-            f"It {operation}. This tool is designed to be used by autonomous agents, "
-            "providing a simple and robust interface for version management."
+            f"{project_name} is a {design} solution designed to {core_functionality}. "
+            f"It {operation}. This tool is built to be easily integrated and self-updating, "
+            "providing a streamlined experience for project management and development."
         )
 
     def generate_project_map(self):

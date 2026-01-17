@@ -287,9 +287,29 @@ class TestNdaversis(unittest.TestCase):
         # Check Fallbacks (using no docstrings for some sections)
         analysis_empty = {"functions": {}, "classes": {}, "imports": [], "files": {}}
         content_fallback = self.app.generate_readme_content("0.1.0", analysis_empty, what_changed)
-        self.assertIn("Project Management", content_fallback)
-        self.assertIn("As a maintainer", content_fallback)
+        self.assertIn("General Usage", content_fallback)
+        self.assertIn("fulfill my project requirements", content_fallback)
         self.assertIn("## 13. Last Version Summary", content_fallback)
+
+    def test_shadow_repo_agnostic_generation(self):
+        """Verify that README sections describe the shadow repo and not Ndaversis."""
+        shadow_analysis = {
+            "functions": {"calculate_orbit": {"docstring": "Orbit logic."}},
+            "classes": {"Planet": {"methods": {"rotate": {}}}},
+            "imports": ["math", "astropy"],
+            "files": {"space.py": {"docstring": "Space simulation."}}
+        }
+        what_changed = "New feature: planet rotation"
+        content = self.app.generate_readme_content("1.0.0", shadow_analysis, what_changed)
+        
+        # Should mention the shadow repo items
+        self.assertIn("Calculate Orbit", content)
+        self.assertIn("Planet", content)
+        # Should NOT mention Ndaversis-specific terms in synthesized fallbacks
+        self.assertNotIn("Version Manager", content)
+        self.assertNotIn("tkinter", content)
+        self.assertIn("As a developer,** I want to utilize `calculate_orbit` ", content)
+        self.assertIn("Q: What is the purpose of `calculate_orbit`?", content)
 
 if __name__ == '__main__':
     unittest.main()
