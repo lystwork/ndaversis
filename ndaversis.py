@@ -52,7 +52,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.38"
+__version__ = "0.0.40"
 
 # --- AI Service Classes ---
 class AIService:
@@ -470,7 +470,19 @@ class Ndaversis:
                 "strings": 0,
             },
             "languages": {},
+            "requirements": set(),
         }
+
+        # Load requirements from file if it exists
+        if os.path.exists("requirements.txt"):
+            try:
+                with open("requirements.txt", "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#"):
+                            features["requirements"].add(line.split("==")[0].split(">=")[0].strip())
+            except IOError:
+                pass
         method_names = set()
         last_code = ""
         for root, _, files in os.walk("."):
@@ -731,14 +743,44 @@ class Ndaversis:
         # --- Features ---
         features_str = "## 7. Features\n\n"
         # Prepend the main value proposition
-        features_str += "*   **Set-and-Forget Automation**: Managed semantic versioning and README updates without manual effort.\n"
+        features_str += "*   **Set-and-Forget Automation**: Automatically keeps your project documentation and versioning in sync with your code, saving you manual effort on every update.\n"
         
+        # Mapping technical specific functions to human-friendly descriptions
+        human_features_map = {
+            "generate_content": "AI-Powered Documentation: Automatically drafts FAQs, User Stories, and Use Cases by analyzing your code structure with AI, ensuring your README is professional even if you haven't written a word.",
+            "increment_patch": "Intelligent Version Management: Handles semantic versioning (Major.Minor.Patch) automatically, calculating the right bump based on your actual code changes.",
+            "analyze_repository": "Comprehensive Project Analysis: Gains a birds-eye view of your codebase with automatic calculation of line counts, language distribution, and complexity metrics.",
+            "install_pre_commit_hook": "Set-and-Forget Workflow: One-time integration into your Git workflow that triggers documentation and version updates automatically before every commit.",
+            "main_gui": "User-Friendly Interface: Provides a sleek graphical window for managing your project updates, making it accessible even for those who avoid the terminal.",
+            "generate_readme_content": "Instant README Refresh: Keeps your entire project front-page up-to-date with structural maps, dependency graphs, and latest feature lists in one click.",
+            "generate_bpmn_diagram": "Visual Logic Maps: Automatically generates process diagrams (BPMN) in Mermaid syntax to show how your code's logic flows visually.",
+            "generate_use_case_diagram": "Automatic Architecture Charts: Creates UML Use Case diagrams to visually communicate project goals and user interactions to stakeholders.",
+            "health_check": "Project Integrity Check: Automatically verifies your environment and configuration to ensure everything is set up for flawless automation.",
+        }
+
+        # Features to EXCLUDE from the main human-readable list (too technical or redundant)
+        technical_blacklist = [
+            "increment_major", "increment_minor", "get_version", "save_version", 
+            "load_ai_config", "get_ai_service", "load_previous_code_state", 
+            "generate_change_summary", "generate_dynamic_sections", 
+            "generate_project_description", "generate_project_map",
+            "update_changelog", "generate_user_benefit_analysis",
+            "infer_goals_from_summary", "suggest_next_steps", "update_readme",
+            "main_cli", "_process_python_file", "_analyze_codebase"
+        ]
+
         features_items = []
         
         # Collect from top-level functions
         for func_name, func_data in analysis_data["functions"].items():
-            if func_name.startswith("_"):
+            if func_name.startswith("_") or func_name in technical_blacklist:
                 continue
+            
+            # Use human mapping if available
+            if func_name in human_features_map:
+                features_items.append(f"*   **{human_features_map[func_name].split(': ')[0].strip()}**: {human_features_map[func_name].split(': ')[1].strip()}\n")
+                continue
+
             docstring = func_data.get("docstring", "")
             if docstring:
                 first_line = docstring.splitlines()[0].strip()
@@ -751,8 +793,17 @@ class Ndaversis:
             if class_name.startswith("_"):
                 continue
             for method_name, method_data in class_data.get("methods", {}).items():
-                if method_name.startswith("_") or method_name in ["__init__", "__str__"]:
+                if method_name.startswith("_") or method_name in ["__init__", "__str__"] or method_name in technical_blacklist:
                     continue
+                
+                # Use human mapping if available
+                if method_name in human_features_map:
+                    # Avoid duplicates if multiple classes share common method names (unlikely to be a problem here)
+                    feat_text = f"*   **{human_features_map[method_name].split(': ')[0].strip()}**: {human_features_map[method_name].split(': ')[1].strip()}\n"
+                    if feat_text not in features_items:
+                        features_items.append(feat_text)
+                    continue
+
                 docstring = method_data.get("docstring", "")
                 if docstring:
                     first_line = docstring.splitlines()[0].strip()
@@ -764,38 +815,36 @@ class Ndaversis:
             # Fallback if no docstrings found
             items_to_use = list(analysis_data.get("functions", {}).keys()) + [m for c in analysis_data.get("classes", {}).values() for m in c.get("methods", {}).keys()]
             if items_to_use:
-                features_items = [f"*   **{item.replace('_', ' ').title()}**: Specialized functional component within the system architecture.\n" for item in items_to_use if not item.startswith("_")][:10]
+                features_items = [f"*   **{item.replace('_', ' ').title()}**: Specialized functional component that contributes to the project's automation goals.\n" for item in items_to_use if not item.startswith("_")][:10]
             else:
                 features_items = ["*   **Automated Analysis**: Scans and parses the codebase for insights.\n", "*   **Dynamic Documentation**: Generates README content based on project state.\n"]
-        features_str += "".join(features_items)
+        
+        # Ensure we don't overwhelm with too many features, pick the best ones
+        features_str += "".join(features_items[:15])
 
         # --- Requirements ---
         requirements = "## 8. Requirements\n\n"
-        if os.path.exists("requirements.txt"):
-            try:
-                with open("requirements.txt", "r") as f:
-                    deps = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-                    if deps:
-                        requirements += "*   " + "\n*   ".join(deps) + "\n"
-                    else:
-                        requirements += "*   Python 3.6+\n"
-            except IOError:
-                requirements += "*   Python 3.6+\n"
-        else:
-            requirements += "*   Python 3.6+\n"
-            stdlib_modules = set(sys.stdlib_module_names)
-            ext_deps = [d for d in analysis_data.get("imports", []) if d not in stdlib_modules]
-            for dep in ext_deps[:10]:
+        stdlib_modules = set(sys.stdlib_module_names)
+        # All unique external libraries (from both file and detection)
+        all_deps = analysis_data.get("requirements", set()) | {d for d in analysis_data.get("imports", []) if d not in stdlib_modules}
+        
+        if all_deps:
+            requirements += "To run this project, you will need to install the following libraries:\n\n"
+            for dep in sorted(all_deps):
                 requirements += f"*   `{dep}`\n"
+        else:
+            requirements += "*   Python 3.6+ (No external libraries required)\n"
 
         # --- Install ---
         install = "## 9. Install\n\n"
         if os.path.exists("requirements.txt"):
-            install += "To install the required dependencies, run:\n\n```bash\npip install -r requirements.txt\n```\n"
+            install += "1.  Install the required dependencies:\n\n    ```bash\n    pip install -r requirements.txt\n    ```\n\n"
         elif os.path.exists("setup.py") or os.path.exists("pyproject.toml"):
-            install += "To install this project, run:\n\n```bash\npip install .\n```\n"
+            install += "1.  Install the project in editable mode:\n\n    ```bash\n    pip install -e .\n    ```\n\n"
         else:
-            install += "Clone the repository and ensure you have Python 3.6+ installed.\n"
+            install += "1.  Clone the repository and ensure you have Python 3.6+ installed.\n\n"
+        
+        install += "2.  (Optional) For true 'set and forget' automation, install the pre-commit hook:\n\n    ```bash\n    python ndaversis.py install-hook\n    ```\n"
 
         # --- Modules Map ---
         modules_map = "## 11. Modules Map\n\n"
@@ -821,20 +870,37 @@ class Ndaversis:
 
         # --- Dependencies Map ---
         dependencies_map = "## 12. Dependencies Map\n\n"
-        stdlib_modules = set(sys.stdlib_module_names)
-        deps = [dep for dep in analysis_data.get("imports", []) if dep not in stdlib_modules]
-        if not deps:
+        if not all_deps:
             dependencies_map += "*   No external dependencies.\n"
         else:
-            dependencies_map += "\n".join([f"*   `{dep}`" for dep in deps])
+            dependencies_map += "This project relies on the following external libraries to function properly:\n\n"
+            dependencies_map += "\n".join([f"*   **{dep}**: Provides essential functionality for the system." for dep in sorted(all_deps)])
         
-        dependencies_map += "\n\n### Dependency Graph\n\n```mermaid\ngraph TD\n"
-        project_name = "Project"
-        if not deps:
-            dependencies_map += f"    {project_name} --> StdLib[Standard Library]\n"
+        dependencies_map += "\n\n### Library Dependency Diagram\n\n```mermaid\ngraph TD\n"
+        project_node = "Project"
+        if not all_deps:
+            dependencies_map += f"    {project_node} --> StdLib[Standard Library]\n"
         else:
-            for dep in deps:
-                dependencies_map += f"    {project_name} --> {dep}\n"
+            # Group by language if multiple languages exist
+            languages = analysis_data.get("languages", {})
+            if len(languages) > 1:
+                # Group dependencies under language nodes
+                # Note: We don't strictly know which lib belongs to which language here 
+                # without deeper analysis, but for now we'll assume Python since it's a Python tool.
+                # In a more complex repo, we'd need to map.
+                for lang_ext, count in languages.items():
+                    lang_name = lang_ext.replace(".", "").upper() or "Unknown"
+                    lang_id = f"lang_{lang_name}"
+                    dependencies_map += f"    {project_node} --> {lang_id}[\"{lang_name} Overiew ({count} files)\"]\n"
+                    # For simplicity, since this is a python project, link python libs to Python node
+                    if lang_ext == ".py":
+                        for dep in sorted(all_deps):
+                            node_id = dep.replace("-", "_").replace(".", "_")
+                            dependencies_map += f"    {lang_id} --> {node_id}[\"{dep}\"]\n"
+            else:
+                for dep in sorted(all_deps):
+                    node_id = dep.replace("-", "_").replace(".", "_")
+                    dependencies_map += f"    {project_node} --> {node_id}[\"{dep}\"]\n"
         dependencies_map += "```\n"
 
         return "\n".join(filter(None, [use_cases, user_stories, faq, how_to, features_str, requirements, install, modules_map, dependencies_map]))

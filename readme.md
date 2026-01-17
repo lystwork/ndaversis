@@ -1,6 +1,6 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.38`
+**Current Version:** `0.0.40`
 
 ## 2. Description Summary
 
@@ -18,12 +18,12 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 1846 |
-| Code Lines | 1441 |
-| Comment Lines | 123 |
-| Blank Lines | 282 |
+| Total Lines | 1996 |
+| Code Lines | 1513 |
+| Comment Lines | 161 |
+| Blank Lines | 322 |
 | Tabs | 0 |
-| Strings | 1114 |
+| Strings | 1191 |
 
 
 ### Language Breakdown
@@ -87,52 +87,40 @@ python ndaversis.py install-hook
 
 ## 7. Features
 
-*   **Set-and-Forget Automation**: Managed semantic versioning and README updates without manual effort.
-*   **Generate Content**: Generate content using the AI service.
-*   **Generate Content**: Generates content using the Google Gemini API.
-*   **Generate Content**: Generates content using the Anthropic Claude API.
-*   **Generate Content**: Generates content using the DeepSeek API.
-*   **Increment Major**: Increments the major version and resets minor and patch versions.
-*   **Increment Minor**: Increments the minor version and resets the patch version.
-*   **Increment Patch**: Increments the patch version.
-*   **Get Version**: Get the current version from the `__version__` variable.
-*   **Save Version**: Save the version back to the ndaversis.py file.
-*   **Load Ai Config**: Load AI configuration from config.json.
-*   **Get Ai Service**: Factory function to get an AI service instance.
-*   **Load Previous Code State**: This method is deprecated and now returns an empty dictionary.
-*   **Generate Change Summary**: Compare two code states and generate a summary of changes.
-*   **Generate Use Case Diagram**: Generates a UML Use Case diagram in Mermaid syntax.
-*   **Generate Bpmn Diagram**: Generates a BPMN diagram in Mermaid syntax.
-*   **Generate Dynamic Sections**: Generate the dynamic sections of the README file.
-*   **Generate Project Description**: Analyze the repository to generate a project description.
-*   **Generate Project Map**: Generate a markdown tree of the project structure with a Mermaid diagram.
-*   **Analyze Repository**: Analyze the repository to generate a summary.
+*   **Set-and-Forget Automation**: Automatically keeps your project documentation and versioning in sync with your code, saving you manual effort on every update.
+*   **AI-Powered Documentation**: Automatically drafts FAQs, User Stories, and Use Cases by analyzing your code structure with AI, ensuring your README is professional even if you haven't written a word.
+*   **Intelligent Version Management**: Handles semantic versioning (Major.Minor.Patch) automatically, calculating the right bump based on your actual code changes.
+*   **Automatic Architecture Charts**: Creates UML Use Case diagrams to visually communicate project goals and user interactions to stakeholders.
+*   **Visual Logic Maps**: Automatically generates process diagrams (BPMN) in Mermaid syntax to show how your code's logic flows visually.
+*   **Comprehensive Project Analysis**: Gains a birds-eye view of your codebase with automatic calculation of line counts, language distribution, and complexity metrics.
 *   **Suggest Version Bump**: Suggest a version bump based on the change summary.
-*   **Update Changelog**: Update the ndaversis_logs.py file with the new entry.
-*   **Generate User Benefit Analysis**: Generate the 7-step analysis for the 'What's Good for the User' section.
-*   **Infer Goals From Summary**: Infer the goals of the changes from the change summary.
-*   **Suggest Next Steps**: Suggest next steps for the project.
-*   **Generate Readme Content**: Generate the entire content of the README file.
-*   **Update Readme**: Update the readme.md file with the new content.
-*   **Main Cli**: Run the command-line interface.
-*   **Main Gui**: Run the tkinter GUI.
-*   **Health Check**: Runs a health check on the project setup.
-*   **Install Pre Commit Hook**: Installs a pre-commit hook.
+*   **Instant README Refresh**: Keeps your entire project front-page up-to-date with structural maps, dependency graphs, and latest feature lists in one click.
+*   **User-Friendly Interface**: Provides a sleek graphical window for managing your project updates, making it accessible even for those who avoid the terminal.
+*   **Project Integrity Check**: Automatically verifies your environment and configuration to ensure everything is set up for flawless automation.
+*   **Set-and-Forget Workflow**: One-time integration into your Git workflow that triggers documentation and version updates automatically before every commit.
 
 ## 8. Requirements
 
-*   google-genai
-*   openai
-*   anthropic
-*   deepseek
+To run this project, you will need to install the following libraries:
+
+*   `anthropic`
+*   `deepseek`
+*   `google-genai`
+*   `openai`
 
 ## 9. Install
 
-To install the required dependencies, run:
+1.  Install the required dependencies:
 
-```bash
-pip install -r requirements.txt
-```
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  (Optional) For true 'set and forget' automation, install the pre-commit hook:
+
+    ```bash
+    python ndaversis.py install-hook
+    ```
 
 ## 11. Modules Map
 
@@ -211,14 +199,26 @@ classDiagram
 
 ## 12. Dependencies Map
 
-*   No external dependencies.
+This project relies on the following external libraries to function properly:
 
+*   **anthropic**: Provides essential functionality for the system.
+*   **deepseek**: Provides essential functionality for the system.
+*   **google-genai**: Provides essential functionality for the system.
+*   **openai**: Provides essential functionality for the system.
 
-### Dependency Graph
+### Library Dependency Diagram
 
 ```mermaid
 graph TD
-    Project --> StdLib[Standard Library]
+    Project --> lang_PY["PY Overiew (2 files)"]
+    lang_PY --> anthropic["anthropic"]
+    lang_PY --> deepseek["deepseek"]
+    lang_PY --> google_genai["google-genai"]
+    lang_PY --> openai["openai"]
+    Project --> lang_JSON["JSON Overiew (2 files)"]
+    Project --> lang_NO EXTENSION["NO EXTENSION Overiew (2 files)"]
+    Project --> lang_TXT["TXT Overiew (2 files)"]
+    Project --> lang_MD["MD Overiew (1 files)"]
 ```
 
 ## 10. Project Map
@@ -253,13 +253,87 @@ graph TD
 
 ## 13. Last Version Summary
 
-The last version is `0.0.38`. Summary of major changes:
+The last version is `0.0.40`. Summary of major changes:
 Improved logic in: ./ndaversis.py
 Improved logic in: ./ndaversis_logs.py
 Improved logic in: ./ndaversis_state.json
 Improved logic in: ./readme.md
 
 ## 14. Version History
+## Version 0.0.40
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants an effortless way to keep project documentation and versioning accurate without manual updates every time the code changes.
+
+### 2. Evaluation of the repository Solution
+The solution provides true automation, scanning the codebase locally to refresh the README and manage semantic versioning instantly.
+
+### 3. Core Functionality
+Automated maintenance of 51 functional components across 7 classes, keeping the repository's identity in sync with its code.
+
+### 4. Safety & Side Effects
+The script operates safely on local files, with the only major 'side effect' being that you'll have more time to focus on actual development.
+
+### 5. Completeness
+It addresses the complete lifecycle of project metadata—from version bumps to detailed feature extraction—all in one place.
+
+### 6. Assessment
+This is a high-utility automation tool that transforms the chore of documentation into a 'set and forget' background process.
+
+### 7. Is that good result?
+Yes, it's a fantastic result for any developer who values their time and wants their project to always appear up-to-date and professional.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
+## Version 0.0.39
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants an effortless way to keep project documentation and versioning accurate without manual updates every time the code changes.
+
+### 2. Evaluation of the repository Solution
+The solution provides true automation, scanning the codebase locally to refresh the README and manage semantic versioning instantly.
+
+### 3. Core Functionality
+Automated maintenance of 51 functional components across 7 classes, keeping the repository's identity in sync with its code.
+
+### 4. Safety & Side Effects
+The script operates safely on local files, with the only major 'side effect' being that you'll have more time to focus on actual development.
+
+### 5. Completeness
+It addresses the complete lifecycle of project metadata—from version bumps to detailed feature extraction—all in one place.
+
+### 6. Assessment
+This is a high-utility automation tool that transforms the chore of documentation into a 'set and forget' background process.
+
+### 7. Is that good result?
+Yes, it's a fantastic result for any developer who values their time and wants their project to always appear up-to-date and professional.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
 ## Version 0.0.38
 ### Goals
 The main goals were to refine existing features for better performance and reliability.
