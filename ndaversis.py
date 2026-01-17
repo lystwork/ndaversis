@@ -52,7 +52,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.40"
+__version__ = "0.0.41"
 
 # --- AI Service Classes ---
 class AIService:
@@ -437,19 +437,18 @@ class Ndaversis:
                         "methods": methods
                     }
                 elif isinstance(node, ast.Import):
-                    features["imports"].update(alias.name for alias in node.names)
+                    for alias in node.names:
+                        features["imports"].add(alias.name.split('.')[0])
                 elif isinstance(node, ast.ImportFrom) and node.module:
-                    features["imports"].add(node.module)
+                    features["imports"].add(node.module.split('.')[0])
                 elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name not in method_names:
-                    # Skip nested functions for the main functions list to avoid noise
-                    if not any(isinstance(parent, (ast.FunctionDef, ast.ClassDef)) for parent in ast.walk(node)): # This is not correct for ast.walk
-                        pass
-                    
-                    docstring = ast.get_docstring(node)
-                    features["functions"][node.name] = {
-                        "args": [arg.arg for arg in node.args.args],
-                        "docstring": docstring if docstring else "",
-                    }
+                    # Only add if it's a top-level function (direct child of Module)
+                    if any(module_item == node for module_item in tree.body):
+                        docstring = ast.get_docstring(node)
+                        features["functions"][node.name] = {
+                            "args": [arg.arg for arg in node.args.args],
+                            "docstring": docstring if docstring else "",
+                        }
         except (SyntaxError, IOError, UnicodeDecodeError):
             pass
         return code
@@ -681,14 +680,13 @@ class Ndaversis:
             items = self._generate_section("3. Use Cases", analysis_data, "Use Case:", "*   **{name}**: {doc}\n")
             content_items = items.replace("## 3. Use Cases\n\n", "").strip()
             if not content_items:
-                # Universal fallback based on detected functions and classes
-                items_to_use = [item for item in list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys()) if not item.startswith("_")]
-                if items_to_use:
-                    for item in items_to_use[:5]:
-                        display_name = item.replace('_', ' ').title()
-                        use_cases += f"*   **Automate {display_name}**: Keep the documentation for `{item}` updated automatically without any manual intervention.\n"
-                else:
-                    use_cases += "*   **Set and Forget Documentation**: Use this tool to ensure your project's README and versioning always reflect the latest code changes.\n"
+                # Professional developer-centric use cases
+                use_cases += (
+                    "*   **Automated Release Cycles**: Integrate version bumping into CI/CD pipelines for touchless releases.\n"
+                    "*   **Dynamic Documentation Sync**: Ensure the repository's 'front window' (README) always matches the latest architectural changes.\n"
+                    "*   **Offline Repository Health**: Audit codebase metrics and structure without needing external tool connectivity.\n"
+                    "*   **Standardized Semantic Versioning**: Enforce consistent versioning across monolithic or microservice projects automatically.\n"
+                )
             else:
                 use_cases += content_items + "\n"
 
@@ -700,16 +698,16 @@ class Ndaversis:
             user_stories += "\n\n### BPMN Diagram\n\n"
             user_stories += f"```mermaid\n{self.generate_bpmn_diagram(analysis_data)}\n```\n"
         else:
-            items = self._generate_section("4. User Stories", analysis_data, "User Story:", "*   **As a user,** I want to be able to {name}, so that {doc}.\n")
+            items = self._generate_section("4. User Stories", analysis_data, "User Story:", "*   **As a {role},** I want to {action}, so that {benefit}.\n")
             content_items = items.replace("## 4. User Stories\n\n", "").strip()
             if not content_items:
-                items_to_use = [item for item in list(analysis_data.get("functions", {}).keys()) + list(analysis_data.get("classes", {}).keys()) if not item.startswith("_")]
-                if items_to_use:
-                    for item in items_to_use[:5]:
-                        display_name = item.replace('_', ' ').title()
-                        user_stories += f"*   **Efficiency Loop**: As a developer, I want my `{item}` functionality to be documented automatically so I can focus on building features instead of writing docs.\n"
-                else:
-                    user_stories += "*   **Peace of Mind**: As a project maintainer, I want my versioning and README to stay in sync with my code automatically so I never have to worry about stale information.\n"
+                # Expert-level technical user stories
+                user_stories += (
+                    "*   **DevOps Engineer**: As a DevOps engineer, I want documentation to refresh on every commit, so that the team always sees the current state without manual edits.\n"
+                    "*   **Open Source Maintainer**: As a maintainer, I want semantic versioning to be calculated from code changes, so that I can avoid human error during release tags.\n"
+                    "*   **Full-Stack Developer**: As a developer, I want a visual map of my project structure, so that I can quickly onboard new contributors or navigate complex repos.\n"
+                    "*   **Project Lead**: As a lead, I want to track code metrics like comments vs code ratios, so that I can maintain high quality and documentation standards.\n"
+                )
             else:
                 user_stories += content_items + "\n"
 
@@ -828,23 +826,42 @@ class Ndaversis:
         # All unique external libraries (from both file and detection)
         all_deps = analysis_data.get("requirements", set()) | {d for d in analysis_data.get("imports", []) if d not in stdlib_modules}
         
+        # Languages used
+        languages = analysis_data.get("languages", {})
+        if languages:
+            requirements += "### Languages & Environments\n"
+            for ext, count in sorted(languages.items(), key=lambda x: x[1], reverse=True):
+                lang_name = ext.replace(".", "").upper() or "Plain Text / Other"
+                requirements += f"*   **{lang_name}**: Primary development language ({count} files detected)."
+                if ext == ".py":
+                    requirements += " Requires Python 3.8+."
+                requirements += "\n"
+            requirements += "\n"
+
         if all_deps:
-            requirements += "To run this project, you will need to install the following libraries:\n\n"
+            requirements += "### External Libraries\n"
+            requirements += "To run this project, ensure you have the following packages installed:\n\n"
             for dep in sorted(all_deps):
                 requirements += f"*   `{dep}`\n"
-        else:
-            requirements += "*   Python 3.6+ (No external libraries required)\n"
+            requirements += "\n"
+        
+        requirements += "### Services & APIs (Optional)\n"
+        requirements += "*   **Vertex AI / Google Gemini**: For AI-powered content generation.\n"
+        requirements += "*   **OpenAI / Anthropic / DeepSeek**: Alternative AI providers supported by the system.\n\n"
 
         # --- Install ---
         install = "## 9. Install\n\n"
         if os.path.exists("requirements.txt"):
-            install += "1.  Install the required dependencies:\n\n    ```bash\n    pip install -r requirements.txt\n    ```\n\n"
-        elif os.path.exists("setup.py") or os.path.exists("pyproject.toml"):
-            install += "1.  Install the project in editable mode:\n\n    ```bash\n    pip install -e .\n    ```\n\n"
+            install += "### Automated Installation (Recommended)\n\n"
+            install += "1.  Install all required dependencies using pip:\n\n    ```bash\n    pip install -r requirements.txt\n    ```\n\n"
+        elif all_deps:
+            install += "### Manual Installation\n\n"
+            install += "1.  Install the required dependencies manually:\n\n    ```bash\n    pip install " + " ".join(sorted(all_deps)) + "\n    ```\n\n"
         else:
-            install += "1.  Clone the repository and ensure you have Python 3.6+ installed.\n\n"
+            install += "1.  Clone the repository and ensure you have Python installed.\n\n"
         
-        install += "2.  (Optional) For true 'set and forget' automation, install the pre-commit hook:\n\n    ```bash\n    python ndaversis.py install-hook\n    ```\n"
+        install += "### Integration\n"
+        install += "2.  For true 'set and forget' automation, install the pre-commit hook:\n\n    ```bash\n    python ndaversis.py install-hook\n    ```\n"
 
         # --- Modules Map ---
         modules_map = "## 11. Modules Map\n\n"
@@ -884,22 +901,21 @@ class Ndaversis:
             # Group by language if multiple languages exist
             languages = analysis_data.get("languages", {})
             if len(languages) > 1:
-                # Group dependencies under language nodes
-                # Note: We don't strictly know which lib belongs to which language here 
-                # without deeper analysis, but for now we'll assume Python since it's a Python tool.
-                # In a more complex repo, we'd need to map.
                 for lang_ext, count in languages.items():
-                    lang_name = lang_ext.replace(".", "").upper() or "Unknown"
-                    lang_id = f"lang_{lang_name}"
-                    dependencies_map += f"    {project_node} --> {lang_id}[\"{lang_name} Overiew ({count} files)\"]\n"
-                    # For simplicity, since this is a python project, link python libs to Python node
+                    lang_name = lang_ext.replace(".", "").upper() or "OTHER"
+                    # Sanitize language ID for Mermaid
+                    lang_id = f"lang_{lang_name.replace(' ', '_').replace('-', '_')}"
+                    dependencies_map += f"    {project_node} --> {lang_id}[\"{lang_name} Overview ({count} files)\"]\n"
+                    
+                    # For Python projects, link all detected libraries to the Python node
                     if lang_ext == ".py":
                         for dep in sorted(all_deps):
-                            node_id = dep.replace("-", "_").replace(".", "_")
+                            # Sanitize library ID for Mermaid
+                            node_id = f"dep_{dep.replace('-', '_').replace('.', '_')}"
                             dependencies_map += f"    {lang_id} --> {node_id}[\"{dep}\"]\n"
             else:
                 for dep in sorted(all_deps):
-                    node_id = dep.replace("-", "_").replace(".", "_")
+                    node_id = f"dep_{dep.replace('-', '_').replace('.', '_')}"
                     dependencies_map += f"    {project_node} --> {node_id}[\"{dep}\"]\n"
         dependencies_map += "```\n"
 
