@@ -1,6 +1,6 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.41`
+**Current Version:** `0.0.43`
 
 ## 2. Description Summary
 
@@ -18,12 +18,12 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 2050 |
-| Code Lines | 1541 |
-| Comment Lines | 173 |
-| Blank Lines | 336 |
+| Total Lines | 2180 |
+| Code Lines | 1598 |
+| Comment Lines | 212 |
+| Blank Lines | 370 |
 | Tabs | 0 |
-| Strings | 1205 |
+| Strings | 1240 |
 
 
 ### Language Breakdown
@@ -69,18 +69,28 @@
 
 ## 6. How To
 
-### Simple Automation
-
-The easiest way to use this is to run it once per update. It will analyze your code, suggest or bump the version, and refresh your README instantly.
-
+### 🚀 Quick Patch Update
+To quickly update your project's version and README after a minor change:
 ```bash
 python ndaversis.py cli --patch
 ```
 
-For true 'set and forget', install the pre-commit hook:
+### 🎨 Using the Graphical Interface
+If you prefer a visual tool, simply run the script without arguments:
+```bash
+python ndaversis.py
+```
 
+### 🔗 Git Pre-Commit Integration
+For a true 'set and forget' experience, integrate it into your Git workflow. This ensures the README and version are updated every time you commit:
 ```bash
 python ndaversis.py install-hook
+```
+
+### 🔍 Detailed Repository Audit
+To see a full analysis of your code metrics and project structure without updating anything:
+```bash
+python ndaversis.py audit
 ```
 
 ## 7. Features
@@ -121,20 +131,25 @@ To run this project, ensure you have the following packages installed:
 
 ## 9. Install
 
-### Automated Installation (Recommended)
+Setting up **NDAVERSIS** is straightforward, even if you are not a technical expert. Follow these steps:
 
-1.  Install all required dependencies using pip:
+### Step 1: Install Python
+Ensure you have Python 3.8 or newer installed on your computer. You can download it from [python.org](https://www.python.org/downloads/).
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+### Step 2: Install Dependencies
+Open your terminal or command prompt, navigate to this folder, and run:
+```bash
+pip install -r requirements.txt
+```
 
-### Integration
-2.  For true 'set and forget' automation, install the pre-commit hook:
+### Step 3: (Optional) Set up AI
+If you want to use AI-powered features, add your API keys to `config.json`. The system supports Gemini, OpenAI, and more.
 
-    ```bash
-    python ndaversis.py install-hook
-    ```
+### Step 4: Run the Tool
+Simply start the tool to initialize your first README update:
+```bash
+python ndaversis.py
+```
 
 ## 11. Modules Map
 
@@ -267,13 +282,88 @@ graph TD
 
 ## 13. Last Version Summary
 
-The last version is `0.0.41`. Summary of major changes:
+The last version is `0.0.43`. Summary of major changes:
 Improved logic in: ./ndaversis.py
 Improved logic in: ./ndaversis_logs.py
 Improved logic in: ./ndaversis_state.json
 Improved logic in: ./readme.md
 
 ## 14. Version History
+## Version 0.0.43
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants a reliable codebase where documentation stays accurate even when internal logic is refactored.
+
+### 2. Evaluation of the repository Solution
+By scanning function signatures and docstrings, the tool ensures the README reflects the latest stable logic.
+
+### 3. Core Functionality
+Automated maintenance of 50 functional components across 7 classes, keeping the repository's identity in sync with its code.
+
+### 4. Safety & Side Effects
+The script operates safely on local files, with the only major 'side effect' being that you'll have more time to focus on actual development.
+
+### 5. Completeness
+It addresses the complete lifecycle of project metadata—from version bumps to detailed feature extraction—all in one place.
+
+### 6. Assessment
+This version strengthens the project's foundation, ensuring documentation remains a source of truth, not a legacy burden.
+
+### 7. Is that good result?
+Yes, it's a fantastic result for any developer who values their time and wants their project to always appear up-to-date and professional.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
+## Version 0.0.42
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+Modified file: ./requirements.txt
+
+### What's Good for the User
+### 1. User's Goal
+The user wants an effortless way to keep project documentation and versioning accurate without manual updates.
+
+### 2. Evaluation of the repository Solution
+The solution provides true automation, scanning the codebase locally to refresh the README instantly.
+
+### 3. Core Functionality
+Automated maintenance of 50 functional components across 7 classes, keeping the repository's identity in sync with its code.
+
+### 4. Safety & Side Effects
+The script operates safely on local files, with the only major 'side effect' being that you'll have more time to focus on actual development.
+
+### 5. Completeness
+It addresses the complete lifecycle of project metadata—from version bumps to detailed feature extraction—all in one place.
+
+### 6. Assessment
+This is a high-utility automation tool that transforms the chore of documentation into a 'set and forget' process.
+
+### 7. Is that good result?
+Yes, it's a fantastic result for any developer who values their time and wants their project to always appear up-to-date and professional.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
 ## Version 0.0.41
 ### Goals
 The main goals were to refine existing features for better performance and reliability.

@@ -52,7 +52,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.41"
+__version__ = "0.0.43"
 
 # --- AI Service Classes ---
 class AIService:
@@ -730,12 +730,19 @@ class Ndaversis:
         how_to = self._generate_section("6. How To", analysis_data, "How To:", "### {name}\n\n{doc}\n\n")
         if how_to.strip() == "## 6. How To":
             how_to += (
-                "### Simple Automation\n\n"
-                "The easiest way to use this is to run it once per update. It will analyze your code, "
-                "suggest or bump the version, and refresh your README instantly.\n\n"
+                "### 🚀 Quick Patch Update\n"
+                "To quickly update your project's version and README after a minor change:\n"
                 "```bash\npython ndaversis.py cli --patch\n```\n\n"
-                "For true 'set and forget', install the pre-commit hook:\n\n"
-                "```bash\npython ndaversis.py install-hook\n```\n"
+                "### 🎨 Using the Graphical Interface\n"
+                "If you prefer a visual tool, simply run the script without arguments:\n"
+                "```bash\npython ndaversis.py\n```\n\n"
+                "### 🔗 Git Pre-Commit Integration\n"
+                "For a true 'set and forget' experience, integrate it into your Git workflow. "
+                "This ensures the README and version are updated every time you commit:\n"
+                "```bash\npython ndaversis.py install-hook\n```\n\n"
+                "### 🔍 Detailed Repository Audit\n"
+                "To see a full analysis of your code metrics and project structure without updating anything:\n"
+                "```bash\npython ndaversis.py audit\n```\n"
             )
 
         # --- Features ---
@@ -851,17 +858,22 @@ class Ndaversis:
 
         # --- Install ---
         install = "## 9. Install\n\n"
-        if os.path.exists("requirements.txt"):
-            install += "### Automated Installation (Recommended)\n\n"
-            install += "1.  Install all required dependencies using pip:\n\n    ```bash\n    pip install -r requirements.txt\n    ```\n\n"
-        elif all_deps:
-            install += "### Manual Installation\n\n"
-            install += "1.  Install the required dependencies manually:\n\n    ```bash\n    pip install " + " ".join(sorted(all_deps)) + "\n    ```\n\n"
-        else:
-            install += "1.  Clone the repository and ensure you have Python installed.\n\n"
+        install += "Setting up **NDAVERSIS** is straightforward, even if you are not a technical expert. Follow these steps:\n\n"
         
-        install += "### Integration\n"
-        install += "2.  For true 'set and forget' automation, install the pre-commit hook:\n\n    ```bash\n    python ndaversis.py install-hook\n    ```\n"
+        install += "### Step 1: Install Python\n"
+        install += "Ensure you have Python 3.8 or newer installed on your computer. You can download it from [python.org](https://www.python.org/downloads/).\n\n"
+        
+        if os.path.exists("requirements.txt"):
+            install += "### Step 2: Install Dependencies\n"
+            install += "Open your terminal or command prompt, navigate to this folder, and run:\n"
+            install += "```bash\npip install -r requirements.txt\n```\n\n"
+        
+        install += "### Step 3: (Optional) Set up AI\n"
+        install += "If you want to use AI-powered features, add your API keys to `config.json`. The system supports Gemini, OpenAI, and more.\n\n"
+        
+        install += "### Step 4: Run the Tool\n"
+        install += "Simply start the tool to initialize your first README update:\n"
+        install += "```bash\npython ndaversis.py\n```\n"
 
         # --- Modules Map ---
         modules_map = "## 11. Modules Map\n\n"
@@ -1083,14 +1095,14 @@ class Ndaversis:
         content += "<!-- AUTO-DESCRIPTION-END -->\n\n"
         return content
 
-    def generate_user_benefit_analysis(self, analysis_data):
+    def generate_user_benefit_analysis(self, analysis_data, change_summary=""):
         """Generate the 7-step analysis for the 'What's Good for the User' section."""
         if self.ai_service:
             prompt = (
                 "Generate a 7-step analysis for the 'What's Good for the User' section "
-                "of a README.md file. Emphasize the 'set-and-forget' automation "
-                "value proposition and human utility. The steps are: User's Goal, "
-                "Evaluation of the repository Solution, Core Functionality, "
+                "of a README.md file based on these changes: " + change_summary + ". "
+                "Emphasize the 'set-and-forget' automation value proposition and human utility. "
+                "The steps are: User's Goal, Evaluation of the repository Solution, Core Functionality, "
                 "Safety & Side Effects, Completeness, Assessment, and Is that good result?"
             )
             return self.ai_service.generate_content(prompt, analysis_data)
@@ -1100,14 +1112,23 @@ class Ndaversis:
         total_components = total_methods + total_funcs
         total_classes = len(analysis_data.get("classes", {}))
         
-        user_goal = (
-            "The user wants an effortless way to keep project documentation and "
-            "versioning accurate without manual updates every time the code changes."
-        )
-        evaluation = (
-            "The solution provides true automation, scanning the codebase locally to "
-            "refresh the README and manage semantic versioning instantly."
-        )
+        # Determine focus based on change summary
+        is_fix = "Modified file" in change_summary or "Fix" in change_summary or "Improved logic" in change_summary
+        is_new = "Added file" in change_summary or "New feature" in change_summary
+        
+        if is_new:
+            user_goal = "The user wants to expand their project's capabilities without spending hours updating documentation for every new file."
+            evaluation = "The system instantly detects new components and integrates them into the project map and feature list automatically."
+            assessment = "This update successfully scales the project's documentation alongside its growth with zero manual overhead."
+        elif is_fix:
+            user_goal = "The user wants a reliable codebase where documentation stays accurate even when internal logic is refactored."
+            evaluation = "By scanning function signatures and docstrings, the tool ensures the README reflects the latest stable logic."
+            assessment = "This version strengthens the project's foundation, ensuring documentation remains a source of truth, not a legacy burden."
+        else:
+            user_goal = "The user wants an effortless way to keep project documentation and versioning accurate without manual updates."
+            evaluation = "The solution provides true automation, scanning the codebase locally to refresh the README instantly."
+            assessment = "This is a high-utility automation tool that transforms the chore of documentation into a 'set and forget' process."
+
         core_functionality = (
             f"Automated maintenance of {total_components} functional components across "
             f"{total_classes} classes, keeping the repository's identity in sync with its code."
@@ -1120,14 +1141,11 @@ class Ndaversis:
             "It addresses the complete lifecycle of project metadata—from version bumps "
             "to detailed feature extraction—all in one place."
         )
-        assessment = (
-            "This is a high-utility automation tool that transforms the chore of "
-            "documentation into a 'set and forget' background process."
-        )
         is_good_result = (
             "Yes, it's a fantastic result for any developer who values their time "
             "and wants their project to always appear up-to-date and professional."
         )
+        
         return (
             f"### 1. User's Goal\n{user_goal}\n\n"
             f"### 2. Evaluation of the repository Solution\n{evaluation}\n\n"
@@ -1189,7 +1207,7 @@ class Ndaversis:
             f"## Version {version}\n"
             f"### Goals\n{self.infer_goals_from_summary(what_changed)}\n\n"
             f"### What Changed\n{what_changed}\n\n"
-            f"### What's Good for the User\n{self.generate_user_benefit_analysis(analysis_data)}\n\n"
+            f"### What's Good for the User\n{self.generate_user_benefit_analysis(analysis_data, what_changed)}\n\n"
             f"### What's Possibly Next\n{self.suggest_next_steps(analysis_data)}\n"
         )
         content += f"{history_start_marker}\n{new_entry}\n\n{existing_history}\n"
