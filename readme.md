@@ -1,6 +1,6 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.44`
+**Current Version:** `0.0.47`
 
 ## 2. Description Summary
 
@@ -18,12 +18,12 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 2289 |
-| Code Lines | 1662 |
-| Comment Lines | 231 |
-| Blank Lines | 396 |
+| Total Lines | 2479 |
+| Code Lines | 1762 |
+| Comment Lines | 273 |
+| Blank Lines | 444 |
 | Tabs | 0 |
-| Strings | 1265 |
+| Strings | 1328 |
 
 
 ### Language Breakdown
@@ -149,8 +149,21 @@ To use Ndaversis with your own code, follow these steps:
 2.  **Initialize**: Run `python ndaversis.py` once to create the initial state.
 3.  **Integrate**: (Optional) Run `python ndaversis.py install-hook` to automate everything via Git.
 
-### Step 4: (Optional) AI Keys
-Add your API keys to `config.json` if you want AI-generated summaries and stories.
+### Step 4: (Optional) Set up AI API Keys 🔑
+To unlock automated summaries and stories, you can add API keys to `config.json`. Here is how:
+
+*   **Google Gemini (Recommended)**: Go to [Google AI Studio](https://aistudio.google.com/), click 'Get API Key'. It usually has a generous FREE tier for individual developers.
+*   **OpenAI (ChatGPT)**: Go to the [OpenAI Platform](https://platform.openai.com/api-keys) to create a key. This is a paid service (pay-as-you-go).
+*   **Anthropic (Claude)**: Visit the [Anthropic Console](https://console.anthropic.com/) to get your key.
+
+**How to use them**: Open `config.json` in this folder and paste your keys like this:
+```json
+{
+  "GEMINI_API_KEY": "your-key-here",
+  "OPENAI_API_KEY": "your-key-here"
+}
+```
+If you leave them blank, the tool will still work perfectly using its built-in 'smart' logic!
 
 ### Step 5: Run
 Start the GUI or CLI to maintain your project:
@@ -238,11 +251,12 @@ classDiagram
 
 This project relies on the following external libraries to function properly:
 
-*   **anthropic**: Provides essential functionality for the system.
-*   **deepseek**: Provides essential functionality for the system.
-*   **flet**: Provides essential functionality for the system.
-*   **google-genai**: Provides essential functionality for the system.
-*   **openai**: Provides essential functionality for the system.
+*   **anthropic**: Client for Claude, a highly reliable and safe institutional-grade AI.
+*   **deepseek**: Advanced AI provider known for efficient and accurate content generation.
+*   **flet**: Modern framework for building beautiful and fast interactive user interfaces.
+*   **google-genai**: Google's official library for accessing high-performance Gemini AI models.
+*   **openai**: Standard interface for integrating ChatGPT and other OpenAI language models.
+
 
 ### Library Dependency Diagram
 
@@ -292,14 +306,135 @@ graph TD
 
 ## 13. Last Version Summary
 
-The last version is `0.0.44`. Summary of major changes:
+The last version is `0.0.47`. Summary of major changes:
 Improved logic in: ./ndaversis.py
 Improved logic in: ./ndaversis_logs.py
 Improved logic in: ./ndaversis_state.json
 Improved logic in: ./readme.md
-Improved logic in: ./requirements.txt
+
+**Practical Impact**: (**DevOps Engineer** focus) Reduces CI/CD friction by keeping documentation in lockstep with logic.
 
 ## 14. Version History
+## Version 0.0.47
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants a project where the README is always a source of truth, not a legacy burden.
+
+### 2. Evaluation of the repository Solution
+By scanning function signatures, the tool verifies and updates feature lists after every logic change.
+
+### 3. Core Functionality
+Automated maintenance of 50 functional components across 7 classes, ensuring repository identity never drifts from its code.
+
+### 4. Safety & Side Effects
+Operates locally with zero unintended side effects, prioritizing data privacy and developer time.
+
+### 5. Completeness
+Covers the entire project lifecycle—from semantic version bumps to detailed library dependency mapping.
+
+### 6. Assessment
+Strengthens repository integrity, guaranteeing that what the user reads is exactly what the code does.
+
+### 7. Practical Impact (**DevOps Engineer** focus)
+Reduces CI/CD friction by keeping documentation in lockstep with logic.
+
+### 8. Is that good result?
+Absolutely. It ensures the repository always looks professional and technically 'vibrant' to contributors.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
+## Version 0.0.46
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants a project where the README is always a source of truth, not a legacy burden.
+
+### 2. Evaluation of the repository Solution
+By scanning function signatures, the tool verifies and updates feature lists after every logic change.
+
+### 3. Core Functionality
+Automated maintenance of 50 functional components across 7 classes, ensuring repository identity never drifts from its code.
+
+### 4. Safety & Side Effects
+Operates locally with zero unintended side effects, prioritizing data privacy and developer time.
+
+### 5. Completeness
+Covers the entire project lifecycle—from semantic version bumps to detailed library dependency mapping.
+
+### 6. Assessment
+Strengthens repository integrity, guaranteeing that what the user reads is exactly what the code does.
+
+### 7. Practical Impact (**DevOps Engineer** focus)
+Reduces CI/CD friction by keeping documentation in lockstep with logic.
+
+### 8. Is that good result?
+Absolutely. It ensures the repository always looks professional and technically 'vibrant' to contributors.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
+## Version 0.0.45
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants a project where the README is always a source of truth, not a legacy burden.
+
+### 2. Evaluation of the repository Solution
+By scanning function signatures, the tool verifies and updates feature lists after every logic change.
+
+### 3. Core Functionality
+Automated maintenance of 50 functional components across 7 classes, ensuring repository identity never drifts from its code.
+
+### 4. Safety & Side Effects
+Operates locally with zero unintended side effects, prioritizing data privacy and developer time.
+
+### 5. Completeness
+Covers the entire project lifecycle—from semantic version bumps to detailed library dependency mapping.
+
+### 6. Assessment
+Strengthens repository integrity, guaranteeing that what the user reads is exactly what the code does.
+
+### 7. Practical Impact (**DevOps Engineer** focus)
+Reduces CI/CD friction by keeping documentation in lockstep with logic.
+
+### 8. Is that good result?
+Absolutely. It ensures the repository always looks professional and technically 'vibrant' to contributors.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
 ## Version 0.0.44
 ### Goals
 The main goals were to refine existing features for better performance and reliability.

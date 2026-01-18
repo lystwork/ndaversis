@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.44"
+__version__ = "0.0.47"
 
 # --- AI Service Classes ---
 class AIService:
@@ -878,8 +878,14 @@ class Ndaversis:
         install += "2.  **Initialize**: Run `python ndaversis.py` once to create the initial state.\n"
         install += "3.  **Integrate**: (Optional) Run `python ndaversis.py install-hook` to automate everything via Git.\n\n"
         
-        install += "### Step 4: (Optional) AI Keys\n"
-        install += "Add your API keys to `config.json` if you want AI-generated summaries and stories.\n\n"
+        install += "### Step 4: (Optional) Set up AI API Keys 🔑\n"
+        install += "To unlock automated summaries and stories, you can add API keys to `config.json`. Here is how:\n\n"
+        install += "*   **Google Gemini (Recommended)**: Go to [Google AI Studio](https://aistudio.google.com/), click 'Get API Key'. It usually has a generous FREE tier for individual developers.\n"
+        install += "*   **OpenAI (ChatGPT)**: Go to the [OpenAI Platform](https://platform.openai.com/api-keys) to create a key. This is a paid service (pay-as-you-go).\n"
+        install += "*   **Anthropic (Claude)**: Visit the [Anthropic Console](https://console.anthropic.com/) to get your key.\n\n"
+        install += "**How to use them**: Open `config.json` in this folder and paste your keys like this:\n"
+        install += "```json\n{\n  \"GEMINI_API_KEY\": \"your-key-here\",\n  \"OPENAI_API_KEY\": \"your-key-here\"\n}\n```\n"
+        install += "If you leave them blank, the tool will still work perfectly using its built-in 'smart' logic!\n\n"
         
         install += "### Step 5: Run\n"
         install += "Start the GUI or CLI to maintain your project:\n"
@@ -910,7 +916,21 @@ class Ndaversis:
             dependencies_map += "*   No external dependencies.\n"
         else:
             dependencies_map += "This project relies on the following external libraries to function properly:\n\n"
-            dependencies_map += "\n".join([f"*   **{dep}**: Provides essential functionality for the system." for dep in sorted(all_deps)])
+            
+            # Map of known libraries to unique human-readable descriptions
+            dep_descriptions = {
+                "flet": "Modern framework for building beautiful and fast interactive user interfaces.",
+                "google-genai": "Google's official library for accessing high-performance Gemini AI models.",
+                "openai": "Standard interface for integrating ChatGPT and other OpenAI language models.",
+                "anthropic": "Client for Claude, a highly reliable and safe institutional-grade AI.",
+                "deepseek": "Advanced AI provider known for efficient and accurate content generation.",
+                "requests": "Simplifies sending HTTP requests to interact with external APIs.",
+                "pytest": "Industry-standard testing framework for ensuring codebase reliability.",
+            }
+            
+            for dep in sorted(all_deps):
+                desc = dep_descriptions.get(dep.lower(), "Essential library that supports the system's core automation logic.")
+                dependencies_map += f"*   **{dep}**: {desc}\n"
         
         dependencies_map += "\n\n### Library Dependency Diagram\n\n```mermaid\ngraph TD\n"
         project_node = "Project"
@@ -1123,34 +1143,42 @@ class Ndaversis:
         is_fix = "Modified file" in change_summary or "Fix" in change_summary or "Improved logic" in change_summary
         is_new = "Added file" in change_summary or "New feature" in change_summary
         
+        # Practical Impact for different personas
+        impacts = {
+            "DevOps Engineer": "Reduces CI/CD friction by keeping documentation in lockstep with logic.",
+            "Open Source Maintainer": "Eliminates versioning mistakes during rapid release tagging.",
+            "Full-Stack Developer": "Provides an instant architectural map for navigating complex updates.",
+            "Project Lead": "Maintains high documentation standards without recurring manual effort."
+        }
+        
         if is_new:
-            user_goal = "The user wants to expand their project's capabilities without spending hours updating documentation for every new file."
-            evaluation = "The system instantly detects new components and integrates them into the project map and feature list automatically."
-            assessment = "This update successfully scales the project's documentation alongside its growth with zero manual overhead."
+            user_goal = "The user wants to scale their project quickly without documentation becoming a bottleneck."
+            evaluation = "The system instantly integrates new files into the project's structural map and feature lists."
+            assessment = "A major step forward in repo scalability, ensuring that growth never means 'stale docs'."
+            impact_persona = "Full-Stack Developer"
         elif is_fix:
-            user_goal = "The user wants a reliable codebase where documentation stays accurate even when internal logic is refactored."
-            evaluation = "By scanning function signatures and docstrings, the tool ensures the README reflects the latest stable logic."
-            assessment = "This version strengthens the project's foundation, ensuring documentation remains a source of truth, not a legacy burden."
+            user_goal = "The user wants a project where the README is always a source of truth, not a legacy burden."
+            evaluation = "By scanning function signatures, the tool verifies and updates feature lists after every logic change."
+            assessment = "Strengthens repository integrity, guaranteeing that what the user reads is exactly what the code does."
+            impact_persona = "DevOps Engineer"
         else:
-            user_goal = "The user wants an effortless way to keep project documentation and versioning accurate without manual updates."
-            evaluation = "The solution provides true automation, scanning the codebase locally to refresh the README instantly."
-            assessment = "This is a high-utility automation tool that transforms the chore of documentation into a 'set and forget' process."
+            user_goal = "The user wants an effortless way to keep project metadata professional and current."
+            evaluation = "Provides seamless, background synchronization of version info and structural diagrams."
+            assessment = "An essential utility for modern workflows, turning documentation into an automated background service."
+            impact_persona = "Open Source Maintainer"
 
         core_functionality = (
             f"Automated maintenance of {total_components} functional components across "
-            f"{total_classes} classes, keeping the repository's identity in sync with its code."
+            f"{total_classes} classes, ensuring repository identity never drifts from its code."
         )
         safety = (
-            "The script operates safely on local files, with the only major 'side effect' "
-            "being that you'll have more time to focus on actual development."
+            "Operates locally with zero unintended side effects, prioritizing data privacy and developer time."
         )
         completeness = (
-            "It addresses the complete lifecycle of project metadata—from version bumps "
-            "to detailed feature extraction—all in one place."
+            "Covers the entire project lifecycle—from semantic version bumps to detailed library dependency mapping."
         )
         is_good_result = (
-            "Yes, it's a fantastic result for any developer who values their time "
-            "and wants their project to always appear up-to-date and professional."
+            "Absolutely. It ensures the repository always looks professional and technically 'vibrant' to contributors."
         )
         
         return (
@@ -1160,7 +1188,8 @@ class Ndaversis:
             f"### 4. Safety & Side Effects\n{safety}\n\n"
             f"### 5. Completeness\n{completeness}\n\n"
             f"### 6. Assessment\n{assessment}\n\n"
-            f"### 7. Is that good result?\n{is_good_result}\n"
+            f"### 7. Practical Impact (**{impact_persona}** focus)\n{impacts[impact_persona]}\n\n"
+            f"### 8. Is that good result?\n{is_good_result}\n"
         )
 
     def infer_goals_from_summary(self, change_summary):
@@ -1201,7 +1230,21 @@ class Ndaversis:
         content += f"The last version is `{version}`. Summary of major changes:\n"
         # Make the summary a bit more descriptive if it's just a list of files
         descriptive_summary = what_changed.replace("Added file:", "New feature added:").replace("Modified file:", "Improved logic in:").replace("Removed file:", "Cleanup in:")
-        content += f"{descriptive_summary}\n\n"
+        content += f"{descriptive_summary}\n"
+        
+        # Robustly extract Practical Impact for Section 13
+        benefit_text = self.generate_user_benefit_analysis(analysis_data, what_changed)
+        practical_impact = "Significant improvement to project maintainability and documentation sync."
+        if "### 7. Practical Impact" in benefit_text:
+            try:
+                impact_lines = [line.strip() for line in benefit_text.split("### 7. Practical Impact")[1].strip().split("\n") if line.strip()]
+                if len(impact_lines) >= 1:
+                    practical_impact = impact_lines[0]
+                    if len(impact_lines) >= 2:
+                        practical_impact += f" {impact_lines[1]}"
+            except (IndexError, AttributeError):
+                pass
+        content += f"\n**Practical Impact**: {practical_impact}\n\n"
         history_start_marker, history_end_marker = "## 14. Version History", "## 15. Contacts"
         try:
             with open(README_FILE, "r", encoding="utf-8") as f:
