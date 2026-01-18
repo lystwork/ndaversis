@@ -133,6 +133,10 @@ To run this project, ensure you have the following packages installed:
 ## 9. Install
 
 Setting up **NDAVERSIS** is straightforward. You can use it in a fresh environment or join it with an existing project.
+It scans your project, generates/updates README.md with semantic content, manages version bumps based on changes, 
+and logs progress in ndaversis_logs.py while storing state in ndaversis_state.json.
+Use it for any repo needing automated docs and versioning during development cycles.
+
 
 ### Step 1: Install Python
 Ensure you have Python 3.8 or newer. Download it from [python.org](https://www.python.org/downloads/).
