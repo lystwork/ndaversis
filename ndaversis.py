@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.47"
+__version__ = "0.0.48"
 
 # --- AI Service Classes ---
 class AIService:
@@ -834,9 +834,11 @@ class Ndaversis:
 
         # --- Requirements ---
         requirements = "## 8. Requirements\n\n"
-        stdlib_modules = set(sys.stdlib_module_names)
-        # All unique external libraries (from both file and detection)
-        all_deps = analysis_data.get("requirements", set()) | {d for d in analysis_data.get("imports", []) if d not in stdlib_modules}
+        stdlib_modules = set(sys.stdlib_module_names) | {"typing", "pkg_resources", "argparse", "datetime", "json", "os", "re", "sys", "ast", "getpass", "difflib", "time"}
+        
+        detected_imports = set(analysis_data.get("imports", []))
+        external_deps = (analysis_data.get("requirements", set()) | {d for d in detected_imports if d not in stdlib_modules})
+        stdlib_deps = {d for d in detected_imports if d in stdlib_modules}
         
         # Languages used
         languages = analysis_data.get("languages", {})
@@ -847,13 +849,15 @@ class Ndaversis:
                 requirements += f"*   **{lang_name}**: Primary development language ({count} files detected)."
                 if ext == ".py":
                     requirements += " Requires Python 3.8+."
-                requirements += "\n"
-            requirements += "\n"
+        if stdlib_deps:
+            requirements += "### Built-in Standard Library (Included with Python)\n"
+            requirements += "The following modules are part of Python's standard library and **do not** require external installation:\n\n"
+            requirements += ", ".join([f"`{d}`" for d in sorted(stdlib_deps)]) + "\n\n"
 
-        if all_deps:
-            requirements += "### External Libraries\n"
-            requirements += "To run this project, ensure you have the following packages installed:\n\n"
-            for dep in sorted(all_deps):
+        if external_deps:
+            requirements += "### External Libraries (Must be installed)\n"
+            requirements += "To run this project, ensure you have the following packages installed via `pip`:\n\n"
+            for dep in sorted(external_deps):
                 requirements += f"*   `{dep}`\n"
             requirements += "\n"
         
@@ -912,25 +916,35 @@ class Ndaversis:
 
         # --- Dependencies Map ---
         dependencies_map = "## 12. Dependencies Map\n\n"
-        if not all_deps:
-            dependencies_map += "*   No external dependencies.\n"
+        
+        # Re-calc lists for descriptions
+        all_external = (analysis_data.get("requirements", set()) | {d for d in detected_imports if d not in stdlib_modules})
+        all_built_in = {d for d in detected_imports if d in stdlib_modules}
+        all_deps = all_external | all_built_in
+
+        if not all_external and not all_built_in:
+            dependencies_map += "*   No external or built-in dependencies detected.\n"
         else:
-            dependencies_map += "This project relies on the following external libraries to function properly:\n\n"
-            
-            # Map of known libraries to unique human-readable descriptions
-            dep_descriptions = {
-                "flet": "Modern framework for building beautiful and fast interactive user interfaces.",
-                "google-genai": "Google's official library for accessing high-performance Gemini AI models.",
-                "openai": "Standard interface for integrating ChatGPT and other OpenAI language models.",
-                "anthropic": "Client for Claude, a highly reliable and safe institutional-grade AI.",
-                "deepseek": "Advanced AI provider known for efficient and accurate content generation.",
-                "requests": "Simplifies sending HTTP requests to interact with external APIs.",
-                "pytest": "Industry-standard testing framework for ensuring codebase reliability.",
-            }
-            
-            for dep in sorted(all_deps):
-                desc = dep_descriptions.get(dep.lower(), "Essential library that supports the system's core automation logic.")
-                dependencies_map += f"*   **{dep}**: {desc}\n"
+            if all_external:
+                dependencies_map += "### Custom/External Frameworks\n\n"
+                dep_descriptions = {
+                    "flet": "Modern framework for building beautiful and fast interactive user interfaces.",
+                    "google-genai": "Google's official library for accessing high-performance Gemini AI models.",
+                    "openai": "Standard interface for integrating ChatGPT and other OpenAI language models.",
+                    "anthropic": "Client for Claude, a highly reliable and safe institutional-grade AI.",
+                    "deepseek": "Advanced AI provider known for efficient and accurate content generation.",
+                    "requests": "Simplifies sending HTTP requests to interact with external APIs.",
+                    "pytest": "Industry-standard testing framework for ensuring codebase reliability.",
+                }
+                for dep in sorted(all_external):
+                    desc = dep_descriptions.get(dep.lower(), "Specialized library that supports the system's core automation logic.")
+                    dependencies_map += f"*   **{dep}** (pip): {desc}\n"
+                dependencies_map += "\n"
+
+            if all_built_in:
+                dependencies_map += "### Python Standard Library (Built-in)\n\n"
+                dependencies_map += "These modules are built into Python (no installation required):\n\n"
+                dependencies_map += ", ".join([f"`{d}`" for d in sorted(all_built_in)]) + "\n"
         
         dependencies_map += "\n\n### Library Dependency Diagram\n\n```mermaid\ngraph TD\n"
         project_node = "Project"
