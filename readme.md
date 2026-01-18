@@ -1,6 +1,6 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.43`
+**Current Version:** `0.0.44`
 
 ## 2. Description Summary
 
@@ -18,12 +18,12 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 2180 |
-| Code Lines | 1598 |
-| Comment Lines | 212 |
-| Blank Lines | 370 |
+| Total Lines | 2289 |
+| Code Lines | 1662 |
+| Comment Lines | 231 |
+| Blank Lines | 396 |
 | Tabs | 0 |
-| Strings | 1240 |
+| Strings | 1265 |
 
 
 ### Language Breakdown
@@ -121,6 +121,7 @@ To run this project, ensure you have the following packages installed:
 
 *   `anthropic`
 *   `deepseek`
+*   `flet`
 *   `google-genai`
 *   `openai`
 
@@ -131,30 +132,37 @@ To run this project, ensure you have the following packages installed:
 
 ## 9. Install
 
-Setting up **NDAVERSIS** is straightforward, even if you are not a technical expert. Follow these steps:
+Setting up **NDAVERSIS** is straightforward. You can use it in a fresh environment or join it with an existing project.
 
 ### Step 1: Install Python
-Ensure you have Python 3.8 or newer installed on your computer. You can download it from [python.org](https://www.python.org/downloads/).
+Ensure you have Python 3.8 or newer. Download it from [python.org](https://www.python.org/downloads/).
 
-### Step 2: Install Dependencies
-Open your terminal or command prompt, navigate to this folder, and run:
+### Step 2: Clone & Setup
+Clone this repository and install the framework dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 3: (Optional) Set up AI
-If you want to use AI-powered features, add your API keys to `config.json`. The system supports Gemini, OpenAI, and more.
+### Step 3: Join with Your Project 🚀
+To use Ndaversis with your own code, follow these steps:
+1.  **Copy**: Copy `ndaversis.py` and `requirements.txt` into your project's root folder.
+2.  **Initialize**: Run `python ndaversis.py` once to create the initial state.
+3.  **Integrate**: (Optional) Run `python ndaversis.py install-hook` to automate everything via Git.
 
-### Step 4: Run the Tool
-Simply start the tool to initialize your first README update:
+### Step 4: (Optional) AI Keys
+Add your API keys to `config.json` if you want AI-generated summaries and stories.
+
+### Step 5: Run
+Start the GUI or CLI to maintain your project:
 ```bash
 python ndaversis.py
 ```
 
 ## 11. Modules Map
 
-*   `ndaversis_logs.py`: Python module.
-*   `ndaversis.py`: Ndaversis: Agentic Semantic Version Information System.
+*   **ndaversis_logs.py**: Core logic and definitions for ndaversis_logs.py
+*   **ndaversis.py**: Ndaversis: Agentic Semantic Version Information System.
+
 
 ### Module Structure Diagram
 
@@ -232,6 +240,7 @@ This project relies on the following external libraries to function properly:
 
 *   **anthropic**: Provides essential functionality for the system.
 *   **deepseek**: Provides essential functionality for the system.
+*   **flet**: Provides essential functionality for the system.
 *   **google-genai**: Provides essential functionality for the system.
 *   **openai**: Provides essential functionality for the system.
 
@@ -242,6 +251,7 @@ graph TD
     Project --> lang_PY["PY Overview (2 files)"]
     lang_PY --> dep_anthropic["anthropic"]
     lang_PY --> dep_deepseek["deepseek"]
+    lang_PY --> dep_flet["flet"]
     lang_PY --> dep_google_genai["google-genai"]
     lang_PY --> dep_openai["openai"]
     Project --> lang_JSON["JSON Overview (2 files)"]
@@ -282,13 +292,52 @@ graph TD
 
 ## 13. Last Version Summary
 
-The last version is `0.0.43`. Summary of major changes:
+The last version is `0.0.44`. Summary of major changes:
 Improved logic in: ./ndaversis.py
 Improved logic in: ./ndaversis_logs.py
 Improved logic in: ./ndaversis_state.json
 Improved logic in: ./readme.md
+Improved logic in: ./requirements.txt
 
 ## 14. Version History
+## Version 0.0.44
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+Modified file: ./requirements.txt
+
+### What's Good for the User
+### 1. User's Goal
+The user wants a reliable codebase where documentation stays accurate even when internal logic is refactored.
+
+### 2. Evaluation of the repository Solution
+By scanning function signatures and docstrings, the tool ensures the README reflects the latest stable logic.
+
+### 3. Core Functionality
+Automated maintenance of 50 functional components across 7 classes, keeping the repository's identity in sync with its code.
+
+### 4. Safety & Side Effects
+The script operates safely on local files, with the only major 'side effect' being that you'll have more time to focus on actual development.
+
+### 5. Completeness
+It addresses the complete lifecycle of project metadata—from version bumps to detailed feature extraction—all in one place.
+
+### 6. Assessment
+This version strengthens the project's foundation, ensuring documentation remains a source of truth, not a legacy burden.
+
+### 7. Is that good result?
+Yes, it's a fantastic result for any developer who values their time and wants their project to always appear up-to-date and professional.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
 ## Version 0.0.43
 ### Goals
 The main goals were to refine existing features for better performance and reliability.

@@ -24,8 +24,6 @@ Core features include:
 """
 import os
 import re
-import tkinter as tk
-from tkinter import messagebox
 import argparse
 import sys
 import ast
@@ -33,6 +31,13 @@ import json
 import datetime
 import getpass
 from typing import Optional
+
+# Flet for modern GUI
+try:
+    import flet as ft
+except ImportError:
+    ft = None
+
 # import google.generativeai as genai
 # import openai
 # import anthropic
@@ -52,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.43"
+__version__ = "0.0.44"
 
 # --- AI Service Classes ---
 class AIService:
@@ -858,34 +863,36 @@ class Ndaversis:
 
         # --- Install ---
         install = "## 9. Install\n\n"
-        install += "Setting up **NDAVERSIS** is straightforward, even if you are not a technical expert. Follow these steps:\n\n"
+        install += "Setting up **NDAVERSIS** is straightforward. You can use it in a fresh environment or join it with an existing project.\n\n"
         
         install += "### Step 1: Install Python\n"
-        install += "Ensure you have Python 3.8 or newer installed on your computer. You can download it from [python.org](https://www.python.org/downloads/).\n\n"
+        install += "Ensure you have Python 3.8 or newer. Download it from [python.org](https://www.python.org/downloads/).\n\n"
         
-        if os.path.exists("requirements.txt"):
-            install += "### Step 2: Install Dependencies\n"
-            install += "Open your terminal or command prompt, navigate to this folder, and run:\n"
-            install += "```bash\npip install -r requirements.txt\n```\n\n"
+        install += "### Step 2: Clone & Setup\n"
+        install += "Clone this repository and install the framework dependencies:\n"
+        install += "```bash\npip install -r requirements.txt\n```\n\n"
         
-        install += "### Step 3: (Optional) Set up AI\n"
-        install += "If you want to use AI-powered features, add your API keys to `config.json`. The system supports Gemini, OpenAI, and more.\n\n"
+        install += "### Step 3: Join with Your Project 🚀\n"
+        install += "To use Ndaversis with your own code, follow these steps:\n"
+        install += "1.  **Copy**: Copy `ndaversis.py` and `requirements.txt` into your project's root folder.\n"
+        install += "2.  **Initialize**: Run `python ndaversis.py` once to create the initial state.\n"
+        install += "3.  **Integrate**: (Optional) Run `python ndaversis.py install-hook` to automate everything via Git.\n\n"
         
-        install += "### Step 4: Run the Tool\n"
-        install += "Simply start the tool to initialize your first README update:\n"
+        install += "### Step 4: (Optional) AI Keys\n"
+        install += "Add your API keys to `config.json` if you want AI-generated summaries and stories.\n\n"
+        
+        install += "### Step 5: Run\n"
+        install += "Start the GUI or CLI to maintain your project:\n"
         install += "```bash\npython ndaversis.py\n```\n"
 
         # --- Modules Map ---
         modules_map = "## 11. Modules Map\n\n"
-        modules_map_items = []
-        for file_path, file_data in analysis_data.get("files", {}).items():
-            doc = file_data.get('docstring', '').splitlines()
-            desc = doc[0].strip() if doc else "Python module."
-            modules_map_items.append(f"*   `{os.path.basename(file_path)}`: {desc}")
-        
-        if not modules_map_items:
-            modules_map_items = [f"*   `{os.path.basename(fp)}`: Python module." for fp in analysis_data.get("files", {}).keys()]
-        modules_map += "\n".join(modules_map_items)
+        for filepath, data in analysis_data.get("files", {}).items():
+            basename = os.path.basename(filepath)
+            doc = data.get("docstring", "").split("\n")[0].strip()
+            if not doc:
+                doc = "Core logic and definitions for " + basename
+            modules_map += f"*   **{basename}**: {doc}\n"
         modules_map += "\n\n### Module Structure Diagram\n\n```mermaid\nclassDiagram\n"
         if not analysis_data.get("classes"):
             modules_map += "    class MainModule {\n        +main()\n    }\n"
@@ -1266,43 +1273,106 @@ class Ndaversis:
 
         print(f"Version updated to {self.version}")
 
-    def main_gui(self, test_mode=False):
-        """Run the tkinter GUI."""
-        if test_mode:
-            self.version.increment_patch()
-            self.save_version(str(self.version))
-            print("GUI test mode complete.")
+    def main_gui(self):
+        """Run the Flet GUI."""
+        if not ft:
+            print("Flet not installed. Please run 'pip install flet' to use the GUI.")
             return
 
-        root = tk.Tk()
-        root.title(f"Version Manager - Current Version: {self.version}")
-        tk.Label(root, text="What changed:").pack()
-        changed_entry = tk.Text(root, height=5, width=50)
-        changed_entry.pack()
+        def main(page: ft.Page):
+            page.title = "NDAVERSIS - Project Manager"
+            page.theme_mode = ft.ThemeMode.DARK
+            page.padding = 40
+            page.window_width = 600
+            page.window_height = 700
+            page.scroll = ft.ScrollMode.ADAPTIVE
 
-        def update_and_close(increment_func):
-            increment_func()
-            what_changed = changed_entry.get("1.0", tk.END).strip()
-            analysis_data, _ = self._analyze_codebase()
-            readme_content = self.generate_readme_content(self.version, analysis_data, what_changed)
-            self.update_readme(readme_content)
-            self.save_version(str(self.version))
-            messagebox.showinfo("Success", f"Version updated to {self.version}")
-            root.destroy()
+            # Header
+            header = ft.Column([
+                ft.Text("NDAVERSIS", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_400),
+                ft.Text(f"Current Version: {self.version}", size=16, color=ft.Colors.GREY_400),
+                ft.Divider(height=20)
+            ])
 
-        major_button = tk.Button(
-            root, text="Increment Major", command=lambda: update_and_close(self.version.increment_major)
-        )
-        major_button.pack()
-        minor_button = tk.Button(
-            root, text="Increment Minor", command=lambda: update_and_close(self.version.increment_minor)
-        )
-        minor_button.pack()
-        patch_button = tk.Button(
-            root, text="Increment Patch", command=lambda: update_and_close(self.version.increment_patch)
-        )
-        patch_button.pack()
-        root.mainloop()
+            # Change Input
+            change_input = ft.TextField(
+                label="What changed in this version?",
+                multiline=True,
+                min_lines=3,
+                max_lines=5,
+                hint_text="e.g., Improved logic in ndaversis.py, added Flet GUI",
+                border_color=ft.Colors.BLUE_200
+            )
+
+            # Progress Indicators
+            status_text = ft.Text("", italic=True, color=ft.Colors.GREEN_400)
+            pb = ft.ProgressBar(width=400, color="blue", bgcolor="#eeeeee", visible=False)
+
+            def on_increment(increment_type):
+                if not change_input.value.strip():
+                    status_text.value = "⚠️ Please describe what changed first!"
+                    status_text.color = ft.Colors.ORANGE_400
+                    page.update()
+                    return
+
+                status_text.value = f"Processing {increment_type} update..."
+                status_text.color = ft.Colors.BLUE_400
+                pb.visible = True
+                page.update()
+
+                try:
+                    # Logic
+                    if increment_type == "Major":
+                        self.version.increment_major()
+                    elif increment_type == "Minor":
+                        self.version.increment_minor()
+                    else:
+                        self.version.increment_patch()
+
+                    what_changed = change_input.value.strip()
+                    analysis_data, _ = self._analyze_codebase()
+                    readme_content = self.generate_readme_content(self.version, analysis_data, what_changed)
+                    self.update_readme(readme_content)
+                    self.save_version(str(self.version))
+
+                    status_text.value = f"✅ Success! Version updated to {self.version}"
+                    status_text.color = ft.Colors.GREEN_400
+                    pb.visible = False
+                    change_input.value = ""
+                    page.update()
+                    
+                    # Small delay before closing
+                    import time
+                    time.sleep(1.5)
+                    page.window_close()
+                except Exception as e:
+                    status_text.value = f"❌ Error: {str(e)}"
+                    status_text.color = ft.Colors.RED_400
+                    pb.visible = False
+                    page.update()
+
+            # Buttons
+            buttons = ft.Row([
+                ft.ElevatedButton("Patch (+0.0.1)", icon=ft.Icons.UPGRADE, on_click=lambda _: on_increment("Patch"), style=ft.ButtonStyle(color=ft.Colors.GREEN_200)),
+                ft.ElevatedButton("Minor (+0.1.0)", icon=ft.Icons.ROCKET_LAUNCH, on_click=lambda _: on_increment("Minor"), style=ft.ButtonStyle(color=ft.Colors.BLUE_200)),
+                ft.ElevatedButton("Major (+1.0.0)", icon=ft.Icons.STAR, on_click=lambda _: on_increment("Major"), style=ft.ButtonStyle(color=ft.Colors.ORANGE_200)),
+            ], alignment=ft.MainAxisAlignment.CENTER, spacing=20)
+
+            footer = ft.Text("Set and Forget: Automation by ndaotec.com", size=12, color=ft.Colors.GREY_600, text_align=ft.TextAlign.CENTER)
+
+            page.add(
+                header,
+                ft.Text("Change Log", size=20, weight=ft.FontWeight.W_600),
+                change_input,
+                ft.Container(height=10),
+                buttons,
+                ft.Container(height=20),
+                ft.Column([status_text, pb], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Divider(height=40),
+                footer
+            )
+
+        ft.app(target=main)
 
     def health_check(self):
         """Runs a health check on the project setup."""
