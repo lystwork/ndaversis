@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.51"
+__version__ = "0.0.52"
 
 # --- AI Service Classes ---
 class AIService:
@@ -1098,7 +1098,6 @@ class Ndaversis:
 
         summary = (
             f"\n\n"
-            f"![System Status](assets/metrics.png)\n\n"
             f"----- \n"
             f"*This summary is auto-generated and reflects the state of the repository at "
             f"the time of the last version update.*\n\n"
@@ -1159,12 +1158,8 @@ class Ndaversis:
     def _create_description_summary(self):
         """Creates the description summary section of the README."""
         project_name = "NDAVERSIS: Agentic Semantic Version Info System"
-        # Injecting super-modern assets and investor link
-        content = f"![NDAVERSIS Header](assets/header.png)\n\n"
-        content += f"# 1. {project_name}\n\n"
+        content = f"# 1. {project_name}\n\n"
         content += f"**Current Version:** `{self.version}`\n\n"
-        content += f"> [!IMPORTANT]\n"
-        content += f"> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**\n\n"
         content += "## 2. Description Summary\n\n"
         content += "<!-- AUTO-DESCRIPTION-START -->\n"
         content += f"{self.generate_project_description()}\n"
@@ -1175,11 +1170,15 @@ class Ndaversis:
         """Generate the 7-step analysis for the 'What's Good for the User' section."""
         if self.ai_service:
             prompt = (
-                "Generate a 7-step analysis for the 'What's Good for the User' section "
-                "of a README.md file based on these changes: " + change_summary + ". "
-                "Emphasize the 'set-and-forget' automation value proposition and human utility. "
-                "The steps are: User's Goal, Evaluation of the repository Solution, Core Functionality, "
-                "Safety & Side Effects, Completeness, Assessment, and Is that good result?"
+                "Generate a high-quality, concise summary of the latest changes for a non-technical audience. "
+                "Focus on the 'Why Upgrade' and 'What's New' aspects. "
+                "Avoid technical jargon. Emphasize the value and benefits to the user. "
+                "The summary should be engaging and clearly explain how these changes improve the experience. "
+                "Format the output as follows:\n\n"
+                "### 💎 What's New?\n"
+                "[Concise, value-driven description of features/fixes]\n\n"
+                "### 🚀 Why Upgrade?\n"
+                "[Persuasive explanation of the benefits of this version]\n"
             )
             return self.ai_service.generate_content(prompt, analysis_data)
         
@@ -1188,57 +1187,14 @@ class Ndaversis:
         total_components = total_methods + total_funcs
         total_classes = len(analysis_data.get("classes", {}))
         
-        # Determine focus based on change summary
-        is_fix = "Modified file" in change_summary or "Fix" in change_summary or "Improved logic" in change_summary
-        is_new = "Added file" in change_summary or "New feature" in change_summary
-        
-        # Practical Impact for different personas
-        impacts = {
-            "DevOps Engineer": "Reduces CI/CD friction by keeping documentation in lockstep with logic.",
-            "Open Source Maintainer": "Eliminates versioning mistakes during rapid release tagging.",
-            "Full-Stack Developer": "Provides an instant architectural map for navigating complex updates.",
-            "Project Lead": "Maintains high documentation standards without recurring manual effort."
-        }
-        
-        if is_new:
-            user_goal = "The user wants to scale their project quickly without documentation becoming a bottleneck."
-            evaluation = "The system instantly integrates new files into the project's structural map and feature lists."
-            assessment = "A major step forward in repo scalability, ensuring that growth never means 'stale docs'."
-            impact_persona = "Full-Stack Developer"
-        elif is_fix:
-            user_goal = "The user wants a project where the README is always a source of truth, not a legacy burden."
-            evaluation = "By scanning function signatures, the tool verifies and updates feature lists after every logic change."
-            assessment = "Strengthens repository integrity, guaranteeing that what the user reads is exactly what the code does."
-            impact_persona = "DevOps Engineer"
-        else:
-            user_goal = "The user wants an effortless way to keep project metadata professional and current."
-            evaluation = "Provides seamless, background synchronization of version info and structural diagrams."
-            assessment = "An essential utility for modern workflows, turning documentation into an automated background service."
-            impact_persona = "Open Source Maintainer"
+        # Determination for fallback non-technical summary
+        benefit_heading = "What's New?"
+        benefit_desc = "Improved system stability and refined documentation automation for a smoother experience."
+        upgrade_reason = "Get the latest enhancements in 'set-and-forget' repository management, ensuring your repo stays professional with zero effort."
 
-        core_functionality = (
-            f"Automated maintenance of {total_components} functional components across "
-            f"{total_classes} classes, ensuring repository identity never drifts from its code."
-        )
-        safety = (
-            "Operates locally with zero unintended side effects, prioritizing data privacy and developer time."
-        )
-        completeness = (
-            "Covers the entire project lifecycle—from semantic version bumps to detailed library dependency mapping."
-        )
-        is_good_result = (
-            "Absolutely. It ensures the repository always looks professional and technically 'vibrant' to contributors."
-        )
-        
         return (
-            f"### 1. User's Goal\n{user_goal}\n\n"
-            f"### 2. Evaluation of the repository Solution\n{evaluation}\n\n"
-            f"### 3. Core Functionality\n{core_functionality}\n\n"
-            f"### 4. Safety & Side Effects\n{safety}\n\n"
-            f"### 5. Completeness\n{completeness}\n\n"
-            f"### 6. Assessment\n{assessment}\n\n"
-            f"### 7. Practical Impact (**{impact_persona}** focus)\n{impacts[impact_persona]}\n\n"
-            f"### 8. Is that good result?\n{is_good_result}\n"
+            f"### 💎 {benefit_heading}\n{benefit_desc}\n\n"
+            f"### 🚀 Why Upgrade?\n{upgrade_reason}\n"
         )
 
     def infer_goals_from_summary(self, change_summary):
@@ -1311,12 +1267,14 @@ class Ndaversis:
         )
         content += f"{history_start_marker}\n{new_entry}\n\n{existing_history}\n"
         content += "## 15. Contacts\n\n"
-        content += f"*   **Email:** {CONTACT_EMAIL}\n*   **Repository:** {REPOSITORY_ADDRESS}\n"
-        content += f"*   **Investor Inquiries:** [ndaotec.com](http://ndaotec.com)\n\n"
+        content += f"*   **Email:** {CONTACT_EMAIL}\n*   **Repository:** {REPOSITORY_ADDRESS}\n\n"
         content += "## 16. Privacy & Terms\n\n"
         content += f"*   **Privacy Policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md)\n"
         content += f"*   **Terms of Service:** [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md)\n\n"
-        content += "## 17. Copyright\n\n"
+        content += "## 17. Investor Relations\n\n"
+        content += f"> [!IMPORTANT]\n"
+        content += f"> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**\n\n"
+        content += "## 18. Copyright\n\n"
         content += f"{COPYRIGHT_TEXT}\n"
         return content
 

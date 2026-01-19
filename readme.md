@@ -1,11 +1,6 @@
-![NDAVERSIS Header](assets/header.png)
-
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.51`
-
-> [!IMPORTANT]
-> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**
+**Current Version:** `0.0.52`
 
 ## 2. Description Summary
 
@@ -16,8 +11,6 @@
 <!-- AUTO-SUMMARY-START -->
 
 
-![System Status](assets/metrics.png)
-
 ----- 
 *This summary is auto-generated and reflects the state of the repository at the time of the last version update.*
 
@@ -25,12 +18,12 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 2793 |
-| Code Lines | 1927 |
-| Comment Lines | 342 |
-| Blank Lines | 524 |
+| Total Lines | 2792 |
+| Code Lines | 1905 |
+| Comment Lines | 353 |
+| Blank Lines | 534 |
 | Tabs | 0 |
-| Strings | 1404 |
+| Strings | 1380 |
 
 
 ### Language Breakdown
@@ -345,15 +338,37 @@ graph TD
 
 ## 13. Last Version Summary
 
-The last version is `0.0.51`. Summary of major changes:
+The last version is `0.0.52`. Summary of major changes:
 Improved logic in: ./ndaversis.py
 Improved logic in: ./ndaversis_logs.py
 Improved logic in: ./ndaversis_state.json
 Improved logic in: ./readme.md
 
-**Practical Impact**: (**DevOps Engineer** focus) Reduces CI/CD friction by keeping documentation in lockstep with logic.
+**Practical Impact**: Significant improvement to project maintainability and documentation sync.
 
 ## 14. Version History
+## Version 0.0.52
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 💎 What's New?
+Improved system stability and refined documentation automation for a smoother experience.
+
+### 🚀 Why Upgrade?
+Get the latest enhancements in 'set-and-forget' repository management, ensuring your repo stays professional with zero effort.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
 ## Version 0.0.51
 ### Goals
 The main goals were to refine existing features for better performance and reliability.
@@ -1099,13 +1114,17 @@ The next steps for the project could be to add a dedicated test suite to improve
 
 *   **Email:** n@ndaotec.com
 *   **Repository:** https://github.com/lystwork/ndaversis
-*   **Investor Inquiries:** [ndaotec.com](http://ndaotec.com)
 
 ## 16. Privacy & Terms
 
 *   **Privacy Policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
 *   **Terms of Service:** [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md)
 
-## 17. Copyright
+## 17. Investor Relations
+
+> [!IMPORTANT]
+> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**
+
+## 18. Copyright
 
 ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. All rights belong to their respective owners.
