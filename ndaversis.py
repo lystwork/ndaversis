@@ -52,7 +52,11 @@ except ImportError:
     version_history = None
 
 # --- Constants ---
-README_FILE = "ndaversis_readme.md"
+# Dual README system
+USER_README_FILE = "readme.md"  # User's unified repository
+NDAVERSIS_README_FILE = "ndaversis_readme.md"  # Ndaversis-specific info
+README_FILE = NDAVERSIS_README_FILE  # Default for backward compatibility
+
 CONFIG_FILE = "config.json"
 STATE_FILE = "ndaversis_state.json"
 LOGS_FILE = "ndaversis_logs.py"
@@ -67,7 +71,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.64"
+__version__ = "0.0.65"
 
 # --- AI Service Classes ---
 class AIService:
@@ -329,6 +333,29 @@ class Ndaversis:
         self.ai_config: dict = self.load_ai_config()
         self.previous_code_state: dict = self.load_previous_code_state()
         self.ai_service: Optional[AIService] = self.get_ai_service()
+
+    def is_ndaversis_repo(self):
+        """
+        Detect if running in the ndaversis repository itself.
+        
+        Returns:
+            bool: True if in ndaversis repo, False if in user's repo
+        """
+        # Count non-ndaversis files to determine context
+        user_files = []
+        for root, dirs, files in os.walk('.'):
+            if '.git' in root or '__pycache__' in root or 'tests_ndaversis' in root:
+                continue
+            for file in files:
+                # Skip ndaversis-specific files
+                if (not file.startswith('ndaversis') and 
+                    not file.startswith('LICENSE') and 
+                    file not in ['.gitignore', 'config.json', '.DS_Store']):
+                    user_files.append(file)
+        
+        # If we have few non-ndaversis files, we're in ndaversis repo
+        # Threshold: less than 3 non-ndaversis files means it's the ndaversis repo
+        return len(user_files) < 3
 
     def get_version(self) -> Version:
         """
@@ -1527,9 +1554,22 @@ class Ndaversis:
         return content
 
     def update_readme(self, content):
-        """Update the readme.md file with the new content."""
-        with open(README_FILE, "w", encoding="utf-8") as f:
-            f.write(content)
+        """Update the appropriate README file based on repository context."""
+        # Determine which README to update based on context
+        if self.is_ndaversis_repo():
+            # In ndaversis repo: update both files
+            # User README for this instance
+            with open(USER_README_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            # Ndaversis-specific README
+            with open(NDAVERSIS_README_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            print(f"README files updated: {USER_README_FILE}, {NDAVERSIS_README_FILE}")
+        else:
+            # In user's repo: update only user README
+            with open(USER_README_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            print(f"README updated: {USER_README_FILE}")
 
     def main_cli(self, cli_args):
         """Run the command-line interface."""
