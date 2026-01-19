@@ -1,6 +1,11 @@
+![NDAVERSIS Header](/Users/admin/.gemini/antigravity/brain/35147840-448e-4af4-a298-ec7cb9c59c40/readme_header_neumorphism_brutalism_1768826085297.png)
+
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.48`
+**Current Version:** `0.0.49`
+
+> [!IMPORTANT]
+> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**
 
 ## 2. Description Summary
 
@@ -11,6 +16,8 @@
 <!-- AUTO-SUMMARY-START -->
 
 
+![System Status](/Users/admin/.gemini/antigravity/brain/35147840-448e-4af4-a298-ec7cb9c59c40/ai_metrics_graph_neumorphism_1768826137891.png)
+
 ----- 
 *This summary is auto-generated and reflects the state of the repository at the time of the last version update.*
 
@@ -18,27 +25,27 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 2538 |
-| Code Lines | 1793 |
-| Comment Lines | 285 |
-| Blank Lines | 460 |
+| Total Lines | 2674 |
+| Code Lines | 1866 |
+| Comment Lines | 315 |
+| Blank Lines | 493 |
 | Tabs | 0 |
-| Strings | 1358 |
+| Strings | 1389 |
 
 
 ### Language Breakdown
 
 | Extension | Count |
 | :--- | :--- |
+| .md | 3 |
 | .py | 2 |
 | .json | 2 |
 | no extension | 2 |
 | .txt | 2 |
-| .md | 1 |
 
 
 ### File Statistics
-- **Total Files:** 9
+- **Total Files:** 11
 - **Python Files:** 2
 ----- 
 
@@ -110,7 +117,7 @@ python ndaversis.py audit
 ## 8. Requirements
 
 ### Languages & Environments
-*   **PY**: Primary development language (2 files detected). Requires Python 3.8+.*   **JSON**: Primary development language (2 files detected).*   **NO EXTENSION**: Primary development language (2 files detected).*   **TXT**: Primary development language (2 files detected).*   **MD**: Primary development language (1 files detected).### Built-in Standard Library (Included with Python)
+*   **MD**: Primary development language (3 files detected).*   **PY**: Primary development language (2 files detected). Requires Python 3.8+.*   **JSON**: Primary development language (2 files detected).*   **NO EXTENSION**: Primary development language (2 files detected).*   **TXT**: Primary development language (2 files detected).### Built-in Standard Library (Included with Python)
 The following modules are part of Python's standard library and **do not** require external installation:
 
 `argparse`, `ast`, `datetime`, `difflib`, `getpass`, `json`, `os`, `re`, `sys`, `time`, `typing`
@@ -201,6 +208,10 @@ classDiagram
         +__init__()
         +generate_content()
     }
+    class OpenAICompatibleService {
+        +__init__()
+        +generate_content()
+    }
     class Version {
         +__init__()
         +__str__()
@@ -284,10 +295,10 @@ graph TD
     lang_PY --> dep_sys["sys"]
     lang_PY --> dep_time["time"]
     lang_PY --> dep_typing["typing"]
+    Project --> lang_MD["MD Overview (3 files)"]
     Project --> lang_JSON["JSON Overview (2 files)"]
     Project --> lang_NO_EXTENSION["NO EXTENSION Overview (2 files)"]
     Project --> lang_TXT["TXT Overview (2 files)"]
-    Project --> lang_MD["MD Overview (1 files)"]
 ```
 
 ## 10. Project Map
@@ -295,6 +306,8 @@ graph TD
 ```
 ./.gitignore
 ./LICENSE
+./PRIVACY_POLICY.md
+./TERMS_OF_SERVICE.md
 ./config.json
 ./ndaversis.py
 ./ndaversis_logs.py
@@ -311,6 +324,8 @@ graph TD
     Root[./]
     Root --> node_gitignore["gitignore"]
     Root --> node_LICENSE["LICENSE"]
+    Root --> node_PRIVACY_POLICY_md["PRIVACY_POLICY.md"]
+    Root --> node_TERMS_OF_SERVICE_md["TERMS_OF_SERVICE.md"]
     Root --> node_config_json["config.json"]
     Root --> node_ndaversis_py["ndaversis.py"]
     Root --> node_ndaversis_logs_py["ndaversis_logs.py"]
@@ -322,15 +337,59 @@ graph TD
 
 ## 13. Last Version Summary
 
-The last version is `0.0.48`. Summary of major changes:
+The last version is `0.0.49`. Summary of major changes:
+New feature added: ./PRIVACY_POLICY.md
+New feature added: ./TERMS_OF_SERVICE.md
 Improved logic in: ./ndaversis.py
 Improved logic in: ./ndaversis_logs.py
 Improved logic in: ./ndaversis_state.json
 Improved logic in: ./readme.md
 
-**Practical Impact**: (**DevOps Engineer** focus) Reduces CI/CD friction by keeping documentation in lockstep with logic.
+**Practical Impact**: (**Full-Stack Developer** focus) Provides an instant architectural map for navigating complex updates.
 
 ## 14. Version History
+## Version 0.0.49
+### Goals
+The main goals were to expand the project's capabilities with new components, refine existing features for better performance and reliability.
+
+### What Changed
+Added file: ./PRIVACY_POLICY.md
+Added file: ./TERMS_OF_SERVICE.md
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants to scale their project quickly without documentation becoming a bottleneck.
+
+### 2. Evaluation of the repository Solution
+The system instantly integrates new files into the project's structural map and feature lists.
+
+### 3. Core Functionality
+Automated maintenance of 52 functional components across 8 classes, ensuring repository identity never drifts from its code.
+
+### 4. Safety & Side Effects
+Operates locally with zero unintended side effects, prioritizing data privacy and developer time.
+
+### 5. Completeness
+Covers the entire project lifecycle—from semantic version bumps to detailed library dependency mapping.
+
+### 6. Assessment
+A major step forward in repo scalability, ensuring that growth never means 'stale docs'.
+
+### 7. Practical Impact (**Full-Stack Developer** focus)
+Provides an instant architectural map for navigating complex updates.
+
+### 8. Is that good result?
+Absolutely. It ensures the repository always looks professional and technically 'vibrant' to contributors.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
 ## Version 0.0.48
 ### Goals
 The main goals were to refine existing features for better performance and reliability.
@@ -954,7 +1013,13 @@ The next steps for the project could be to add a dedicated test suite to improve
 
 *   **Email:** n@ndaotec.com
 *   **Repository:** https://github.com/lystwork/ndaversis
+*   **Investor Inquiries:** [ndaotec.com](http://ndaotec.com)
 
-## 16. Copyright
+## 16. Privacy & Terms
+
+*   **Privacy Policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
+*   **Terms of Service:** [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md)
+
+## 17. Copyright
 
 ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. All rights belong to their respective owners.

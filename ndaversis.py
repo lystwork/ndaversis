@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.48"
+__version__ = "0.0.49"
 
 # --- AI Service Classes ---
 class AIService:
@@ -226,6 +226,23 @@ class DeepSeekService(AIService):
         )
         return response.choices[0].message.content
 
+class OpenAICompatibleService(AIService):
+    """
+    An AI service compatible with the OpenAI API (e.g., for on-premise LLMs, LocalAI, RAG).
+    """
+    def __init__(self, api_key: str, base_url: str, model: str = "gpt-3.5-turbo") -> None:
+        super().__init__()
+        import openai
+        self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
+        self.model = model
+
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
+        response = self.client.chat.completions.create(
+            model=self.model, messages=[{"role": "user", "content": full_prompt}]
+        )
+        return response.choices[0].message.content
+
 # --- Version Class ---
 class Version:
     """
@@ -381,11 +398,20 @@ class Ndaversis:
             "chatgpt": ChatGPTService,
             "claude": ClaudeService,
             "deepseek": DeepSeekService,
+            "openai_compatible": OpenAICompatibleService,
         }
 
         service_class = service_map.get(provider)
 
         if service_class:
+            if provider == "openai_compatible":
+                base_url = self.ai_config.get("api_base") or os.getenv("AI_API_BASE")
+                model = self.ai_config.get("model") or os.getenv("AI_MODEL") or "gpt-3.5-turbo"
+                if not base_url:
+                    print("api_base not specified for openai_compatible provider. AI service disabled.")
+                    return None
+                return service_class(api_key or "no-key", base_url, model)
+            
             if api_key:
                 return service_class(api_key)
             else:
@@ -1068,6 +1094,7 @@ class Ndaversis:
 
         summary = (
             f"\n\n"
+            f"![System Status](/Users/admin/.gemini/antigravity/brain/35147840-448e-4af4-a298-ec7cb9c59c40/ai_metrics_graph_neumorphism_1768826137891.png)\n\n"
             f"----- \n"
             f"*This summary is auto-generated and reflects the state of the repository at "
             f"the time of the last version update.*\n\n"
@@ -1128,8 +1155,12 @@ class Ndaversis:
     def _create_description_summary(self):
         """Creates the description summary section of the README."""
         project_name = "NDAVERSIS: Agentic Semantic Version Info System"
-        content = f"# 1. {project_name}\n\n"
+        # Injecting super-modern assets and investor link
+        content = f"![NDAVERSIS Header](/Users/admin/.gemini/antigravity/brain/35147840-448e-4af4-a298-ec7cb9c59c40/readme_header_neumorphism_brutalism_1768826085297.png)\n\n"
+        content += f"# 1. {project_name}\n\n"
         content += f"**Current Version:** `{self.version}`\n\n"
+        content += f"> [!IMPORTANT]\n"
+        content += f"> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**\n\n"
         content += "## 2. Description Summary\n\n"
         content += "<!-- AUTO-DESCRIPTION-START -->\n"
         content += f"{self.generate_project_description()}\n"
@@ -1276,8 +1307,12 @@ class Ndaversis:
         )
         content += f"{history_start_marker}\n{new_entry}\n\n{existing_history}\n"
         content += "## 15. Contacts\n\n"
-        content += f"*   **Email:** {CONTACT_EMAIL}\n*   **Repository:** {REPOSITORY_ADDRESS}\n\n"
-        content += "## 16. Copyright\n\n"
+        content += f"*   **Email:** {CONTACT_EMAIL}\n*   **Repository:** {REPOSITORY_ADDRESS}\n"
+        content += f"*   **Investor Inquiries:** [ndaotec.com](http://ndaotec.com)\n\n"
+        content += "## 16. Privacy & Terms\n\n"
+        content += f"*   **Privacy Policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md)\n"
+        content += f"*   **Terms of Service:** [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md)\n\n"
+        content += "## 17. Copyright\n\n"
         content += f"{COPYRIGHT_TEXT}\n"
         return content
 
