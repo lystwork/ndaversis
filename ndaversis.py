@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.53"
+__version__ = "0.0.54"
 
 # --- AI Service Classes ---
 class AIService:
@@ -625,9 +625,9 @@ class Ndaversis:
         summary += "```mermaid\ngraph LR\n"
         for file, metrics in diff_data.items():
             name = os.path.basename(file)
-            color = "green" if metrics["status"] == "added" else "red" if metrics["status"] == "removed" else "blue"
+            # Use light blue (#bbdefb) instead of pink (#f9f)
             summary += f"    {name.replace('.', '_')}[\"{name} ({metrics['status']})\"]\n"
-            summary += f"    style {name.replace('.', '_')} fill:#f9f,stroke:#333,stroke-width:2px\n"
+            summary += f"    style {name.replace('.', '_')} fill:#bbdefb,stroke:#333,stroke-width:2px\n"
         summary += "```\n\n"
 
         summary += "| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |\n"
@@ -648,10 +648,27 @@ class Ndaversis:
             ai_descriptions = self.ai_service.generate_content(prompt, {})
             summary += "### 🔍 File-level Insights\n\n"
             summary += f"{ai_descriptions}\n"
+            
+            # Add a Mermaid diagram for insights
+            summary += "\n#### Distribution of Changes\n\n"
+            summary += "```mermaid\npie title Changes by Lines Added\n"
+            for file, metrics in diff_data.items():
+                if metrics["lines_added"] > 0:
+                    summary += f"    \"{os.path.basename(file)}\" : {metrics['lines_added']}\n"
+            summary += "```\n"
         else:
             summary += "### 🔍 File-level Insights\n\n"
             for file, metrics in diff_data.items():
                 summary += f"- **{file}**: {metrics['status'].capitalize()} with {metrics['lines_added']} additions and {metrics['lines_removed']} removals.\n"
+            
+            # Simple bar-like chart using Mermaid for fallback
+            summary += "\n#### Impact Map\n\n"
+            summary += "```mermaid\ngraph LR\n"
+            for file, metrics in diff_data.items():
+                name = os.path.basename(file).replace(".", "_")
+                summary += f"    {name}[\"{os.path.basename(file)} (+{metrics['lines_added']}/-{metrics['lines_removed']})\"]\n"
+                summary += f"    style {name} fill:#e3f2fd,stroke:#2196f3\n"
+            summary += "```\n"
 
         return summary
 
@@ -1243,10 +1260,13 @@ class Ndaversis:
         if self.ai_service:
             prompt = (
                 "Generate a high-quality, concise summary of the latest changes for a non-technical audience. "
-                "Focus on the 'Why Upgrade' and 'What's New' aspects. "
-                "Avoid technical jargon. Emphasize the value and benefits to the user. "
-                "CRITICAL: Merge the evaluative 'Assessment' (assessing the quality and impact of the solution) "
-                "directly into the 'Why Upgrade' section. "
+                "Focus on the 'Why Upgrade' and 'What's New' aspects.\n\n"
+                "CRITICAL: \n"
+                "1. Keep 'What's New' and 'Why Upgrade' distinct from each other.\n"
+                "2. Do NOT include future suggestions or 'next steps' here; those belong in a separate section.\n"
+                "3. Focus on the value and impact of the current changes only.\n"
+                "4. Avoid technical jargon.\n"
+                "5. Merge the evaluative 'Assessment' (quality and impact) directly into the 'Why Upgrade' section.\n\n"
                 "Format the output as follows:\n\n"
                 "### 💎 What's New?\n"
                 "[Concise, value-driven description of features/fixes]\n\n"
@@ -1283,25 +1303,42 @@ class Ndaversis:
             return "Address minor updates and keep the repository information current."
         return f"The main goals were to {', '.join(goals)}."
 
-    def suggest_next_steps(self, analysis_data):
-        """Suggest next steps for the project."""
+    def suggest_next_steps(self, analysis_data, previous_history=""):
+        """Suggest next steps for the project, ensuring they are unique and fresh."""
         if self.ai_service:
             prompt = (
                 "Based on the current state of the codebase, suggest 3 unique, actionable, and non-repeating "
                 "next steps for the project. Be creative and focus on long-term value, maintainability, or "
-                "user experience enhancements. Ensure the suggestions are fresh and context-aware."
+                "user experience enhancements.\n\n"
+                "CRITICAL: Avoid repeating any of the following previous suggestions:\n"
+                f"{previous_history}\n\n"
+                "Ensure the new suggestions are fresh and context-aware."
             )
             return self.ai_service.generate_content(prompt, analysis_data)
 
-        suggestions = []
-        if not any("test" in func for func in analysis_data["functions"]):
-            suggestions.append("improve robustness by adding a dedicated test suite")
-        if len(analysis_data["functions"]) > 15:
-            suggestions.append("consider modularizing the code to keep it maintainable as it grows")
+        # Fallback logic with a pool of suggestions to rotate
+        suggestion_pool = [
+            "improve robustness by adding a dedicated test suite",
+            "consider modularizing the code to keep it maintainable as it grows",
+            "add comprehensive error handling and logging",
+            "implement a plugin system for extended functionality",
+            "enhance the user interface for better accessibility",
+            "optimize performance for large-scale repositories",
+            "add support for more configuration formats (YAML, TOML)",
+            "integrate with more AI providers for diversity",
+            "create detailed API documentation for other developers",
+            "implement automated benchmarking for core logic"
+        ]
         
-        if not suggestions:
-            return "Continue building great features and let Ndaversis handle the documentation updates automatically."
-        return f"Moving forward, you might want to {', '.join(suggestions)}."
+        # Filter out suggestions already in history
+        available = [s for s in suggestion_pool if s.lower() not in previous_history.lower()]
+        if not available:
+            available = suggestion_pool # Reset if all used
+
+        import random
+        selected = random.sample(available, min(3, len(available)))
+        
+        return f"Moving forward, you might want to {', '.join(selected)}."
 
     def generate_readme_content(self, version, analysis_data, what_changed):
         """Generate the entire content of the README file."""
@@ -1317,7 +1354,9 @@ class Ndaversis:
         content += f"{what_changed}\n"
         
         # Robustly extract Practical Impact for Section 13
+        # Use a single call to AI service to avoid redundancy and ensure diversity
         benefit_text = self.generate_user_benefit_analysis(analysis_data, what_changed)
+        
         practical_impact = "Significant improvement to project maintainability and documentation sync."
         if "### 7. Practical Impact" in benefit_text:
             try:
@@ -1329,6 +1368,7 @@ class Ndaversis:
             except (IndexError, AttributeError):
                 pass
         content += f"\n**Practical Impact**: {practical_impact}\n\n"
+        
         history_start_marker, history_end_marker = "## 14. Version History", "## 15. Contacts"
         try:
             with open(README_FILE, "r", encoding="utf-8") as f:
@@ -1337,12 +1377,19 @@ class Ndaversis:
                 existing_history = existing_content[start + len(history_start_marker):end].strip() if start != -1 and end != -1 else ""
         except FileNotFoundError:
             existing_history = ""
+        
+        # Extract previous "What's Possibly Next" for uniqueness
+        previous_suggestions = ""
+        if existing_history:
+            prev_next = re.findall(r"### What's Possibly Next\n(.*?)(?=\n## Version|\n## 15\. Contacts|$)", existing_history, re.DOTALL)
+            previous_suggestions = "\n".join(prev_next).strip()
+
         new_entry = (
             f"## Version {version}\n"
             f"### Goals\n{self.infer_goals_from_summary(what_changed)}\n\n"
             f"### What Changed\n{what_changed}\n\n"
-            f"### What's Good for the User\n{self.generate_user_benefit_analysis(analysis_data, what_changed)}\n\n"
-            f"### What's Possibly Next\n{self.suggest_next_steps(analysis_data)}\n"
+            f"### What's Good for the User\n{benefit_text}\n\n"
+            f"### What's Possibly Next\n{self.suggest_next_steps(analysis_data, previous_suggestions)}\n"
         )
         content += f"{history_start_marker}\n{new_entry}\n\n{existing_history}\n"
         content += "## 15. Contacts\n\n"
