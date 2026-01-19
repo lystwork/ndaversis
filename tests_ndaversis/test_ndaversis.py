@@ -117,14 +117,16 @@ class TestNdaversis(unittest.TestCase):
             f.write("line1\nline2\n")
 
         with patch('ndaversis.__file__', self.test_ndaversis_path):
+            self.app.previous_code_state = self.app.load_previous_code_state()
             self.app.main_cli(Namespace(major=False, minor=False, patch=True))
 
         with open(self.test_readme_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         self.assertIn("## Version 0.1.1", content)
+        self.assertIn("Repository Size:", content)
         self.assertIn("test_txt", content) # Mermaid node ID
-        self.assertIn("test.txt: Modified with 1 additions and 0 removals.", content) # Full metric label
+        self.assertIn("./test.txt: Modified (1 + / 0 -)", content) # Full metric label
 
         os.remove("./test.txt")
 
@@ -267,9 +269,9 @@ class TestNdaversis(unittest.TestCase):
         self.assertIn("Impact Map", diff)
         self.assertIn("graph LR", diff)
         self.assertIn("Root[\"Latest Changes\"] --> file1_txt & file2_txt & file3_txt", diff)
-        self.assertIn("file1.txt: Modified with 1 additions and 1 removals.", diff)
-        self.assertIn("file3.txt: Added with 1 additions and 0 removals.", diff)
-        self.assertIn("file2.txt: Removed with 0 additions and 1 removals.", diff)
+        self.assertIn("file1.txt: Modified (1 + / 1 -)", diff)
+        self.assertIn("file3.txt: Added (1 + / 0 -)", diff)
+        self.assertIn("file2.txt: Removed (0 + / 1 -)", diff)
         self.assertNotIn("content1_mod", diff) # Should not include content
 
     def test_readme_sections_and_diagrams(self):

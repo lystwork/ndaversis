@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.60"
+__version__ = "0.0.61"
 
 # --- AI Service Classes ---
 class AIService:
@@ -633,6 +633,23 @@ class Ndaversis:
                         f"{metrics['spaces_added']} |\n")
         summary += "\n"
 
+        # Generate practical impact labels via AI or fallback
+        practical_labels = {}
+        if self.ai_service:
+            prompt = (
+                "For each file change listed below, provide a short (max 10 words) human-readable explanation of the practical value or impact of that change. "
+                "Focus on what it means for the user or the project (e.g., 'Improves chart readability' or 'Fixes a bug in version tracking'). "
+                "Format as a JSON object: {\"filename\": \"description\"}\n\n"
+                f"Changes:\n{diff_data}\n"
+            )
+            try:
+                ai_output = self.ai_service.generate_content(prompt, {"diff_data": diff_data})
+                # Clean markdown if AI returns it
+                ai_output = re.sub(r"```json\s*|\s*```", "", ai_output).strip()
+                practical_labels = json.loads(ai_output)
+            except:
+                practical_labels = {}
+
         # Universal horizontal diagram for insights with full metrics
         summary += "\n#### Impact Map\n\n"
         summary += "```mermaid\ngraph LR\n"
@@ -641,8 +658,15 @@ class Ndaversis:
         for file, metrics in diff_data.items():
             # Clean name for Mermaid ID
             clean_id = file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ", "_").strip("_")
-            # Label with full metrics as requested: ./path/to/file: Added with 4 additions and 0 removals.
-            label = f"{file}: {metrics['status'].capitalize()} with {metrics['lines_added']} additions and {metrics['lines_removed']} removals."
+            
+            # Label with practical value if available, else metrics
+            practical_val = practical_labels.get(file)
+            if practical_val:
+                label = f"{file}: {practical_val}"
+            else:
+                # Fallback: ./path/to/file: Added with 4 additions and 0 removals.
+                label = f"{file}: {metrics['status'].capitalize()} ({metrics['lines_added']} + / {metrics['lines_removed']} -)"
+            
             summary += f"    {clean_id}[\"{label}\"]\n"
             summary += f"    style {clean_id} fill:#bbdefb,stroke:#333,stroke-width:2px\n"
         summary += "```\n"
@@ -1162,6 +1186,22 @@ class Ndaversis:
                 self._generate_repo_synthesis_prompt(), (features, code)
             )
 
+        # Calculate repository size
+        total_size = 0
+        for root, dirs, files in os.walk("."):
+            if ".git" in root or "__pycache__" in root or "tests_ndaversis" in root:
+                continue
+            for f in files:
+                fp = os.path.join(root, f)
+                if os.path.isfile(fp):
+                    total_size += os.path.getsize(fp)
+        
+        size_str = f"{total_size / 1024:.2f} KB"
+        if total_size > 1024 * 1024:
+            size_str = f"{total_size / (1024 * 1024):.2f} MB"
+        if total_size > 1024 * 1024 * 1024:
+            size_str = f"{total_size / (1024 * 1024 * 1024):.2f} GB"
+
         summary = (
             f"\n\n"
             f"----- \n"
@@ -1172,6 +1212,7 @@ class Ndaversis:
             f"### File Statistics\n"
             f"- **Total Files:** {sum(features['languages'].values())}\n"
             f"- **Python Files:** {features['languages'].get('.py', 0)}\n"
+            f"- **Repository Size:** {size_str}\n"
         )
         if synthesis:
             summary += f"\n**Goal & Tasks synthesis:**\n{synthesis}\n"
@@ -1272,8 +1313,16 @@ class Ndaversis:
             f"### 🚀 Why Upgrade?\n{upgrade_v}\n"
         )
 
-    def infer_goals_from_summary(self, change_summary):
-        """Infer the goals of the changes from the change summary."""
+    def infer_goals_from_summary(self, change_summary, analysis_data=None):
+        """Infer the goals of the changes from the change summary using AI if available."""
+        if self.ai_service and analysis_data:
+            prompt = (
+                "Based on the following change metrics and summary, generate a concise, unique one-sentence description of the primary goal for this version. "
+                "Avoid repeating generic goals. Focus on the actual intent of these specific changes.\n\n"
+                f"Changes:\n{change_summary}\n"
+            )
+            return self.ai_service.generate_content(prompt, analysis_data).strip()
+
         goals = []
         if "added" in change_summary.lower() or "Added file" in change_summary or "New feature" in change_summary:
             goals.append("expand the project's capabilities with new components")
@@ -1386,7 +1435,7 @@ class Ndaversis:
 
         new_entry = (
             f"## Version {version}\n"
-            f"### Goals\n{self.infer_goals_from_summary(what_changed)}\n\n"
+            f"### Goals\n{self.infer_goals_from_summary(what_changed, analysis_data)}\n\n"
             f"### What Changed\n{what_changed}\n\n"
             f"### What's Good for the User\n{benefit_text}\n\n"
             f"### What's Possibly Next\n{self.suggest_next_steps(analysis_data, previous_suggestions)}\n"
