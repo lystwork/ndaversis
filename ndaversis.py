@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.54"
+__version__ = "0.0.56"
 
 # --- AI Service Classes ---
 class AIService:
@@ -621,16 +621,7 @@ class Ndaversis:
         if not diff_data:
             return "No significant changes detected."
 
-        summary = "### 📊 Change Visualization\n\n"
-        summary += "```mermaid\ngraph LR\n"
-        for file, metrics in diff_data.items():
-            name = os.path.basename(file)
-            # Use light blue (#bbdefb) instead of pink (#f9f)
-            summary += f"    {name.replace('.', '_')}[\"{name} ({metrics['status']})\"]\n"
-            summary += f"    style {name.replace('.', '_')} fill:#bbdefb,stroke:#333,stroke-width:2px\n"
-        summary += "```\n\n"
-
-        summary += "| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |\n"
+        summary = "| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |\n"
         summary += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
         for file, metrics in diff_data.items():
             summary += (f"| {file} | {metrics['status']} | {metrics['lines_added']} | "
@@ -639,36 +630,18 @@ class Ndaversis:
                         f"{metrics['spaces_added']} |\n")
         summary += "\n"
 
-        if self.ai_service:
-            prompt = (
-                "Based on the following file-level metrics, provide a brief (1-sentence) explanation "
-                "for WHY each file was changed/added/removed. Focus on the architectural or functional purpose.\n\n"
-                f"{json.dumps(diff_data, indent=2)}"
-            )
-            ai_descriptions = self.ai_service.generate_content(prompt, {})
-            summary += "### 🔍 File-level Insights\n\n"
-            summary += f"{ai_descriptions}\n"
-            
-            # Add a Mermaid diagram for insights
-            summary += "\n#### Distribution of Changes\n\n"
-            summary += "```mermaid\npie title Changes by Lines Added\n"
-            for file, metrics in diff_data.items():
-                if metrics["lines_added"] > 0:
-                    summary += f"    \"{os.path.basename(file)}\" : {metrics['lines_added']}\n"
-            summary += "```\n"
-        else:
-            summary += "### 🔍 File-level Insights\n\n"
-            for file, metrics in diff_data.items():
-                summary += f"- **{file}**: {metrics['status'].capitalize()} with {metrics['lines_added']} additions and {metrics['lines_removed']} removals.\n"
-            
-            # Simple bar-like chart using Mermaid for fallback
-            summary += "\n#### Impact Map\n\n"
-            summary += "```mermaid\ngraph LR\n"
-            for file, metrics in diff_data.items():
-                name = os.path.basename(file).replace(".", "_")
-                summary += f"    {name}[\"{os.path.basename(file)} (+{metrics['lines_added']}/-{metrics['lines_removed']})\"]\n"
-                summary += f"    style {name} fill:#e3f2fd,stroke:#2196f3\n"
-            summary += "```\n"
+        # Universal horizontal diagram for insights with full metrics
+        summary += "\n#### Impact Map\n\n"
+        summary += "```mermaid\ngraph LR\n"
+        summary += "    Root[\"Latest Changes\"] --> " + ", ".join([file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ","_").strip("_") for file in diff_data.keys()]) + "\n"
+        for file, metrics in diff_data.items():
+            # Clean name for Mermaid ID
+            clean_id = file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ", "_").strip("_")
+            # Label with full metrics as requested: ./path/to/file: Added with 4 additions and 0 removals.
+            label = f"{file}: {metrics['status'].capitalize()} with {metrics['lines_added']} additions and {metrics['lines_removed']} removals."
+            summary += f"    {clean_id}[\"{label}\"]\n"
+            summary += f"    style {clean_id} fill:#bbdefb,stroke:#333,stroke-width:2px\n"
+        summary += "```\n"
 
         return summary
 
@@ -1383,6 +1356,13 @@ class Ndaversis:
         if existing_history:
             prev_next = re.findall(r"### What's Possibly Next\n(.*?)(?=\n## Version|\n## 15\. Contacts|$)", existing_history, re.DOTALL)
             previous_suggestions = "\n".join(prev_next).strip()
+
+        # Strip legacy sections from existing history
+        if existing_history:
+            # Remove "Change Visualization" sections
+            existing_history = re.sub(r"### 📊 Change Visualization\n\n```mermaid.*?```\n+", "", existing_history, flags=re.DOTALL)
+            # Remove standalone "File-level Insights" text sections (if they exist without diagrams)
+            existing_history = re.sub(r"### 🔍 File-level Insights\n\n(- .*?\n)+", "", existing_history)
 
         new_entry = (
             f"## Version {version}\n"

@@ -123,7 +123,8 @@ class TestNdaversis(unittest.TestCase):
             content = f.read()
 
         self.assertIn("## Version 0.1.1", content)
-        self.assertIn("test_txt", content) # Mermaid node name
+        self.assertIn("test_txt", content) # Mermaid node ID
+        self.assertIn("test.txt: Modified with 1 additions and 0 removals.", content) # Full metric label
 
         os.remove("./test.txt")
 
@@ -261,13 +262,13 @@ class TestNdaversis(unittest.TestCase):
         """Test the concise diff generation."""
         old_state = {"file1.txt": "content1", "file2.txt": "content2"}
         new_state = {"file1.txt": "content1_mod", "file3.txt": "content3"}
-        
         diff = self.app.generate_change_summary(old_state, new_state)
-        self.assertIn("Change Visualization", diff)
+        self.assertNotIn("Change Visualization", diff)
+        self.assertIn("Impact Map", diff)
         self.assertIn("graph LR", diff)
-        self.assertIn("file1.txt", diff)
-        self.assertIn("file3.txt", diff)
-        self.assertIn("file2.txt", diff)
+        self.assertIn("file1.txt: Modified with 1 additions and 1 removals.", diff)
+        self.assertIn("file3.txt: Added with 1 additions and 0 removals.", diff)
+        self.assertIn("file2.txt: Removed with 0 additions and 1 removals.", diff)
         self.assertNotIn("content1_mod", diff) # Should not include content
 
     def test_readme_sections_and_diagrams(self):

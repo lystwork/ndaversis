@@ -21,11 +21,8 @@ class TestNdaversisNewFeatures(unittest.TestCase):
         # Check horizontal orientation
         self.assertIn("graph LR", summary)
         
-        # Check that pink (#f9f) is NOT used
-        self.assertNotIn("fill:#f9f", summary)
-        
-        # Check that a light blue or similar is used (based on my implementation #bbdefb)
-        self.assertIn("fill:#bbdefb", summary)
+        # Check that Change Visualization is NOT present
+        self.assertNotIn("### 📊 Change Visualization", summary)
 
     def test_file_level_insights_diagram(self):
         """Verify that File-level Insights contains a diagram."""
@@ -34,8 +31,10 @@ class TestNdaversisNewFeatures(unittest.TestCase):
         summary = self.app.generate_change_summary(old_state, new_state)
         
         self.assertIn("### 🔍 File-level Insights", summary)
-        # Should contain a Mermaid diagram (pie or graph LR depending on AI availability)
-        self.assertIn("```mermaid", summary.split("### 🔍 File-level Insights")[1])
+        # Should contain an Impact Map with full path and metrics
+        self.assertIn("#### Impact Map", summary)
+        self.assertIn("graph LR", summary)
+        self.assertIn("test.py: Modified (+1/-1)", summary)
 
     def test_next_steps_uniqueness_fallback(self):
         """Verify that suggest_next_steps fallback returns different suggestions."""
