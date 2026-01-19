@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.52"
+__version__ = "0.0.53"
 
 # --- AI Service Classes ---
 class AIService:
@@ -566,22 +566,94 @@ class Ndaversis:
                     pass
         return state
 
-    def _generate_diff(self, old_state, new_state):
-        """Generate a concise diff between two repository states."""
-        diff = []
+    def _generate_diff(self, old_state: dict, new_state: dict) -> dict:
+        """
+        Generate a detailed diff between two repository states.
+        Returns a dictionary mapping file paths to their change metrics.
+        """
+        diff_data = {}
         all_files = set(old_state.keys()) | set(new_state.keys())
         for file in sorted(all_files):
-            if file not in old_state:
-                diff.append(f"Added file: {file}")
-            elif file not in new_state:
-                diff.append(f"Removed file: {file}")
-            elif old_state[file] != new_state[file]:
-                diff.append(f"Modified file: {file}")
-        return "\n".join(diff) if diff else "No significant changes detected."
+            old_c = old_state.get(file, "")
+            new_c = new_state.get(file, "")
+            if old_c == new_c:
+                continue
 
-    def generate_change_summary(self, old_state, new_state):
-        """Compare two code states and generate a summary of changes."""
-        return self._generate_diff(old_state, new_state)
+            metrics = {
+                "status": "modified",
+                "lines_added": 0, "lines_removed": 0,
+                "chars_added": 0, "chars_removed": 0,
+                "tabs_added": 0, "tabs_removed": 0,
+                "spaces_added": 0, "spaces_removed": 0
+            }
+            if file not in old_state:
+                metrics["status"] = "added"
+            elif file not in new_state:
+                metrics["status"] = "removed"
+
+            old_lines = old_c.splitlines()
+            new_lines = new_c.splitlines()
+            
+            diff = list(difflib.ndiff(old_lines, new_lines))
+            for line in diff:
+                if line.startswith("+ "):
+                    metrics["lines_added"] += 1
+                    content = line[2:]
+                    metrics["chars_added"] += len(content)
+                    metrics["tabs_added"] += content.count("\t")
+                    metrics["spaces_added"] += content.count(" ")
+                elif line.startswith("- "):
+                    metrics["lines_removed"] += 1
+                    content = line[2:]
+                    metrics["chars_removed"] += len(content)
+                    metrics["tabs_removed"] += content.count("\t")
+                    metrics["spaces_removed"] += content.count(" ")
+                elif line.startswith("? "):
+                    # ndiff highlights within-line changes with ? lines
+                    pass
+
+            diff_data[file] = metrics
+        return diff_data
+
+    def generate_change_summary(self, old_state: dict, new_state: dict) -> str:
+        """Compare two code states and generate a detailed summary of changes."""
+        diff_data = self._generate_diff(old_state, new_state)
+        if not diff_data:
+            return "No significant changes detected."
+
+        summary = "### 📊 Change Visualization\n\n"
+        summary += "```mermaid\ngraph LR\n"
+        for file, metrics in diff_data.items():
+            name = os.path.basename(file)
+            color = "green" if metrics["status"] == "added" else "red" if metrics["status"] == "removed" else "blue"
+            summary += f"    {name.replace('.', '_')}[\"{name} ({metrics['status']})\"]\n"
+            summary += f"    style {name.replace('.', '_')} fill:#f9f,stroke:#333,stroke-width:2px\n"
+        summary += "```\n\n"
+
+        summary += "| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |\n"
+        summary += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+        for file, metrics in diff_data.items():
+            summary += (f"| {file} | {metrics['status']} | {metrics['lines_added']} | "
+                        f"{metrics['lines_removed']} | {metrics['chars_added']} | "
+                        f"{metrics['chars_removed']} | {metrics['tabs_added']} | "
+                        f"{metrics['spaces_added']} |\n")
+        summary += "\n"
+
+        if self.ai_service:
+            prompt = (
+                "Based on the following file-level metrics, provide a brief (1-sentence) explanation "
+                "for WHY each file was changed/added/removed. Focus on the architectural or functional purpose.\n\n"
+                f"{json.dumps(diff_data, indent=2)}"
+            )
+            ai_descriptions = self.ai_service.generate_content(prompt, {})
+            summary += "### 🔍 File-level Insights\n\n"
+            summary += f"{ai_descriptions}\n"
+        else:
+            summary += "### 🔍 File-level Insights\n\n"
+            for file, metrics in diff_data.items():
+                summary += f"- **{file}**: {metrics['status'].capitalize()} with {metrics['lines_added']} additions and {metrics['lines_removed']} removals.\n"
+
+        return summary
 
     def _generate_use_cases_prompt(self) -> str:
         """
@@ -1173,12 +1245,13 @@ class Ndaversis:
                 "Generate a high-quality, concise summary of the latest changes for a non-technical audience. "
                 "Focus on the 'Why Upgrade' and 'What's New' aspects. "
                 "Avoid technical jargon. Emphasize the value and benefits to the user. "
-                "The summary should be engaging and clearly explain how these changes improve the experience. "
+                "CRITICAL: Merge the evaluative 'Assessment' (assessing the quality and impact of the solution) "
+                "directly into the 'Why Upgrade' section. "
                 "Format the output as follows:\n\n"
                 "### 💎 What's New?\n"
                 "[Concise, value-driven description of features/fixes]\n\n"
                 "### 🚀 Why Upgrade?\n"
-                "[Persuasive explanation of the benefits of this version]\n"
+                "[Persuasive explanation of the benefits and evaluative assessment of this version]\n"
             )
             return self.ai_service.generate_content(prompt, analysis_data)
         
@@ -1200,11 +1273,11 @@ class Ndaversis:
     def infer_goals_from_summary(self, change_summary):
         """Infer the goals of the changes from the change summary."""
         goals = []
-        if "Added file" in change_summary or "New feature" in change_summary:
+        if "added" in change_summary.lower() or "Added file" in change_summary or "New feature" in change_summary:
             goals.append("expand the project's capabilities with new components")
-        if "Modified file" in change_summary or "Improved logic" in change_summary:
+        if "modified" in change_summary.lower() or "Modified file" in change_summary or "Improved logic" in change_summary:
             goals.append("refine existing features for better performance and reliability")
-        if "Removed file" in change_summary or "Cleanup" in change_summary:
+        if "removed" in change_summary.lower() or "Removed file" in change_summary or "Cleanup" in change_summary:
             goals.append("clean up the codebase and remove obsolete parts")
         if not goals:
             return "Address minor updates and keep the repository information current."
@@ -1212,6 +1285,14 @@ class Ndaversis:
 
     def suggest_next_steps(self, analysis_data):
         """Suggest next steps for the project."""
+        if self.ai_service:
+            prompt = (
+                "Based on the current state of the codebase, suggest 3 unique, actionable, and non-repeating "
+                "next steps for the project. Be creative and focus on long-term value, maintainability, or "
+                "user experience enhancements. Ensure the suggestions are fresh and context-aware."
+            )
+            return self.ai_service.generate_content(prompt, analysis_data)
+
         suggestions = []
         if not any("test" in func for func in analysis_data["functions"]):
             suggestions.append("improve robustness by adding a dedicated test suite")
@@ -1232,10 +1313,8 @@ class Ndaversis:
         content += "## 10. Project Map\n\n"
         content += f"{self.generate_project_map()}\n\n"
         content += "## 13. Last Version Summary\n\n"
-        content += f"The last version is `{version}`. Summary of major changes:\n"
-        # Make the summary a bit more descriptive if it's just a list of files
-        descriptive_summary = what_changed.replace("Added file:", "New feature added:").replace("Modified file:", "Improved logic in:").replace("Removed file:", "Cleanup in:")
-        content += f"{descriptive_summary}\n"
+        content += f"The last version is `{version}`. Detailed change log and metrics:\n"
+        content += f"{what_changed}\n"
         
         # Robustly extract Practical Impact for Section 13
         benefit_text = self.generate_user_benefit_analysis(analysis_data, what_changed)
@@ -1269,8 +1348,7 @@ class Ndaversis:
         content += "## 15. Contacts\n\n"
         content += f"*   **Email:** {CONTACT_EMAIL}\n*   **Repository:** {REPOSITORY_ADDRESS}\n\n"
         content += "## 16. Privacy & Terms\n\n"
-        content += f"*   **Privacy Policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md)\n"
-        content += f"*   **Terms of Service:** [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md)\n\n"
+        content += f"*   **Privacy Policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md)\n\n"
         content += "## 17. Investor Relations\n\n"
         content += f"> [!IMPORTANT]\n"
         content += f"> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**\n\n"
