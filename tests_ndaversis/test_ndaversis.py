@@ -15,7 +15,7 @@ class TestNdaversis(unittest.TestCase):
 
     def setUp(self):
         """Set up the test environment."""
-        self.test_readme_path = "test_readme.md"
+        self.test_readme_path = "test_ndaversis_readme.md"
         self.test_ndaversis_path = "test_ndaversis.py"
         self.test_config_path = "test_config.json"
         self.state_file_path = "ndaversis_state.json"

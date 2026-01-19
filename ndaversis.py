@@ -45,11 +45,21 @@ except ImportError:
 
 import difflib
 
+# Import version history module
+try:
+    import ndaversis_version_history as version_history
+except ImportError:
+    version_history = None
+
 # --- Constants ---
-README_FILE = "readme.md"
+README_FILE = "ndaversis_readme.md"
 CONFIG_FILE = "config.json"
 STATE_FILE = "ndaversis_state.json"
 LOGS_FILE = "ndaversis_logs.py"
+VERSION_HISTORY_FILE = "ndaversis_version_history.py"
+PRIVACY_POLICY_FILE = "ndaversis_privacy_policy.md"
+LICENSE_FILE = "LICENSE_ndaversis"
+REQUIREMENTS_FILE = "ndaversis_requirements.txt"
 CONTACT_EMAIL = "n@ndaotec.com"
 COPYRIGHT_HOLDER = "Nikita Andreevich Drozdov"
 REPOSITORY_ADDRESS = "https://github.com/lystwork/ndaversis"
@@ -57,7 +67,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.63"
+__version__ = "0.0.64"
 
 # --- AI Service Classes ---
 class AIService:
@@ -1508,7 +1518,7 @@ class Ndaversis:
         content += "## 15. Contacts\n\n"
         content += f"*   **Email:** {CONTACT_EMAIL}\n*   **Repository:** {REPOSITORY_ADDRESS}\n\n"
         content += "## 16. Privacy & Terms\n\n"
-        content += f"*   **Privacy Policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md)\n\n"
+        content += f"*   **Privacy Policy:** [{PRIVACY_POLICY_FILE}]({PRIVACY_POLICY_FILE})\n\n"
         content += "## 17. Investor Relations\n\n"
         content += f"> [!IMPORTANT]\n"
         content += f"> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**\n\n"
@@ -1565,49 +1575,107 @@ class Ndaversis:
         print(f"Version updated to {self.version}")
 
     def main_gui(self):
-        """Run the Flet GUI."""
+        """Run the Flet GUI with futuristic Neumorphism/Brutalism design."""
         if not ft:
             print("Flet not installed. Please run 'pip install flet' to use the GUI.")
             return
 
         def main(page: ft.Page):
-            page.title = "NDAVERSIS - Project Manager"
+            page.title = "NDAVERSIS - Agentic Version System"
             page.theme_mode = ft.ThemeMode.DARK
-            page.padding = 40
-            page.window_width = 600
-            page.window_height = 700
+            page.bgcolor = "#0a0e27"  # Deep space blue
+            page.padding = 0
+            page.window_width = 700
+            page.window_height = 850
             page.scroll = ft.ScrollMode.ADAPTIVE
-
-            # Header
-            header = ft.Column([
-                ft.Text("NDAVERSIS", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_400),
-                ft.Text(f"Current Version: {self.version}", size=16, color=ft.Colors.GREY_400),
-                ft.Divider(height=20)
-            ])
-
-            # Change Input
-            change_input = ft.TextField(
-                label="What changed in this version?",
-                multiline=True,
-                min_lines=3,
-                max_lines=5,
-                hint_text="e.g., Improved logic in ndaversis.py, added Flet GUI",
-                border_color=ft.Colors.BLUE_200
+            
+            # Neumorphic card container
+            def create_neomorphic_card(content, padding=30):
+                return ft.Container(
+                    content=content,
+                    padding=padding,
+                    margin=20,
+                    border_radius=20,
+                    bgcolor="#151b35",
+                    shadow=ft.BoxShadow(
+                        spread_radius=1,
+                        blur_radius=20,
+                        color="#00000040",
+                        offset=ft.Offset(0, 10)
+                    ),
+                    border=ft.border.all(1, "#1f2847")
+                )
+            
+            # Brutalist header with geometric design
+            header = ft.Container(
+                content=ft.Column([
+                    ft.Text(
+                        "NDAVERSIS",
+                        size=48,
+                        weight=ft.FontWeight.BOLD,
+                        font_family="Courier New",  # Brutalist monospace
+                        color="#00d9ff"  # Cyan
+                    ),
+                    ft.Text(
+                        f"v{self.version}",
+                        size=18,
+                        weight=ft.FontWeight.W_300,
+                        color="#6c7a9b"
+                    ),
+                    ft.Container(
+                        width=100,
+                        height=4,
+                        bgcolor="#00d9ff",
+                        border_radius=2,
+                        margin=ft.margin.only(top=10)
+                    )
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                padding=40,
+                gradient=ft.LinearGradient(
+                    begin=ft.alignment.top_left,
+                    end=ft.alignment.bottom_right,
+                    colors=["#0a0e27", "#1a1f3a", "#0f1729"]
+                )
             )
-
-            # Progress Indicators
-            status_text = ft.Text("", italic=True, color=ft.Colors.GREEN_400)
-            pb = ft.ProgressBar(width=400, color="blue", bgcolor="#eeeeee", visible=False)
-
+            
+            # Neumorphic input field
+            change_input = ft.TextField(
+                label="Version Changes",
+                label_style=ft.TextStyle(color="#6c7a9b", size=14),
+                multiline=True,
+                min_lines=4,
+                max_lines=6,
+                hint_text="Describe what changed in this version...",
+                hint_style=ft.TextStyle(color="#3d4663"),
+                border_color="#1f2847",
+                focused_border_color="#00d9ff",
+                bgcolor="#0d1128",
+                color="#e0e6f0",
+                text_size=15,
+                border_radius=15,
+                content_padding=20
+            )
+            
+            # Status indicator
+            status_text = ft.Text("", size=14, color="#00d9ff", text_align=ft.TextAlign.CENTER)
+            pb = ft.ProgressBar(
+                width=500,
+                height=4,
+                color="#00d9ff",
+                bgcolor="#1f2847",
+                visible=False,
+                border_radius=2
+            )
+            
             def on_increment(increment_type):
                 if not change_input.value.strip():
                     status_text.value = "⚠️ Please describe what changed first!"
-                    status_text.color = ft.Colors.ORANGE_400
+                    status_text.color = "#ff9500"  # Orange warning
                     page.update()
                     return
 
                 status_text.value = f"Processing {increment_type} update..."
-                status_text.color = ft.Colors.BLUE_400
+                status_text.color = "#00d9ff"
                 pb.visible = True
                 page.update()
 
@@ -1619,15 +1687,25 @@ class Ndaversis:
                         self.version.increment_minor()
                     else:
                         self.version.increment_patch()
-
                     what_changed = change_input.value.strip()
                     analysis_data, _ = self._analyze_codebase()
                     readme_content = self.generate_readme_content(self.version, analysis_data, what_changed)
                     self.update_readme(readme_content)
                     self.save_version(str(self.version))
+                    
+                    # Save to version history if module available
+                    if version_history:
+                        version_data = {
+                            "version": str(self.version),
+                            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "author": getpass.getuser(),
+                            "changes": what_changed,
+                            "goals": self.infer_goals_from_summary(what_changed, analysis_data)
+                        }
+                        version_history.add_version(version_data)
 
                     status_text.value = f"✅ Success! Version updated to {self.version}"
-                    status_text.color = ft.Colors.GREEN_400
+                    status_text.color = "#00ff88"  # Bright green
                     pb.visible = False
                     change_input.value = ""
                     page.update()
@@ -1638,29 +1716,87 @@ class Ndaversis:
                     page.window_close()
                 except Exception as e:
                     status_text.value = f"❌ Error: {str(e)}"
-                    status_text.color = ft.Colors.RED_400
+                    status_text.color = "#ff3366"  # Bright red
                     pb.visible = False
                     page.update()
-
-            # Buttons
-            buttons = ft.Row([
-                ft.ElevatedButton("Patch (+0.0.1)", icon=ft.Icons.UPGRADE, on_click=lambda _: on_increment("Patch"), style=ft.ButtonStyle(color=ft.Colors.GREEN_200)),
-                ft.ElevatedButton("Minor (+0.1.0)", icon=ft.Icons.ROCKET_LAUNCH, on_click=lambda _: on_increment("Minor"), style=ft.ButtonStyle(color=ft.Colors.BLUE_200)),
-                ft.ElevatedButton("Major (+1.0.0)", icon=ft.Icons.STAR, on_click=lambda _: on_increment("Major"), style=ft.ButtonStyle(color=ft.Colors.ORANGE_200)),
-            ], alignment=ft.MainAxisAlignment.CENTER, spacing=20)
-
-            footer = ft.Text("Set and Forget: Automation by ndaotec.com", size=12, color=ft.Colors.GREY_600, text_align=ft.TextAlign.CENTER)
-
+            
+            # Brutalist geometric buttons with gradients
+            def create_version_button(label, icon, increment_type, gradient_colors):
+                return ft.Container(
+                    content=ft.ElevatedButton(
+                        content=ft.Row([
+                            ft.Icon(icon, size=20, color="#ffffff"),
+                            ft.Text(label, size=14, weight=ft.FontWeight.BOLD, color="#ffffff")
+                        ], alignment=ft.MainAxisAlignment.CENTER, spacing=8),
+                        on_click=lambda _: on_increment(increment_type),
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=12),
+                            padding=ft.padding.symmetric(horizontal=25, vertical=18),
+                            bgcolor="#1a1f3a",
+                            overlay_color="#00000020"
+                        ),
+                        width=180,
+                        height=60
+                    ),
+                    gradient=ft.LinearGradient(
+                        colors=gradient_colors,
+                        begin=ft.alignment.top_left,
+                        end=ft.alignment.bottom_right
+                    ),
+                    border_radius=12,
+                    padding=2  # Border effect
+                )
+            
+            buttons = ft.Column([
+                create_version_button("PATCH +0.0.1", ft.Icons.UPGRADE, "Patch", ["#00d9ff", "#0099cc"]),
+                create_version_button("MINOR +0.1.0", ft.Icons.ROCKET_LAUNCH, "Minor", ["#5e60ce", "#7b2cbf"]),
+                create_version_button("MAJOR +1.0.0", ft.Icons.STAR, "Major", ["#ff6b35", "#f72585"])
+            ], spacing=15, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+            
+            # Footer with geometric accent
+            footer = ft.Container(
+                content=ft.Column([
+                    ft.Container(height=2, bgcolor="#1f2847", width=200),
+                    ft.Text(
+                        "Agentic Automation • ndaotec.com",
+                        size=11,
+                        color="#3d4663",
+                        text_align=ft.TextAlign.CENTER,
+                        font_family="Courier New"
+                    )
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+                margin=ft.margin.only(top=30, bottom=20)
+            )
+            
+            # Main layout with gradient background
             page.add(
-                header,
-                ft.Text("Change Log", size=20, weight=ft.FontWeight.W_600),
-                change_input,
-                ft.Container(height=10),
-                buttons,
-                ft.Container(height=20),
-                ft.Column([status_text, pb], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                ft.Divider(height=40),
-                footer
+                ft.Stack([
+                    # Gradient background
+                    ft.Container(
+                        gradient=ft.LinearGradient(
+                            begin=ft.alignment.top_left,
+                            end=ft.alignment.bottom_right,
+                            colors=["#0a0e27", "#1a1f3a", "#0f1729"]
+                        ),
+                        expand=True
+                    ),
+                    # Content
+                    ft.Column([
+                        header,
+                        create_neomorphic_card(
+                            ft.Column([
+                                ft.Text("CHANGE LOG", size=16, weight=ft.FontWeight.BOLD, color="#6c7a9b", font_family="Courier New"),
+                                ft.Container(height=10),
+                                change_input,
+                                ft.Container(height=25),
+                                buttons,
+                                ft.Container(height=20),
+                                ft.Column([status_text, pb], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                            ])
+                        ),
+                        footer
+                    ], scroll=ft.ScrollMode.ADAPTIVE)
+                ], expand=True)
             )
 
         ft.app(target=main)
@@ -1673,8 +1809,8 @@ class Ndaversis:
         if not os.path.exists(CONFIG_FILE):
             errors.append(f"Configuration file '{CONFIG_FILE}' not found.")
 
-        if not os.path.exists("requirements.txt"):
-            errors.append("requirements.txt file not found.")
+        if not os.path.exists(REQUIREMENTS_FILE):
+            errors.append(f"{REQUIREMENTS_FILE} file not found.")
 
         if self.ai_config:
             provider = self.ai_config.get("ai_provider")
@@ -1694,7 +1830,7 @@ class Ndaversis:
 
     def install_pre_commit_hook(self):
         """Installs a pre-commit hook."""
-        hook_script = "#!/bin/sh\npython3 ndaversis.py cli --patch\ngit add ndaversis.py readme.md\n"
+        hook_script = f"#!/bin/sh\npython3 ndaversis.py cli --patch\ngit add ndaversis.py {README_FILE}\n"
         hook_path = os.path.join(".git", "hooks", "pre-commit")
         try:
             with open(hook_path, "w", encoding="utf-8") as f:
