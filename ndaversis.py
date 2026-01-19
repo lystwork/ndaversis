@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.56"
+__version__ = "0.0.60"
 
 # --- AI Service Classes ---
 class AIService:
@@ -422,11 +422,12 @@ class Ndaversis:
         return None
 
     def load_previous_code_state(self) -> dict:
-        """
-        This method is deprecated and now returns an empty dictionary.
-        The functionality to track code state in the README has been removed.
-        """
-        return {}
+        """Load the previous code state from the state file."""
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (FileNotFoundError, IOError, json.JSONDecodeError):
+            return {}
 
     def _process_python_file(self, filepath, features, method_names):
         """Process a single Python file to extract features and metrics."""
@@ -615,9 +616,11 @@ class Ndaversis:
             diff_data[file] = metrics
         return diff_data
 
-    def generate_change_summary(self, old_state: dict, new_state: dict) -> str:
+    def generate_change_summary(self, old_state: dict, new_state: dict, diff_data: Optional[dict] = None) -> str:
         """Compare two code states and generate a detailed summary of changes."""
-        diff_data = self._generate_diff(old_state, new_state)
+        if diff_data is None:
+            diff_data = self._generate_diff(old_state, new_state)
+        
         if not diff_data:
             return "No significant changes detected."
 
@@ -633,7 +636,8 @@ class Ndaversis:
         # Universal horizontal diagram for insights with full metrics
         summary += "\n#### Impact Map\n\n"
         summary += "```mermaid\ngraph LR\n"
-        summary += "    Root[\"Latest Changes\"] --> " + ", ".join([file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ","_").strip("_") for file in diff_data.keys()]) + "\n"
+        if diff_data:
+            summary += "    Root[\"Latest Changes\"] --> " + " & ".join([file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ","_").strip("_") for file in diff_data.keys()]) + "\n"
         for file, metrics in diff_data.items():
             # Clean name for Mermaid ID
             clean_id = file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ", "_").strip("_")
@@ -1232,35 +1236,40 @@ class Ndaversis:
         """Generate the 7-step analysis for the 'What's Good for the User' section."""
         if self.ai_service:
             prompt = (
-                "Generate a high-quality, concise summary of the latest changes for a non-technical audience. "
-                "Focus on the 'Why Upgrade' and 'What's New' aspects.\n\n"
+                "Identify the specific technical changes in the provided metrics and explain their value to a user. "
+                "Avoid generic descriptions like 'Improved stability' or 'Refined documentation'. "
+                "Instead, be context-aware and mention what actually changed (e.g., 'Enhanced visual representation in diagrams' or 'Streamlined version tracking logic').\n\n"
                 "CRITICAL: \n"
-                "1. Keep 'What's New' and 'Why Upgrade' distinct from each other.\n"
-                "2. Do NOT include future suggestions or 'next steps' here; those belong in a separate section.\n"
-                "3. Focus on the value and impact of the current changes only.\n"
-                "4. Avoid technical jargon.\n"
-                "5. Merge the evaluative 'Assessment' (quality and impact) directly into the 'Why Upgrade' section.\n\n"
+                "1. Each description MUST be unique and specifically tailored to the added/modified files.\n"
+                "2. Keep 'What's New' and 'Why Upgrade' distinct.\n"
+                "3. Focus on the tangible impact of these specific modifications.\n"
+                "4. Avoid generic templates.\n"
+                "5. Merge the evaluative 'Assessment' directly into 'Why Upgrade'.\n\n"
                 "Format the output as follows:\n\n"
                 "### 💎 What's New?\n"
-                "[Concise, value-driven description of features/fixes]\n\n"
+                "[Specific, unique description of the new features or technical fixes]\n\n"
                 "### 🚀 Why Upgrade?\n"
-                "[Persuasive explanation of the benefits and evaluative assessment of this version]\n"
+                "[Persuasive, context-aware explanation of the benefits of this specific version]\n"
             )
             return self.ai_service.generate_content(prompt, analysis_data)
         
-        total_methods = sum(len(c.get("methods", {})) for c in analysis_data.get("classes", {}).values())
-        total_funcs = len(analysis_data.get("functions", {}))
-        total_components = total_methods + total_funcs
-        total_classes = len(analysis_data.get("classes", {}))
+        # Fallback logic with more dynamic descriptions based on change summary
+        added_files = [f for f, m in analysis_data.get("diff_data", {}).items() if m['status'] == 'added']
+        modified_files = [f for f, m in analysis_data.get("diff_data", {}).items() if m['status'] == 'modified']
         
-        # Determination for fallback non-technical summary
-        benefit_heading = "What's New?"
-        benefit_desc = "Improved system stability and refined documentation automation for a smoother experience."
-        upgrade_reason = "Get the latest enhancements in 'set-and-forget' repository management, ensuring your repo stays professional with zero effort."
+        if added_files:
+            new_feat = f"Expanded project scope by adding {len(added_files)} new files, including {os.path.basename(added_files[0])}."
+            upgrade_v = f"This update introduces significant new components that improve the overall feature set of the repository."
+        elif modified_files:
+            new_feat = f"Refined the core logic in {os.path.basename(modified_files[0])} to improve performance and reliability."
+            upgrade_v = f"Stay current with the latest optimizations and bug fixes in the core automation engine."
+        else:
+            new_feat = "General system maintenance and repository metadata updates."
+            upgrade_v = "Ensures your repository documentation remains in sync with the latest minor adjustments."
 
         return (
-            f"### 💎 {benefit_heading}\n{benefit_desc}\n\n"
-            f"### 🚀 Why Upgrade?\n{upgrade_reason}\n"
+            f"### 💎 What's New?\n{new_feat}\n\n"
+            f"### 🚀 Why Upgrade?\n{upgrade_v}\n"
         )
 
     def infer_goals_from_summary(self, change_summary):
@@ -1326,8 +1335,10 @@ class Ndaversis:
         content += f"The last version is `{version}`. Detailed change log and metrics:\n"
         content += f"{what_changed}\n"
         
-        # Robustly extract Practical Impact for Section 13
-        # Use a single call to AI service to avoid redundancy and ensure diversity
+        # Ensure analysis_data has diff_data for benefit analysis
+        if "diff_data" not in analysis_data:
+            analysis_data["diff_data"] = self._generate_diff(self.previous_code_state, self._capture_repo_state())
+
         benefit_text = self.generate_user_benefit_analysis(analysis_data, what_changed)
         
         practical_impact = "Significant improvement to project maintainability and documentation sync."
@@ -1357,12 +1368,21 @@ class Ndaversis:
             prev_next = re.findall(r"### What's Possibly Next\n(.*?)(?=\n## Version|\n## 15\. Contacts|$)", existing_history, re.DOTALL)
             previous_suggestions = "\n".join(prev_next).strip()
 
-        # Strip legacy sections from existing history
+        # Strip legacy sections and limit history to top 3
         if existing_history:
             # Remove "Change Visualization" sections
             existing_history = re.sub(r"### 📊 Change Visualization\n\n```mermaid.*?```\n+", "", existing_history, flags=re.DOTALL)
             # Remove standalone "File-level Insights" text sections (if they exist without diagrams)
             existing_history = re.sub(r"### 🔍 File-level Insights\n\n(- .*?\n)+", "", existing_history)
+            
+            # Limit to most recent 2 existing versions (to make room for the 1 new one)
+            history_versions = re.split(r"(?=## Version \d+\.\d+\.\d+)", existing_history)
+            # Filter out empty strings from split
+            history_versions = [v.strip() for v in history_versions if v.strip()]
+            if len(history_versions) > 2:
+                existing_history = "\n\n".join(history_versions[:2])
+            else:
+                existing_history = "\n\n".join(history_versions)
 
         new_entry = (
             f"## Version {version}\n"
@@ -1390,16 +1410,13 @@ class Ndaversis:
 
     def main_cli(self, cli_args):
         """Run the command-line interface."""
-        # Load the previous state
-        try:
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                old_state = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            old_state = {}
+        # Use the already loaded previous state
+        old_state = self.previous_code_state
 
         # Capture the new state and generate a diff
         new_state = self._capture_repo_state()
-        change_summary = self.generate_change_summary(old_state, new_state)
+        diff_data = self._generate_diff(old_state, new_state)
+        change_summary = self.generate_change_summary(old_state, new_state, diff_data=diff_data)
 
         # Update version
         if cli_args.major:
@@ -1419,8 +1436,10 @@ class Ndaversis:
                 self.version.increment_patch()
 
         # Generate and update the README
+        analysis_data, _ = self._analyze_codebase()
+        analysis_data["diff_data"] = diff_data
         readme_content = self.generate_readme_content(
-            str(self.version), self._analyze_codebase()[0], change_summary
+            str(self.version), analysis_data, change_summary
         )
         self.update_readme(readme_content)
 

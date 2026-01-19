@@ -266,6 +266,7 @@ class TestNdaversis(unittest.TestCase):
         self.assertNotIn("Change Visualization", diff)
         self.assertIn("Impact Map", diff)
         self.assertIn("graph LR", diff)
+        self.assertIn("Root[\"Latest Changes\"] --> file1_txt & file2_txt & file3_txt", diff)
         self.assertIn("file1.txt: Modified with 1 additions and 1 removals.", diff)
         self.assertIn("file3.txt: Added with 1 additions and 0 removals.", diff)
         self.assertIn("file2.txt: Removed with 0 additions and 1 removals.", diff)
@@ -317,6 +318,37 @@ class TestNdaversis(unittest.TestCase):
         # Should NOT mention Ndaversis-specific terms in synthesized fallbacks
         self.assertNotIn("tkinter", content)
         self.assertIn("Moving forward", content)
+
+    def test_version_history_limiting(self):
+        """Verify that only the most recent 3 versions are kept in the README."""
+        # Setup existing history with 4 versions
+        existing_history = (
+            "## Version 1.0.0\nGoal 1\n\n"
+            "## Version 0.9.0\nGoal 2\n\n"
+            "## Version 0.8.0\nGoal 3\n\n"
+            "## Version 0.7.0\nGoal 4\n"
+        )
+        
+        # Mocking the existing history in the file
+        with open(self.test_readme_path, "w", encoding="utf-8") as f:
+            f.write(f"# 1. Test\n\n## 14. Version History\n{existing_history}\n## 15. Contacts\n")
+            
+        analysis_data = {
+            "functions": {}, "classes": {}, "imports": [], "files": {},
+            "metrics": {"total_lines": 0, "code_lines": 0, "comment_lines": 0, "blank_lines": 0, "tabs": 0, "strings": 0},
+            "languages": {}, "diff_data": {}
+        }
+        what_changed = "Nothing much"
+        
+        content = self.app.generate_readme_content("1.1.0", analysis_data, what_changed)
+        
+        # Should contain Version 1.1.0, 1.0.0, and 0.9.0
+        self.assertIn("## Version 1.1.0", content)
+        self.assertIn("## Version 1.0.0", content)
+        self.assertIn("## Version 0.9.0", content)
+        # Should NOT contain Version 0.8.0 or 0.7.0
+        self.assertNotIn("## Version 0.8.0", content)
+        self.assertNotIn("## Version 0.7.0", content)
 
 if __name__ == '__main__':
     unittest.main()
