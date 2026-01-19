@@ -279,28 +279,35 @@ class TestNdaversis(unittest.TestCase):
         analysis_data = {
             "functions": {"my_func": {"docstring": "test: doc"}},
             "classes": {"MyClass": {"methods": {"my_method": {}}}},
-            "imports": ["os", "sys", "requests"],
-            "files": {"ndaversis.py": {"docstring": "main module"}}
+            "imports": ["os", "sys", "requests", "openai", "flet"],
+            "files": {"ndaversis.py": {"docstring": "main module"}},
+            "languages": {".py": 1, ".md": 1}
         }
         what_changed = "Modified file: ndaversis.py"
         content = self.app.generate_readme_content("0.1.0", analysis_data, what_changed)
         
         # Check Sections
-        for i in range(2, 15):
+        for i in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
             self.assertIn(f"## {i}.", content)
             
-        # Check Diagrams
-        self.assertIn("```mermaid\ngraph TD", content) # Project Map / Dependency Graph
-        self.assertIn("```mermaid\nclassDiagram", content) # Modules Map
+        # Check mermaid diagrams
+        self.assertIn("pie title Language Distribution", content)
+        self.assertIn("graph LR", content) # stdlib diagram
+        self.assertIn("Python --\u003e", content)
+        # Check new dependency structure
+        self.assertIn("Optional - AI Providers (Could be used without)", content)
+        self.assertIn("For AI-powered documentation insights", content)
+        self.assertIn("Mandatory (Required for correct work)", content)
+        self.assertIn("local on-prem mode", content)
         
         # Check Fallbacks (using no docstrings for some sections)
         analysis_empty = {
-            "functions": {}, "classes": {}, "imports": [], "files": {},
+            "functions": {}, "classes": {}, "imports": ["os"], "files": {},
             "metrics": {"total_lines": 0, "code_lines": 0, "comment_lines": 0, "blank_lines": 0, "tabs": 0, "strings": 0},
             "languages": {}
         }
         content_fallback = self.app.generate_readme_content("0.1.0", analysis_empty, what_changed)
-        self.assertIn("Set-and-Forget Automation", content_fallback)
+        self.assertIn("graph LR", content_fallback) # stdlib is still shown (empty)
         self.assertIn("## 13. Last Version Summary", content_fallback)
 
     def test_shadow_repo_agnostic_generation(self):

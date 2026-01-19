@@ -1,6 +1,6 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.61`
+**Current Version:** `0.0.63`
 
 ## 2. Description Summary
 
@@ -18,29 +18,29 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 2345 |
-| Code Lines | 1844 |
-| Comment Lines | 151 |
-| Blank Lines | 350 |
+| Total Lines | 2433 |
+| Code Lines | 1905 |
+| Comment Lines | 164 |
+| Blank Lines | 364 |
 | Tabs | 0 |
-| Strings | 1639 |
+| Strings | 1761 |
 
 
 ### Language Breakdown
 
 | Extension | Count |
 | :--- | :--- |
-| .txt | 3 |
-| .py | 2 |
+| .py | 3 |
 | .md | 2 |
 | no extension | 2 |
+| .txt | 1 |
 | .json | 1 |
 
 
 ### File Statistics
-- **Total Files:** 10
-- **Python Files:** 2
-- **Repository Size:** 235.78 KB
+- **Total Files:** 9
+- **Python Files:** 3
+- **Repository Size:** 200.30 KB
 ----- 
 
 <!-- AUTO-SUMMARY-END -->
@@ -111,23 +111,49 @@ python ndaversis.py audit
 ## 8. Requirements
 
 ### Languages & Environments
-*   **TXT**: Primary development language (3 files detected).*   **PY**: Primary development language (2 files detected). Requires Python 3.8+.*   **MD**: Primary development language (2 files detected).*   **NO EXTENSION**: Primary development language (2 files detected).*   **JSON**: Primary development language (1 files detected).### Built-in Standard Library (Included with Python)
+
+**Python Version**: 3.8 or higher required
+
+```mermaid
+pie title Language Distribution
+    ".py" : 3
+    ".md" : 2
+    "no extension" : 2
+    ".txt" : 1
+    ".json" : 1
+```
+
+### Built-in Standard Library (Included with Python)
+```mermaid
+graph LR
+    Python --> argparse & ast & datetime & difflib & getpass & json & os & random & re & sys & time & typing
+```
+
 The following modules are part of Python's standard library and **do not** require external installation:
 
 `argparse`, `ast`, `datetime`, `difflib`, `getpass`, `json`, `os`, `random`, `re`, `sys`, `time`, `typing`
 
-### External Libraries (Must be installed)
-To run this project, ensure you have the following packages installed via `pip`:
+### External Libraries
 
-*   `anthropic`
-*   `deepseek`
-*   `flet`
-*   `google-genai`
-*   `openai`
+#### Mandatory (Required for correct work)
+*   `flet` - Required for GUI functionality
+
+#### Optional - AI Providers (Could be used without)
+> [!NOTE]
+> The system works in **local on-prem mode** without any AI dependencies. AI providers enhance documentation with intelligent summaries but are not required for core functionality.
+
+*   `anthropic` - For AI-powered documentation insights
+*   `deepseek` - For AI-powered documentation insights
+*   `google-genai` - For AI-powered documentation insights
+*   `openai` - For AI-powered documentation insights
+
+#### Other Dependencies
+*   `ndaversis` - Technical dependency
 
 ### Services & APIs (Optional)
-*   **Vertex AI / Google Gemini**: For AI-powered content generation.
-*   **OpenAI / Anthropic / DeepSeek**: Alternative AI providers supported by the system.
+*   **Vertex AI / Google Gemini**: For AI-powered documentation (Recommended).
+*   **OpenAI / Anthropic / DeepSeek**: Supported providers for advanced synthesis.
+*   **Local/On-Prem**: Works entirely offline for core analysis and versioning.
 
 
 ## 9. Install
@@ -173,8 +199,15 @@ python ndaversis.py
 
 ## 11. Modules Map
 
-*   **ndaversis_logs.py**: Core logic and definitions for ndaversis_logs.py
+*   **.gitignore**: Git ignore rules for version control
+*   **LICENSE**: Project license and terms
+*   **PRIVACY_POLICY.md**: Documentation file: PRIVACY_POLICY.md
+*   **config.json**: Configuration file: config.json
 *   **ndaversis.py**: Ndaversis: Agentic Semantic Version Information System.
+*   **ndaversis_logs.py**: Python module implementing AIService, GeminiService, ChatGPTService and more
+*   **readme.md**: Documentation file: readme.md
+*   **requirements.txt**: Text resource file: requirements.txt
+*   **test_debug.py**: Python module implementing AIService, GeminiService, ChatGPTService and more
 
 
 ### Module Structure Diagram
@@ -259,6 +292,7 @@ classDiagram
 *   **deepseek** (pip): Advanced AI provider known for efficient and accurate content generation.
 *   **flet** (pip): Modern framework for building beautiful and fast interactive user interfaces.
 *   **google-genai** (pip): Google's official library for accessing high-performance Gemini AI models.
+*   **ndaversis** (pip): Specialized library that supports the system's core automation logic.
 *   **openai** (pip): Standard interface for integrating ChatGPT and other OpenAI language models.
 
 ### Python Standard Library (Built-in)
@@ -272,7 +306,7 @@ These modules are built into Python (no installation required):
 
 ```mermaid
 graph TD
-    Project --> lang_PY["PY Overview (2 files)"]
+    Project --> lang_PY["PY Overview (3 files)"]
     lang_PY --> dep_anthropic["anthropic"]
     lang_PY --> dep_argparse["argparse"]
     lang_PY --> dep_ast["ast"]
@@ -283,6 +317,7 @@ graph TD
     lang_PY --> dep_getpass["getpass"]
     lang_PY --> dep_google_genai["google-genai"]
     lang_PY --> dep_json["json"]
+    lang_PY --> dep_ndaversis["ndaversis"]
     lang_PY --> dep_openai["openai"]
     lang_PY --> dep_os["os"]
     lang_PY --> dep_random["random"]
@@ -291,8 +326,8 @@ graph TD
     lang_PY --> dep_time["time"]
     lang_PY --> dep_typing["typing"]
     Project --> lang_MD["MD Overview (2 files)"]
-    Project --> lang_TXT["TXT Overview (3 files)"]
     Project --> lang_NO_EXTENSION["NO EXTENSION Overview (2 files)"]
+    Project --> lang_TXT["TXT Overview (1 files)"]
     Project --> lang_JSON["JSON Overview (1 files)"]
 ```
 
@@ -307,8 +342,7 @@ graph TD
 ./ndaversis_logs.py
 ./readme.md
 ./requirements.txt
-./test_fail.txt
-./test_output.txt
+./test_debug.py
 ```
 
 ### Project Structure Diagram
@@ -324,32 +358,30 @@ graph TD
     Root --> node_ndaversis_logs_py["ndaversis_logs.py"]
     Root --> node_readme_md["readme.md"]
     Root --> node_requirements_txt["requirements.txt"]
-    Root --> node_test_fail_txt["test_fail.txt"]
-    Root --> node_test_output_txt["test_output.txt"]
+    Root --> node_test_debug_py["test_debug.py"]
 ```
 
 ## 13. Last Version Summary
 
-The last version is `0.0.61`. Detailed change log and metrics:
+The last version is `0.0.63`. Detailed change log and metrics:
 | File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | ./.gitignore | added | 4 | 0 | 42 | 0 | 0 | 0 |
 | ./LICENSE | added | 16 | 0 | 1207 | 0 | 0 | 172 |
 | ./PRIVACY_POLICY.md | added | 21 | 0 | 1554 | 0 | 0 | 235 |
 | ./config.json | added | 3 | 0 | 27 | 0 | 0 | 3 |
-| ./ndaversis.py | added | 1673 | 0 | 77455 | 0 | 0 | 22770 |
-| ./ndaversis_logs.py | added | 33 | 0 | 91233 | 0 | 0 | 18417 |
-| ./readme.md | added | 496 | 0 | 18949 | 0 | 0 | 3036 |
+| ./ndaversis.py | added | 1737 | 0 | 80842 | 0 | 0 | 24018 |
+| ./ndaversis_logs.py | added | 35 | 0 | 95151 | 0 | 0 | 19073 |
+| ./readme.md | added | 552 | 0 | 21509 | 0 | 0 | 3517 |
 | ./requirements.txt | added | 11 | 0 | 261 | 0 | 0 | 33 |
-| ./test_fail.txt | added | 40 | 0 | 23391 | 0 | 0 | 3519 |
-| ./test_output.txt | added | 48 | 0 | 24831 | 0 | 0 | 3617 |
+| ./test_debug.py | added | 54 | 0 | 1978 | 0 | 0 | 351 |
 
 
 #### Impact Map
 
 ```mermaid
 graph LR
-    Root["Latest Changes"] --> gitignore & LICENSE & PRIVACY_POLICY_md & config_json & ndaversis_py & ndaversis_logs_py & readme_md & requirements_txt & test_fail_txt & test_output_txt
+    Root["Latest Changes"] --> gitignore & LICENSE & PRIVACY_POLICY_md & config_json & ndaversis_py & ndaversis_logs_py & readme_md & requirements_txt & test_debug_py
     gitignore["./.gitignore: Added (4 + / 0 -)"]
     style gitignore fill:#bbdefb,stroke:#333,stroke-width:2px
     LICENSE["./LICENSE: Added (16 + / 0 -)"]
@@ -358,24 +390,124 @@ graph LR
     style PRIVACY_POLICY_md fill:#bbdefb,stroke:#333,stroke-width:2px
     config_json["./config.json: Added (3 + / 0 -)"]
     style config_json fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_py["./ndaversis.py: Added (1673 + / 0 -)"]
+    ndaversis_py["./ndaversis.py: Added (1737 + / 0 -)"]
     style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_logs_py["./ndaversis_logs.py: Added (33 + / 0 -)"]
+    ndaversis_logs_py["./ndaversis_logs.py: Added (35 + / 0 -)"]
     style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    readme_md["./readme.md: Added (496 + / 0 -)"]
+    readme_md["./readme.md: Added (552 + / 0 -)"]
     style readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
     requirements_txt["./requirements.txt: Added (11 + / 0 -)"]
     style requirements_txt fill:#bbdefb,stroke:#333,stroke-width:2px
-    test_fail_txt["./test_fail.txt: Added (40 + / 0 -)"]
-    style test_fail_txt fill:#bbdefb,stroke:#333,stroke-width:2px
-    test_output_txt["./test_output.txt: Added (48 + / 0 -)"]
-    style test_output_txt fill:#bbdefb,stroke:#333,stroke-width:2px
+    test_debug_py["./test_debug.py: Added (54 + / 0 -)"]
+    style test_debug_py fill:#bbdefb,stroke:#333,stroke-width:2px
 ```
 
 
 **Practical Impact**: Significant improvement to project maintainability and documentation sync.
 
 ## 14. Version History
+## Version 0.0.63
+### Goals
+The main goals were to expand the project's capabilities with new components.
+
+### What Changed
+| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| ./.gitignore | added | 4 | 0 | 42 | 0 | 0 | 0 |
+| ./LICENSE | added | 16 | 0 | 1207 | 0 | 0 | 172 |
+| ./PRIVACY_POLICY.md | added | 21 | 0 | 1554 | 0 | 0 | 235 |
+| ./config.json | added | 3 | 0 | 27 | 0 | 0 | 3 |
+| ./ndaversis.py | added | 1737 | 0 | 80842 | 0 | 0 | 24018 |
+| ./ndaversis_logs.py | added | 35 | 0 | 95151 | 0 | 0 | 19073 |
+| ./readme.md | added | 552 | 0 | 21509 | 0 | 0 | 3517 |
+| ./requirements.txt | added | 11 | 0 | 261 | 0 | 0 | 33 |
+| ./test_debug.py | added | 54 | 0 | 1978 | 0 | 0 | 351 |
+
+
+#### Impact Map
+
+```mermaid
+graph LR
+    Root["Latest Changes"] --> gitignore & LICENSE & PRIVACY_POLICY_md & config_json & ndaversis_py & ndaversis_logs_py & readme_md & requirements_txt & test_debug_py
+    gitignore["./.gitignore: Added (4 + / 0 -)"]
+    style gitignore fill:#bbdefb,stroke:#333,stroke-width:2px
+    LICENSE["./LICENSE: Added (16 + / 0 -)"]
+    style LICENSE fill:#bbdefb,stroke:#333,stroke-width:2px
+    PRIVACY_POLICY_md["./PRIVACY_POLICY.md: Added (21 + / 0 -)"]
+    style PRIVACY_POLICY_md fill:#bbdefb,stroke:#333,stroke-width:2px
+    config_json["./config.json: Added (3 + / 0 -)"]
+    style config_json fill:#bbdefb,stroke:#333,stroke-width:2px
+    ndaversis_py["./ndaversis.py: Added (1737 + / 0 -)"]
+    style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
+    ndaversis_logs_py["./ndaversis_logs.py: Added (35 + / 0 -)"]
+    style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
+    readme_md["./readme.md: Added (552 + / 0 -)"]
+    style readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
+    requirements_txt["./requirements.txt: Added (11 + / 0 -)"]
+    style requirements_txt fill:#bbdefb,stroke:#333,stroke-width:2px
+    test_debug_py["./test_debug.py: Added (54 + / 0 -)"]
+    style test_debug_py fill:#bbdefb,stroke:#333,stroke-width:2px
+```
+
+
+### What's Good for the User
+### 💎 What's New?
+Expanded project scope by adding 9 new files, including .gitignore.
+
+### 🚀 Why Upgrade?
+This update introduces significant new components that improve the overall feature set of the repository.
+
+
+### What's Possibly Next
+Moving forward, you might want to integrate with more AI providers for diversity, consider modularizing the code to keep it maintainable as it grows.
+
+
+## Version 0.0.62
+### Goals
+The main goals were to expand the project's capabilities with new components, refine existing features for better performance and reliability, clean up the codebase and remove obsolete parts.
+
+### What Changed
+| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| ./ndaversis.py | modified | 39 | 9 | 2431 | 717 | 0 | 772 |
+| ./ndaversis_logs.py | modified | 1 | 0 | 2318 | 0 | 0 | 396 |
+| ./ndaversis_state.json | added | 12 | 0 | 253534 | 0 | 0 | 51832 |
+| ./readme.md | modified | 124 | 87 | 5863 | 3856 | 0 | 1003 |
+| ./test_fail.txt | removed | 0 | 40 | 0 | 23391 | 0 | 0 |
+| ./test_output.txt | removed | 0 | 48 | 0 | 24831 | 0 | 0 |
+
+
+#### Impact Map
+
+```mermaid
+graph LR
+    Root["Latest Changes"] --> ndaversis_py & ndaversis_logs_py & ndaversis_state_json & readme_md & test_fail_txt & test_output_txt
+    ndaversis_py["./ndaversis.py: Modified (39 + / 9 -)"]
+    style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
+    ndaversis_logs_py["./ndaversis_logs.py: Modified (1 + / 0 -)"]
+    style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
+    ndaversis_state_json["./ndaversis_state.json: Added (12 + / 0 -)"]
+    style ndaversis_state_json fill:#bbdefb,stroke:#333,stroke-width:2px
+    readme_md["./readme.md: Modified (124 + / 87 -)"]
+    style readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
+    test_fail_txt["./test_fail.txt: Removed (0 + / 40 -)"]
+    style test_fail_txt fill:#bbdefb,stroke:#333,stroke-width:2px
+    test_output_txt["./test_output.txt: Removed (0 + / 48 -)"]
+    style test_output_txt fill:#bbdefb,stroke:#333,stroke-width:2px
+```
+
+
+### What's Good for the User
+### 💎 What's New?
+Expanded project scope by adding 1 new files, including ndaversis_state.json.
+
+### 🚀 Why Upgrade?
+This update introduces significant new components that improve the overall feature set of the repository.
+
+
+### What's Possibly Next
+Moving forward, you might want to create detailed API documentation for other developers, optimize performance for large-scale repositories.
+
 ## Version 0.0.61
 ### Goals
 The main goals were to expand the project's capabilities with new components.
@@ -433,87 +565,6 @@ This update introduces significant new components that improve the overall featu
 
 ### What's Possibly Next
 Moving forward, you might want to implement automated benchmarking for core logic, improve robustness by adding a dedicated test suite, add support for more configuration formats (YAML, TOML).
-
-
-## Version 0.0.60
-### Goals
-The main goals were to refine existing features for better performance and reliability.
-
-### What Changed
-| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ./ndaversis.py | modified | 18 | 16 | 901 | 727 | 0 | 215 |
-| ./ndaversis_logs.py | modified | 1 | 0 | 1265 | 0 | 0 | 196 |
-| ./ndaversis_state.json | modified | 4 | 4 | 756682 | 472381 | 0 | 142145 |
-| ./readme.md | modified | 78 | 93 | 3222 | 4277 | 0 | 506 |
-
-
-#### Impact Map
-
-```mermaid
-graph LR
-    Root["Latest Changes"] --> ndaversis_py & ndaversis_logs_py & ndaversis_state_json & readme_md
-    ndaversis_py["./ndaversis.py: Modified with 18 additions and 16 removals."]
-    style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_logs_py["./ndaversis_logs.py: Modified with 1 additions and 0 removals."]
-    style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_state_json["./ndaversis_state.json: Modified with 4 additions and 4 removals."]
-    style ndaversis_state_json fill:#bbdefb,stroke:#333,stroke-width:2px
-    readme_md["./readme.md: Modified with 78 additions and 93 removals."]
-    style readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
-```
-
-
-### What's Good for the User
-### 💎 What's New?
-Refined the core logic in ndaversis.py to improve performance and reliability.
-
-### 🚀 Why Upgrade?
-Stay current with the latest optimizations and bug fixes in the core automation engine.
-
-
-### What's Possibly Next
-Moving forward, you might want to implement a plugin system for extended functionality, add comprehensive error handling and logging, enhance the user interface for better accessibility.
-
-## Version 0.0.59
-### Goals
-The main goals were to refine existing features for better performance and reliability.
-
-### What Changed
-| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ./ndaversis.py | modified | 1 | 1 | 22 | 22 | 0 | 2 |
-| ./ndaversis_logs.py | modified | 1 | 0 | 1259 | 0 | 0 | 196 |
-| ./ndaversis_state.json | modified | 4 | 3 | 472381 | 226333 | 0 | 94694 |
-| ./readme.md | modified | 86 | 113 | 3792 | 5369 | 0 | 586 |
-
-
-#### Impact Map
-
-```mermaid
-graph LR
-    Root["Latest Changes"] --> ndaversis_py & ndaversis_logs_py & ndaversis_state_json & readme_md
-    ndaversis_py["./ndaversis.py: Modified with 1 additions and 1 removals."]
-    style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_logs_py["./ndaversis_logs.py: Modified with 1 additions and 0 removals."]
-    style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_state_json["./ndaversis_state.json: Modified with 4 additions and 3 removals."]
-    style ndaversis_state_json fill:#bbdefb,stroke:#333,stroke-width:2px
-    readme_md["./readme.md: Modified with 86 additions and 113 removals."]
-    style readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
-```
-
-
-### What's Good for the User
-### 💎 What's New?
-Expanded project scope by adding 10 new files, including .gitignore.
-
-### 🚀 Why Upgrade?
-This update introduces significant new components that improve the overall feature set of the repository.
-
-
-### What's Possibly Next
-Moving forward, you might want to integrate with more AI providers for diversity, consider modularizing the code to keep it maintainable as it grows.
 ## 15. Contacts
 
 *   **Email:** n@ndaotec.com

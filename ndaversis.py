@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.61"
+__version__ = "0.0.63"
 
 # --- AI Service Classes ---
 class AIService:
@@ -527,7 +527,8 @@ class Ndaversis:
                 if file.endswith(".py"):
                     last_code = self._process_python_file(filepath, features, method_names)
                 else:
-                    # Collect basic line metrics for non-python files too
+                    # Collect basic line metrics and file info for non-python files
+                    features["files"][filepath] = {"docstring": ""}
                     try:
                         with open(filepath, "r", encoding="utf-8") as f:
                             lines = f.readlines()
@@ -959,27 +960,63 @@ class Ndaversis:
         # Languages used
         languages = analysis_data.get("languages", {})
         if languages:
-            requirements += "### Languages & Environments\n"
+            requirements += "### Languages & Environments\n\n"
+            
+            # Show Python version requirement prominently if Python files detected
+            if ".py" in languages:
+                requirements += "**Python Version**: 3.8 or higher required\n\n"
+            
+            # Mermaid pie chart for language distribution
+            requirements += "```mermaid\npie title Language Distribution\n"
             for ext, count in sorted(languages.items(), key=lambda x: x[1], reverse=True):
-                lang_name = ext.replace(".", "").upper() or "Plain Text / Other"
-                requirements += f"*   **{lang_name}**: Primary development language ({count} files detected)."
-                if ext == ".py":
-                    requirements += " Requires Python 3.8+."
+                requirements += f"    \"{ext}\" : {count}\n"
+            requirements += "```\n\n"
+
         if stdlib_deps:
             requirements += "### Built-in Standard Library (Included with Python)\n"
+            requirements += "```mermaid\ngraph LR\n"
+            requirements += "    Python --> " + " & ".join([d for d in sorted(stdlib_deps)]) + "\n"
+            requirements += "```\n\n"
             requirements += "The following modules are part of Python's standard library and **do not** require external installation:\n\n"
             requirements += ", ".join([f"`{d}`" for d in sorted(stdlib_deps)]) + "\n\n"
 
         if external_deps:
-            requirements += "### External Libraries (Must be installed)\n"
-            requirements += "To run this project, ensure you have the following packages installed via `pip`:\n\n"
-            for dep in sorted(external_deps):
-                requirements += f"*   `{dep}`\n"
-            requirements += "\n"
+            requirements += "### External Libraries\n\n"
+            
+            mandatory = ["flet"]
+            ai_providers = ["openai", "google-genai", "anthropic", "deepseek"]
+            optional_deps = [d for d in external_deps if d.lower() not in mandatory and d.lower() not in ai_providers]
+            
+            # Mandatory dependencies
+            mandatory_found = [d for d in external_deps if d.lower() in mandatory]
+            if mandatory_found:
+                requirements += "#### Mandatory (Required for correct work)\n"
+                for dep in sorted(mandatory_found):
+                    requirements += f"*   `{dep}` - Required for GUI functionality\n"
+                requirements += "\n"
+            
+            # Optional AI dependencies
+            ai_found = [d for d in external_deps if d.lower() in ai_providers]
+            if ai_found:
+                requirements += "#### Optional - AI Providers (Could be used without)\n"
+                requirements += "> [!NOTE]\n"
+                requirements += "> The system works in **local on-prem mode** without any AI dependencies. "
+                requirements += "AI providers enhance documentation with intelligent summaries but are not required for core functionality.\n\n"
+                for dep in sorted(ai_found):
+                    requirements += f"*   `{dep}` - For AI-powered documentation insights\n"
+                requirements += "\n"
+            
+            # Other technical dependencies
+            if optional_deps:
+                requirements += "#### Other Dependencies\n"
+                for dep in sorted(optional_deps):
+                    requirements += f"*   `{dep}` - Technical dependency\n"
+                requirements += "\n"
         
         requirements += "### Services & APIs (Optional)\n"
-        requirements += "*   **Vertex AI / Google Gemini**: For AI-powered content generation.\n"
-        requirements += "*   **OpenAI / Anthropic / DeepSeek**: Alternative AI providers supported by the system.\n\n"
+        requirements += "*   **Vertex AI / Google Gemini**: For AI-powered documentation (Recommended).\n"
+        requirements += "*   **OpenAI / Anthropic / DeepSeek**: Supported providers for advanced synthesis.\n"
+        requirements += "*   **Local/On-Prem**: Works entirely offline for core analysis and versioning.\n\n"
 
         # --- Install ---
         install = "## 9. Install\n\n"
@@ -1013,11 +1050,38 @@ class Ndaversis:
 
         # --- Modules Map ---
         modules_map = "## 11. Modules Map\n\n"
-        for filepath, data in analysis_data.get("files", {}).items():
+        
+        # Enhanced descriptions for all modules
+        for filepath, data in sorted(analysis_data.get("files", {}).items()):
             basename = os.path.basename(filepath)
             doc = data.get("docstring", "").split("\n")[0].strip()
+            
             if not doc:
-                doc = "Core logic and definitions for " + basename
+                # Provide specific descriptions based on file type and name
+                if basename.endswith(".py"):
+                    # Check if file contains classes or functions
+                    file_classes = [c for c, c_data in analysis_data.get("classes", {}).items()]
+                    file_functions = list(analysis_data.get("functions", {}).keys())
+                    
+                    if file_classes:
+                        doc = f"Python module implementing {', '.join(file_classes[:3])} {'and more' if len(file_classes) > 3 else ''}"
+                    elif file_functions:
+                        doc = f"Python module with {len(file_functions)} function(s) for core logic"
+                    else:
+                        doc = "Python module containing core system logic and definitions"
+                elif basename.endswith(".json"):
+                    doc = f"Configuration file: {basename}"
+                elif basename.endswith(".md"):
+                    doc = f"Documentation file: {basename}"
+                elif basename.endswith(".txt"):
+                    doc = f"Text resource file: {basename}"
+                elif basename == ".gitignore":
+                    doc = "Git ignore rules for version control"
+                elif basename == "LICENSE":
+                    doc = "Project license and terms"
+                else:
+                    doc = f"Project resource file: {basename}"
+            
             modules_map += f"*   **{basename}**: {doc}\n"
         modules_map += "\n\n### Module Structure Diagram\n\n```mermaid\nclassDiagram\n"
         if not analysis_data.get("classes"):
