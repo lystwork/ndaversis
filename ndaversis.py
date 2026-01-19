@@ -51,21 +51,14 @@ try:
 except ImportError:
     version_history = None
 
-# Import state and config modules
-try:
-    import ndaversis_state
-    import ndaversis_config
-except ImportError:
-    ndaversis_state = None
-    ndaversis_config = None
-
 # --- Constants ---
 # Dual README system
 USER_README_FILE = "readme.md"  # User's unified repository
 NDAVERSIS_README_FILE = "ndaversis_readme.md"  # Ndaversis-specific info
 README_FILE = NDAVERSIS_README_FILE  # Default for backward compatibility
 
-# CONFIG_FILE and STATE_FILE are now handled by ndaversis_config.py and ndaversis_state.py
+CONFIG_FILE = "config.json"
+STATE_FILE = "ndaversis_state.json"
 LOGS_FILE = "ndaversis_logs.py"
 VERSION_HISTORY_FILE = "ndaversis_version_history.py"
 PRIVACY_POLICY_FILE = "ndaversis_privacy_policy.md"
@@ -78,7 +71,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.66"
+__version__ = "0.0.65"
 
 # --- AI Service Classes ---
 class AIService:
@@ -340,30 +333,6 @@ class Ndaversis:
         self.ai_config: dict = self.load_ai_config()
         self.previous_code_state: dict = self.load_previous_code_state()
         self.ai_service: Optional[AIService] = self.get_ai_service()
-        
-    def generate_mermaid_with_paropank_theme(self, diagram_content):
-        """Wrap Mermaid diagram with paropank dark theme."""
-        theme_config = "%%{init: {\\n" \
-            "  'theme':'dark',\\n" \
-            "  'themeVariables': {\\n" \
-            "    'primaryColor': '#667eea',\\n" \
-            "    'primaryTextColor': '#fff',\\n" \
-            "    'primaryBorderColor': '#764ba2',\\n" \
-            "    'lineColor': '#f093fb',\\n" \
-            "    'secondaryColor': '#4facfe',\\n" \
-            "    'tertiaryColor': '#43e97b',\\n" \
-            "    'background': '#1a1a2e',\\n" \
-            "    'mainBkg': '#16213e',\\n" \
-            "    'secondBkg': '#0f3460',\\n" \
-            "    'nodeBorder': '#667eea',\\n" \
-            "    'clusterBkg': '#0f3460',\\n" \
-            "    'clusterBorder': '#764ba2',\\n" \
-            "    'edgeLabelBackground': '#16213e',\\n" \
-            "    'tertiaryBorderColor': '#43e97b',\\n" \
-            "    'titleColor': '#fff'\\n" \
-            "  }\\n" \
-            "}}%%\\n"
-        return f"{theme_config}\\n{diagram_content}"
 
     def is_ndaversis_repo(self):
         """
@@ -428,11 +397,25 @@ class Ndaversis:
 
     def load_ai_config(self) -> dict:
         """
-        Load AI configuration from ndaversis_config module.
+        Load AI configuration from config.json.
+
+        This method reads the `config.json` file and returns the configuration
+        as a dictionary. It handles potential errors like the file not being
+        found or being invalid JSON.
+
+        Returns:
+            dict: The AI configuration, or an empty dictionary if
+                            an error occurs.
         """
-        if ndaversis_config:
-            return ndaversis_config.get_all_config()
-        return {}
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            print(f"Configuration file '{CONFIG_FILE}' not found. AI service disabled.")
+            return {}
+        except (IOError, json.JSONDecodeError) as e:
+            print(f"Error loading AI configuration from {CONFIG_FILE}: {e}")
+            return {}
 
     def get_ai_service(self):
         """Factory function to get an AI service instance."""
@@ -476,10 +459,12 @@ class Ndaversis:
         return None
 
     def load_previous_code_state(self) -> dict:
-        """Load the previous code state from the state module."""
-        if ndaversis_state:
-            return ndaversis_state.load_state()
-        return {}
+        """Load the previous code state from the state file."""
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (FileNotFoundError, IOError, json.JSONDecodeError):
+            return {}
 
     def _process_python_file(self, filepath, features, method_names):
         """Process a single Python file to extract features and metrics."""
@@ -612,16 +597,6 @@ class Ndaversis:
                 dirs.remove('__pycache__')
 
             for file in files:
-                # Exclude self-managed state/config files to prevent recursion and bloating
-                if file in [
-                    'ndaversis_state.py', 
-                    'ndaversis_config.py', 
-                    'ndaversis_logs.py', 
-                    'ndaversis_version_history.py',
-                    '__pycache__'
-                ]:
-                    continue
-
                 filepath = os.path.join(root, file)
                 try:
                     with open(filepath, "r", encoding="utf-8") as f:
@@ -715,11 +690,9 @@ class Ndaversis:
 
         # Universal horizontal diagram for insights with full metrics
         summary += "\n#### Impact Map\n\n"
-        summary += "```mermaid\n"
-        
-        impact_code = "graph LR\n"
+        summary += "```mermaid\ngraph LR\n"
         if diff_data:
-            impact_code += "    Root[\"Latest Changes\"] --> " + " & ".join([file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ","_").strip("_") for file in diff_data.keys()]) + "\n"
+            summary += "    Root[\"Latest Changes\"] --> " + " & ".join([file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ","_").strip("_") for file in diff_data.keys()]) + "\n"
         for file, metrics in diff_data.items():
             # Clean name for Mermaid ID
             clean_id = file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ", "_").strip("_")
@@ -732,10 +705,8 @@ class Ndaversis:
                 # Fallback: ./path/to/file: Added with 4 additions and 0 removals.
                 label = f"{file}: {metrics['status'].capitalize()} ({metrics['lines_added']} + / {metrics['lines_removed']} -)"
             
-            impact_code += f"    {clean_id}[\"{label}\"]\n"
-            impact_code += f"    style {clean_id} fill:#1a1f3a,stroke:#667eea,stroke-width:2px,color:#fff\n" # Paropank node style
-            
-        summary += self.generate_mermaid_with_paropank_theme(impact_code)
+            summary += f"    {clean_id}[\"{label}\"]\n"
+            summary += f"    style {clean_id} fill:#bbdefb,stroke:#333,stroke-width:2px\n"
         summary += "```\n"
 
         return summary
@@ -863,9 +834,7 @@ class Ndaversis:
             content = self.ai_service.generate_content(self._generate_use_cases_prompt(), analysis_data)
             use_cases += re.sub(r"^#+ (3\.)? ?Use Cases\n*", "", content, flags=re.MULTILINE).strip()
             use_cases += "\n\n### Use Case Diagram\n\n"
-            use_cases += "```mermaid\n"
-            use_cases += self.generate_mermaid_with_paropank_theme(self.generate_use_case_diagram(analysis_data))
-            use_cases += "```\n"
+            use_cases += f"```mermaid\n{self.generate_use_case_diagram(analysis_data)}\n```\n"
         else:
             items = self._generate_section("3. Use Cases", analysis_data, "Use Case:", "*   **{name}**: {doc}\n")
             content_items = items.replace("## 3. Use Cases\n\n", "").strip()
@@ -886,9 +855,7 @@ class Ndaversis:
             content = self.ai_service.generate_content(self._generate_user_stories_prompt(), analysis_data)
             user_stories += re.sub(r"^#+ (4\.)? ?User Stories\n*", "", content, flags=re.MULTILINE).strip()
             user_stories += "\n\n### BPMN Diagram\n\n"
-            user_stories += "```mermaid\n"
-            user_stories += self.generate_mermaid_with_paropank_theme(self.generate_bpmn_diagram(analysis_data))
-            user_stories += "```\n"
+            user_stories += f"```mermaid\n{self.generate_bpmn_diagram(analysis_data)}\n```\n"
         else:
             items = self._generate_section("4. User Stories", analysis_data, "User Story:", "*   **As a {role},** I want to {action}, so that {benefit}.\n")
             content_items = items.replace("## 4. User Stories\n\n", "").strip()
@@ -1037,42 +1004,15 @@ class Ndaversis:
                 requirements += "**Python Version**: 3.8 or higher required\n\n"
             
             # Mermaid pie chart for language distribution
-            # Enhanced Paropank-style pie chart
-            requirements += "### Languages & Environments\n"
-            requirements += "```mermaid\n"
-            requirements += "%%{init: {\n"
-            requirements += "  'theme':'dark',\n"
-            requirements += "  'themeVariables': {\n"
-            requirements += "    'primaryColor': '#667eea',\n"
-            requirements += "    'primaryTextColor': '#fff',\n"
-            requirements += "    'primaryBorderColor': '#764ba2',\n"
-            requirements += "    'lineColor': '#f093fb',\n"
-            requirements += "    'secondaryColor': '#4facfe',\n"
-            requirements += "    'tertiaryColor': '#43e97b',\n"
-            requirements += "    'background': '#1a1a2e',\n"
-            requirements += "    'mainBkg': '#16213e',\n"
-            requirements += "    'secondBkg': '#0f3460',\n"
-            requirements += "    'pieOuterStrokeWidth': '3px',\n"
-            requirements += "    'pieStrokeWidth': '2px',\n"
-            requirements += "    'pieOpacity': '0.9'\n"
-            requirements += "  }\n"
-            requirements += "}}%%\n"
-            requirements += "pie title Language Distribution\n"
-            
-            # Map extensions to specific Paropank colors if possible, otherwise let Mermaid cycle
-            # We can't easily force specific colors per slice in current Mermaid pie implementation 
-            # without extensive themeVariables hacks, but the theme set above sets the palette.
-            
+            requirements += "```mermaid\npie title Language Distribution\n"
             for ext, count in sorted(languages.items(), key=lambda x: x[1], reverse=True):
                 requirements += f"    \"{ext}\" : {count}\n"
             requirements += "```\n\n"
 
         if stdlib_deps:
             requirements += "### Built-in Standard Library (Included with Python)\n"
-            requirements += "```mermaid\n"
-            requirements += self.generate_mermaid_with_paropank_theme(
-                "graph LR\n    Python --> " + " & ".join([d for d in sorted(stdlib_deps)]) + "\n"
-            )
+            requirements += "```mermaid\ngraph LR\n"
+            requirements += "    Python --> " + " & ".join([d for d in sorted(stdlib_deps)]) + "\n"
             requirements += "```\n\n"
             requirements += "The following modules are part of Python's standard library and **do not** require external installation:\n\n"
             requirements += ", ".join([f"`{d}`" for d in sorted(stdlib_deps)]) + "\n\n"
@@ -1180,19 +1120,15 @@ class Ndaversis:
                     doc = f"Project resource file: {basename}"
             
             modules_map += f"*   **{basename}**: {doc}\n"
-        modules_map += "\n\n### Module Structure Diagram\n\n```mermaid\n"
-        
-        diag_code = "classDiagram\n"
+        modules_map += "\n\n### Module Structure Diagram\n\n```mermaid\nclassDiagram\n"
         if not analysis_data.get("classes"):
-            diag_code += "    class MainModule {\n        +main()\n    }\n"
+            modules_map += "    class MainModule {\n        +main()\n    }\n"
         else:
             for class_name, class_data in analysis_data.get("classes", {}).items():
-                diag_code += f"    class {class_name} {{\n"
+                modules_map += f"    class {class_name} {{\n"
                 for method in class_data.get("methods", {}).keys():
-                    diag_code += f"        +{method}()\n"
-                diag_code += "    }\n"
-        
-        modules_map += self.generate_mermaid_with_paropank_theme(diag_code)
+                    modules_map += f"        +{method}()\n"
+                modules_map += "    }\n"
         modules_map += "```\n"
 
         # --- Dependencies Map ---
@@ -1227,12 +1163,10 @@ class Ndaversis:
                 dependencies_map += "These modules are built into Python (no installation required):\n\n"
                 dependencies_map += ", ".join([f"`{d}`" for d in sorted(all_built_in)]) + "\n"
         
-        dependencies_map += "\n\n### Library Dependency Diagram\n\n```mermaid\n"
-        
-        dep_code = "graph TD\n"
+        dependencies_map += "\n\n### Library Dependency Diagram\n\n```mermaid\ngraph TD\n"
         project_node = "Project"
         if not all_deps:
-            dep_code += f"    {project_node} --> StdLib[Standard Library]\n"
+            dependencies_map += f"    {project_node} --> StdLib[Standard Library]\n"
         else:
             # Group by language if multiple languages exist
             languages = analysis_data.get("languages", {})
@@ -1241,20 +1175,18 @@ class Ndaversis:
                     lang_name = lang_ext.replace(".", "").upper() or "OTHER"
                     # Sanitize language ID for Mermaid
                     lang_id = f"lang_{lang_name.replace(' ', '_').replace('-', '_')}"
-                    dep_code += f"    {project_node} --> {lang_id}[\"{lang_name} Overview ({count} files)\"]\n"
+                    dependencies_map += f"    {project_node} --> {lang_id}[\"{lang_name} Overview ({count} files)\"]\n"
                     
                     # For Python projects, link all detected libraries to the Python node
                     if lang_ext == ".py":
                         for dep in sorted(all_deps):
                             # Sanitize library ID for Mermaid
                             node_id = f"dep_{dep.replace('-', '_').replace('.', '_')}"
-                            dep_code += f"    {lang_id} --> {node_id}[\"{dep}\"]\n"
+                            dependencies_map += f"    {lang_id} --> {node_id}[\"{dep}\"]\n"
             else:
                 for dep in sorted(all_deps):
                     node_id = f"dep_{dep.replace('-', '_').replace('.', '_')}"
-                    dep_code += f"    {project_node} --> {node_id}[\"{dep}\"]\n"
-        
-        dependencies_map += self.generate_mermaid_with_paropank_theme(dep_code)
+                    dependencies_map += f"    {project_node} --> {node_id}[\"{dep}\"]\n"
         dependencies_map += "```\n"
 
         return "\n".join(filter(None, [use_cases, user_stories, faq, how_to, features_str, requirements, install, modules_map, dependencies_map]))
@@ -1311,23 +1243,19 @@ class Ndaversis:
         project_map += "```\n\n### Project Structure Diagram\n\n"
         
         # Add Mermaid Project Diagram
-        project_map += "```mermaid\n"
-        
-        proj_code = "graph TD\n"
-        proj_code += "    Root[./]\n"
+        project_map += "```mermaid\ngraph TD\n"
+        project_map += "    Root[./]\n"
         for f in files_list:
             if "/" in f.lstrip("./"):
                 parts = f.lstrip("./").split("/")
                 current = "Root"
                 for i, part in enumerate(parts):
                     node_id = f"node_{'_'.join(parts[:i+1]).replace('.', '_')}"
-                    proj_code += f"    {current} --> {node_id}[\"{part}\"]\n"
+                    project_map += f"    {current} --> {node_id}[\"{part}\"]\n"
                     current = node_id
             else:
                 node_id = f"node_{f.lstrip('./').replace('.', '_')}"
-                proj_code += f"    Root --> {node_id}[\"{f.lstrip('./')}\"]\n"
-        
-        project_map += self.generate_mermaid_with_paropank_theme(proj_code)
+                project_map += f"    Root --> {node_id}[\"{f.lstrip('./')}\"]\n"
         project_map += "```"
         return project_map
 
@@ -1679,10 +1607,8 @@ class Ndaversis:
         self.update_readme(readme_content)
 
         # Save the new state and version
-        if ndaversis_state:
-            ndaversis_state.save_state(new_state)
-        else:
-            print("Warning: State module not loaded. State not saved.")
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(new_state, f, indent=2)
         self.save_version(str(self.version))
         self.update_changelog(self.version, change_summary)
 
@@ -1748,7 +1674,7 @@ class Ndaversis:
                 gradient=ft.LinearGradient(
                     begin=ft.alignment.top_left,
                     end=ft.alignment.bottom_right,
-                    colors=["#1a1a2e", "#16213e", "#0f3460"]  # Paropank dark theme
+                    colors=["#0a0e27", "#1a1f3a", "#0f1729"]
                 )
             )
             
@@ -1862,9 +1788,9 @@ class Ndaversis:
                 )
             
             buttons = ft.Column([
-                create_version_button("PATCH +0.0.1", ft.Icons.UPGRADE, "Patch", ["#4facfe", "#00f2fe"]), # Paropank Blue
-                create_version_button("MINOR +0.1.0", ft.Icons.ROCKET_LAUNCH, "Minor", ["#667eea", "#764ba2"]), # Paropank Purple
-                create_version_button("MAJOR +1.0.0", ft.Icons.STAR, "Major", ["#fa709a", "#fee140"])   # Paropank Pink/Orange
+                create_version_button("PATCH +0.0.1", ft.Icons.UPGRADE, "Patch", ["#00d9ff", "#0099cc"]),
+                create_version_button("MINOR +0.1.0", ft.Icons.ROCKET_LAUNCH, "Minor", ["#5e60ce", "#7b2cbf"]),
+                create_version_button("MAJOR +1.0.0", ft.Icons.STAR, "Major", ["#ff6b35", "#f72585"])
             ], spacing=15, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
             
             # Footer with geometric accent
@@ -1890,7 +1816,7 @@ class Ndaversis:
                         gradient=ft.LinearGradient(
                             begin=ft.alignment.top_left,
                             end=ft.alignment.bottom_right,
-                            colors=["#0a0e27", "#1a1a2e", "#16213e"] # Paropank Deep Dark
+                            colors=["#0a0e27", "#1a1f3a", "#0f1729"]
                         ),
                         expand=True
                     ),
@@ -1920,8 +1846,8 @@ class Ndaversis:
         print("Running health check...")
         errors = []
 
-        if not ndaversis_config:
-            errors.append("ndaversis_config module could not be imported.")
+        if not os.path.exists(CONFIG_FILE):
+            errors.append(f"Configuration file '{CONFIG_FILE}' not found.")
 
         if not os.path.exists(REQUIREMENTS_FILE):
             errors.append(f"{REQUIREMENTS_FILE} file not found.")
