@@ -17,36 +17,41 @@ class TestNdaversis(unittest.TestCase):
         """Set up the test environment."""
         self.test_readme_path = "test_ndaversis_readme.md"
         self.test_ndaversis_path = "test_ndaversis.py"
-        self.test_config_path = "test_config.json"
-        self.state_file_path = "ndaversis_state.json"
         self.test_logs_path = "test_ndaversis_logs.py"
 
         with open(self.test_readme_path, "w", encoding="utf-8") as f:
             f.write("# 1. Test Readme\n\n## 14. Version History\n\n## 15. Contacts\n")
         with open(self.test_ndaversis_path, "w", encoding="utf-8") as f:
             f.write('__version__ = "0.1.0"')
-        with open(self.test_config_path, "w", encoding="utf-8") as f:
-            json.dump({"ai_provider": "gemini"}, f)
 
         self.readme_patch = patch('ndaversis.README_FILE', self.test_readme_path)
-        self.config_patch = patch('ndaversis.CONFIG_FILE', self.test_config_path)
-        self.state_file_patch = patch('ndaversis.STATE_FILE', self.state_file_path)
         self.logs_file_patch = patch('ndaversis.LOGS_FILE', self.test_logs_path)
+        
+        # Mock state and config modules
+        self.config_mock = MagicMock()
+        self.config_mock.get_all_config.return_value = {"ai_provider": "gemini"}
+        self.config_mock.get_config.return_value = "gemini"
+        
+        self.state_mock = MagicMock()
+        self.state_mock.load_state.return_value = {}
+
+        self.modules_patch = patch.multiple('ndaversis', 
+                                          ndaversis_config=self.config_mock, 
+                                          ndaversis_state=self.state_mock)
+        
         self.readme_patch.start()
-        self.config_patch.start()
-        self.state_file_patch.start()
         self.logs_file_patch.start()
+        self.modules_patch.start()
 
         self.app = Ndaversis()
 
     def tearDown(self):
         """Tear down the test environment."""
         self.readme_patch.stop()
-        self.config_patch.stop()
-        self.state_file_patch.stop()
         self.logs_file_patch.stop()
+        self.modules_patch.stop()
 
-        for path in [self.test_readme_path, self.test_ndaversis_path, self.test_config_path, self.state_file_path, self.test_logs_path, "dummy_module.py"]:
+        for path in [self.test_readme_path, self.test_ndaversis_path, self.test_logs_path, "dummy_module.py", "./test.txt"]:
             if os.path.exists(path):
                 os.remove(path)
 
@@ -108,15 +113,18 @@ class TestNdaversis(unittest.TestCase):
 
     @patch('ndaversis.__version__', "0.1.0")
     def test_readme_update_integration(self):
-        """Integration test for the README update process."""
+        """Integration test for the README integration process."""
         self.app.version = self.app.get_version()
-        with open(self.state_file_path, "w", encoding="utf-8") as f:
-            json.dump({'./test.txt': 'line1\n'}, f)
-
+        
+        # Mock state load
+        self.state_mock.load_state.return_value = {'./test.txt': 'line1\n'} # Mock old state
+        
         with open("./test.txt", "w", encoding="utf-8") as f:
             f.write("line1\nline2\n")
 
-        with patch('ndaversis.__file__', self.test_ndaversis_path):
+        with patch('ndaversis.USER_README_FILE', self.test_readme_path), \
+             patch('ndaversis.__file__', self.test_ndaversis_path), \
+             patch.object(self.app, 'is_ndaversis_repo', return_value=False):
             self.app.previous_code_state = self.app.load_previous_code_state()
             self.app.main_cli(Namespace(major=False, minor=False, patch=True))
 
@@ -144,24 +152,22 @@ class TestNdaversis(unittest.TestCase):
     @patch('builtins.print')
     def test_health_check(self, mock_print):
         """Test the health check functionality."""
+        # Case 1: All good
         with patch('os.path.exists', return_value=True), patch('os.getenv', return_value="fake_key"):
             self.app.health_check()
             mock_print.assert_any_call("Health check passed. All configurations seem correct.")
 
-        with patch('os.path.exists', side_effect=[False, True]):
-            self.app.health_check()
-            mock_print.assert_any_call(f"- Configuration file '{self.test_config_path}' not found.")
+        # Case 2: Config module missing (simulate by setting to None)
+        with patch('ndaversis.ndaversis_config', None):
+             self.app.health_check()
+             mock_print.assert_any_call("- ndaversis_config module could not be imported.")
 
     @patch('builtins.print')
-    def test_load_ai_config_file_not_found(self, mock_print):
-        """Test that load_ai_config handles a missing file."""
-        os.remove(self.test_config_path)
-        # Re-load config now that the file is removed.
-        config = self.app.load_ai_config()
-        self.assertEqual(config, {})
-        mock_print.assert_called_with(
-            f"Configuration file '{self.test_config_path}' not found. AI service disabled."
-        )
+    def test_load_ai_config_module_missing(self, mock_print):
+        """Test that load_ai_config handles missing module."""
+        with patch('ndaversis.ndaversis_config', None):
+            config = self.app.load_ai_config()
+            self.assertEqual(config, {})
 
     def test_generate_use_case_diagram(self):
         """Test the generate_use_case_diagram method."""
@@ -199,12 +205,13 @@ class TestNdaversis(unittest.TestCase):
             self.assertIn("## 3. Use Cases", sections)
             self.assertIn("Test Use Cases", sections)
             self.assertIn("### Use Case Diagram", sections)
-            self.assertIn("```mermaid\nTest Use Case Diagram\n```", sections)
+            self.assertIn("Test Use Case Diagram", sections)
+            self.assertIn("themeVariables", sections) # Check for theme presence
 
             self.assertIn("## 4. User Stories", sections)
             self.assertIn("Test User Stories", sections)
             self.assertIn("### BPMN Diagram", sections)
-            self.assertIn("```mermaid\nTest BPMN Diagram\n```", sections)
+            self.assertIn("Test BPMN Diagram", sections)
 
     def test_suggest_version_bump(self):
         """Test the suggest_version_bump method."""
