@@ -57,7 +57,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.49"
+__version__ = "0.0.51"
 
 # --- AI Service Classes ---
 class AIService:
@@ -1015,10 +1015,14 @@ class Ndaversis:
         
         try:
             with open(README_FILE, "r", encoding="utf-8") as f:
-                first_line = f.readline()
-                project_name = first_line.split(":")[0].replace("# 1. ", "").strip()
+                content = f.read()
+                match = re.search(r"# 1\. ([^:\n]+)", content)
+                if match:
+                    project_name = match.group(1).strip()
+                else:
+                    project_name = "NDAVERSIS"
         except (IOError, IndexError, FileNotFoundError):
-            project_name = "This Repository"
+            project_name = "NDAVERSIS"
             
         total_methods = sum(len(c.get("methods", {})) for c in features["classes"].values())
         total_funcs = len(features["functions"])
@@ -1094,7 +1098,7 @@ class Ndaversis:
 
         summary = (
             f"\n\n"
-            f"![System Status](/Users/admin/.gemini/antigravity/brain/35147840-448e-4af4-a298-ec7cb9c59c40/ai_metrics_graph_neumorphism_1768826137891.png)\n\n"
+            f"![System Status](assets/metrics.png)\n\n"
             f"----- \n"
             f"*This summary is auto-generated and reflects the state of the repository at "
             f"the time of the last version update.*\n\n"
@@ -1156,7 +1160,7 @@ class Ndaversis:
         """Creates the description summary section of the README."""
         project_name = "NDAVERSIS: Agentic Semantic Version Info System"
         # Injecting super-modern assets and investor link
-        content = f"![NDAVERSIS Header](/Users/admin/.gemini/antigravity/brain/35147840-448e-4af4-a298-ec7cb9c59c40/readme_header_neumorphism_brutalism_1768826085297.png)\n\n"
+        content = f"![NDAVERSIS Header](assets/header.png)\n\n"
         content += f"# 1. {project_name}\n\n"
         content += f"**Current Version:** `{self.version}`\n\n"
         content += f"> [!IMPORTANT]\n"

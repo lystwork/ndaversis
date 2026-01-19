@@ -1,8 +1,8 @@
-![NDAVERSIS Header](/Users/admin/.gemini/antigravity/brain/35147840-448e-4af4-a298-ec7cb9c59c40/readme_header_neumorphism_brutalism_1768826085297.png)
+![NDAVERSIS Header](assets/header.png)
 
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.49`
+**Current Version:** `0.0.51`
 
 > [!IMPORTANT]
 > **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**
@@ -16,7 +16,7 @@
 <!-- AUTO-SUMMARY-START -->
 
 
-![System Status](/Users/admin/.gemini/antigravity/brain/35147840-448e-4af4-a298-ec7cb9c59c40/ai_metrics_graph_neumorphism_1768826137891.png)
+![System Status](assets/metrics.png)
 
 ----- 
 *This summary is auto-generated and reflects the state of the repository at the time of the last version update.*
@@ -25,12 +25,12 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 2674 |
-| Code Lines | 1866 |
-| Comment Lines | 315 |
-| Blank Lines | 493 |
+| Total Lines | 2793 |
+| Code Lines | 1927 |
+| Comment Lines | 342 |
+| Blank Lines | 524 |
 | Tabs | 0 |
-| Strings | 1389 |
+| Strings | 1404 |
 
 
 ### Language Breakdown
@@ -42,10 +42,11 @@
 | .json | 2 |
 | no extension | 2 |
 | .txt | 2 |
+| .png | 2 |
 
 
 ### File Statistics
-- **Total Files:** 11
+- **Total Files:** 13
 - **Python Files:** 2
 ----- 
 
@@ -117,7 +118,7 @@ python ndaversis.py audit
 ## 8. Requirements
 
 ### Languages & Environments
-*   **MD**: Primary development language (3 files detected).*   **PY**: Primary development language (2 files detected). Requires Python 3.8+.*   **JSON**: Primary development language (2 files detected).*   **NO EXTENSION**: Primary development language (2 files detected).*   **TXT**: Primary development language (2 files detected).### Built-in Standard Library (Included with Python)
+*   **MD**: Primary development language (3 files detected).*   **PY**: Primary development language (2 files detected). Requires Python 3.8+.*   **JSON**: Primary development language (2 files detected).*   **NO EXTENSION**: Primary development language (2 files detected).*   **TXT**: Primary development language (2 files detected).*   **PNG**: Primary development language (2 files detected).### Built-in Standard Library (Included with Python)
 The following modules are part of Python's standard library and **do not** require external installation:
 
 `argparse`, `ast`, `datetime`, `difflib`, `getpass`, `json`, `os`, `re`, `sys`, `time`, `typing`
@@ -299,6 +300,7 @@ graph TD
     Project --> lang_JSON["JSON Overview (2 files)"]
     Project --> lang_NO_EXTENSION["NO EXTENSION Overview (2 files)"]
     Project --> lang_TXT["TXT Overview (2 files)"]
+    Project --> lang_PNG["PNG Overview (2 files)"]
 ```
 
 ## 10. Project Map
@@ -315,6 +317,8 @@ graph TD
 ./readme.md
 ./requirements.txt
 ./test_output.txt
+./assets/header.png
+./assets/metrics.png
 ```
 
 ### Project Structure Diagram
@@ -333,21 +337,103 @@ graph TD
     Root --> node_readme_md["readme.md"]
     Root --> node_requirements_txt["requirements.txt"]
     Root --> node_test_output_txt["test_output.txt"]
+    Root --> node_assets["assets"]
+    node_assets --> node_assets_header_png["header.png"]
+    Root --> node_assets["assets"]
+    node_assets --> node_assets_metrics_png["metrics.png"]
 ```
 
 ## 13. Last Version Summary
 
-The last version is `0.0.49`. Summary of major changes:
-New feature added: ./PRIVACY_POLICY.md
-New feature added: ./TERMS_OF_SERVICE.md
+The last version is `0.0.51`. Summary of major changes:
 Improved logic in: ./ndaversis.py
 Improved logic in: ./ndaversis_logs.py
 Improved logic in: ./ndaversis_state.json
 Improved logic in: ./readme.md
 
-**Practical Impact**: (**Full-Stack Developer** focus) Provides an instant architectural map for navigating complex updates.
+**Practical Impact**: (**DevOps Engineer** focus) Reduces CI/CD friction by keeping documentation in lockstep with logic.
 
 ## 14. Version History
+## Version 0.0.51
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants a project where the README is always a source of truth, not a legacy burden.
+
+### 2. Evaluation of the repository Solution
+By scanning function signatures, the tool verifies and updates feature lists after every logic change.
+
+### 3. Core Functionality
+Automated maintenance of 52 functional components across 8 classes, ensuring repository identity never drifts from its code.
+
+### 4. Safety & Side Effects
+Operates locally with zero unintended side effects, prioritizing data privacy and developer time.
+
+### 5. Completeness
+Covers the entire project lifecycle—from semantic version bumps to detailed library dependency mapping.
+
+### 6. Assessment
+Strengthens repository integrity, guaranteeing that what the user reads is exactly what the code does.
+
+### 7. Practical Impact (**DevOps Engineer** focus)
+Reduces CI/CD friction by keeping documentation in lockstep with logic.
+
+### 8. Is that good result?
+Absolutely. It ensures the repository always looks professional and technically 'vibrant' to contributors.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
+## Version 0.0.50
+### Goals
+The main goals were to refine existing features for better performance and reliability.
+
+### What Changed
+Modified file: ./ndaversis.py
+Modified file: ./ndaversis_logs.py
+Modified file: ./ndaversis_state.json
+Modified file: ./readme.md
+
+### What's Good for the User
+### 1. User's Goal
+The user wants a project where the README is always a source of truth, not a legacy burden.
+
+### 2. Evaluation of the repository Solution
+By scanning function signatures, the tool verifies and updates feature lists after every logic change.
+
+### 3. Core Functionality
+Automated maintenance of 52 functional components across 8 classes, ensuring repository identity never drifts from its code.
+
+### 4. Safety & Side Effects
+Operates locally with zero unintended side effects, prioritizing data privacy and developer time.
+
+### 5. Completeness
+Covers the entire project lifecycle—from semantic version bumps to detailed library dependency mapping.
+
+### 6. Assessment
+Strengthens repository integrity, guaranteeing that what the user reads is exactly what the code does.
+
+### 7. Practical Impact (**DevOps Engineer** focus)
+Reduces CI/CD friction by keeping documentation in lockstep with logic.
+
+### 8. Is that good result?
+Absolutely. It ensures the repository always looks professional and technically 'vibrant' to contributors.
+
+
+### What's Possibly Next
+Moving forward, you might want to improve robustness by adding a dedicated test suite.
+
+
 ## Version 0.0.49
 ### Goals
 The main goals were to expand the project's capabilities with new components, refine existing features for better performance and reliability.
