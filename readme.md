@@ -1,6 +1,6 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.65`
+**Current Version:** `0.0.66`
 
 ## 2. Description Summary
 
@@ -18,12 +18,12 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 2686 |
-| Code Lines | 2112 |
-| Comment Lines | 186 |
-| Blank Lines | 388 |
+| Total Lines | 3329 |
+| Code Lines | 2555 |
+| Comment Lines | 259 |
+| Blank Lines | 515 |
 | Tabs | 0 |
-| Strings | 1839 |
+| Strings | 1949 |
 
 
 ### Language Breakdown
@@ -31,16 +31,16 @@
 | Extension | Count |
 | :--- | :--- |
 | .py | 3 |
+| .md | 3 |
 | no extension | 2 |
-| .json | 2 |
-| .md | 2 |
-| .txt | 1 |
+| .json | 1 |
+| .example | 1 |
 
 
 ### File Statistics
 - **Total Files:** 10
 - **Python Files:** 3
-- **Repository Size:** 435.51 KB
+- **Repository Size:** 242.96 KB
 ----- 
 
 <!-- AUTO-SUMMARY-END -->
@@ -94,6 +94,57 @@ To see a full analysis of your code metrics and project structure without updati
 python ndaversis.py audit
 ```
 
+### 📦 Install
+#### 1. Clone and Prepare Environment
+```bash
+git clone https://github.com/lystwork/ndaversis.git
+cd ndaversis
+cp .env.example .env   # see below for what to fill
+```
+
+#### 2. Configure Variables
+Substitute your own API key (at least one required). Example:
+```json
+{
+  "GEMINI_API_KEY": "your-key-here",
+  "OPENAI_API_KEY": "your-key-here"
+}
+```
+
+#### 3. Launch Entire Infrastructure
+```bash
+python ndaversis.py
+```
+
+The ndaversis starts polling and is ready with any free port.
+Web available at http://localhost:8080
+
+### ✅ How to Verify
+After installation, verify everything is working:
+```bash
+# Check health and configuration
+python ndaversis.py health
+
+# Run a full audit to test analysis
+python ndaversis.py audit
+
+# Test GUI functionality
+python ndaversis.py
+```
+
+### 🧪 How to Test
+Run the test suite to verify functionality:
+```bash
+# Run all tests
+python -m pytest tests_ndaversis/ -v
+
+# Run specific test file
+python -m pytest tests_ndaversis/test_ndaversis.py -v
+
+# Run with coverage
+python -m pytest tests_ndaversis/ --cov=. --cov-report=html
+```
+
 ## 7. Features
 
 *   **Set-and-Forget Automation**: Automatically keeps your project documentation and versioning in sync with your code, saving you manual effort on every update.
@@ -122,16 +173,32 @@ python ndaversis.py audit
 ```mermaid
 pie title Language Distribution
     ".py" : 3
+    ".md" : 3
     "no extension" : 2
-    ".json" : 2
-    ".md" : 2
-    ".txt" : 1
+    ".json" : 1
+    ".example" : 1
 ```
 
 ### Built-in Standard Library (Included with Python)
 ```mermaid
 graph LR
     Python --> argparse & ast & datetime & difflib & getpass & json & os & random & re & sys & time & typing
+
+%% Dark mode styling
+classDef pythonNode fill:#3776ab,stroke:#4b8bbe,stroke-width:2px,color:#fff
+class Python pythonNode
+class argparse pythonNode
+class ast pythonNode
+class datetime pythonNode
+class difflib pythonNode
+class getpass pythonNode
+class json pythonNode
+class os pythonNode
+class random pythonNode
+class re pythonNode
+class sys pythonNode
+class time pythonNode
+class typing pythonNode
 ```
 
 The following modules are part of Python's standard library and **do not** require external installation:
@@ -201,6 +268,7 @@ python ndaversis.py
 
 ## 11. Modules Map
 
+*   **.env.example**: Project resource file: .env.example
 *   **.gitignore**: Git ignore rules for version control
 *   **LICENSE_ndaversis**: Project resource file: LICENSE_ndaversis
 *   **config.json**: Configuration file: config.json
@@ -208,9 +276,8 @@ python ndaversis.py
 *   **ndaversis_logs.py**: Python module implementing AIService, GeminiService, ChatGPTService and more
 *   **ndaversis_privacy_policy.md**: Documentation file: ndaversis_privacy_policy.md
 *   **ndaversis_readme.md**: Documentation file: ndaversis_readme.md
-*   **ndaversis_requirements.txt**: Text resource file: ndaversis_requirements.txt
-*   **ndaversis_state.json**: Configuration file: ndaversis_state.json
 *   **ndaversis_version_history.py**: NDAVERSIS Version History Module
+*   **readme.md**: Documentation file: readme.md
 
 
 ### Module Structure Diagram
@@ -324,14 +391,42 @@ graph TD
     lang_PY --> dep_time["time"]
     lang_PY --> dep_typing["typing"]
     Project --> lang_NO_EXTENSION["NO EXTENSION Overview (2 files)"]
-    Project --> lang_JSON["JSON Overview (2 files)"]
-    Project --> lang_MD["MD Overview (2 files)"]
-    Project --> lang_TXT["TXT Overview (1 files)"]
-```
+    Project --> lang_MD["MD Overview (3 files)"]
+    Project --> lang_JSON["JSON Overview (1 files)"]
+    Project --> lang_EXAMPLE["EXAMPLE Overview (1 files)"]
 
+%% Dark mode styling
+classDef projectNode fill:#1a1a2e,stroke:#eee,stroke-width:3px,color:#fff
+classDef langNode fill:#0f3460,stroke:#4fbdba,stroke-width:2px,color:#fff
+classDef depNode fill:#16213e,stroke:#e0913f,stroke-width:2px,color:#fff
+classDef stdLibNode fill:#2d033b,stroke:#4caf50,stroke-width:2px,color:#fff
+
+class Project projectNode
+class lang_PY langNode
+class dep_argparse depNode
+class dep_ast depNode
+class dep_datetime depNode
+class dep_difflib depNode
+class dep_flet depNode
+class dep_getpass depNode
+class dep_json depNode
+class dep_ndaversis_version_history depNode
+class dep_openai depNode
+class dep_os depNode
+class dep_random depNode
+class dep_re depNode
+class dep_sys depNode
+class dep_time depNode
+class dep_typing depNode
+class lang_NO_EXTENSION langNode
+class lang_MD langNode
+class lang_JSON langNode
+class lang_EXAMPLE langNode
+```
 ## 10. Project Map
 
 ```
+./.env.example
 ./.gitignore
 ./LICENSE_ndaversis
 ./config.json
@@ -339,9 +434,8 @@ graph TD
 ./ndaversis_logs.py
 ./ndaversis_privacy_policy.md
 ./ndaversis_readme.md
-./ndaversis_requirements.txt
-./ndaversis_state.json
 ./ndaversis_version_history.py
+./readme.md
 ```
 
 ### Project Structure Diagram
@@ -349,6 +443,7 @@ graph TD
 ```mermaid
 graph TD
     Root[./]
+    Root --> node_env_example["env.example"]
     Root --> node_gitignore["gitignore"]
     Root --> node_LICENSE_ndaversis["LICENSE_ndaversis"]
     Root --> node_config_json["config.json"]
@@ -356,41 +451,153 @@ graph TD
     Root --> node_ndaversis_logs_py["ndaversis_logs.py"]
     Root --> node_ndaversis_privacy_policy_md["ndaversis_privacy_policy.md"]
     Root --> node_ndaversis_readme_md["ndaversis_readme.md"]
-    Root --> node_ndaversis_requirements_txt["ndaversis_requirements.txt"]
-    Root --> node_ndaversis_state_json["ndaversis_state.json"]
     Root --> node_ndaversis_version_history_py["ndaversis_version_history.py"]
+    Root --> node_readme_md["readme.md"]
+
+%% Dark mode styling
+classDef rootNode fill:#1a1a2e,stroke:#eee,stroke-width:2px,color:#fff
+classDef fileNode fill:#16213e,stroke:#ddd,stroke-width:1px,color:#fff
+classDef pythonFile fill:#0f3460,stroke:#4fbdba,stroke-width:2px,color:#fff
+classDef configFile fill:#2d033b,stroke:#e0913f,stroke-width:2px,color:#fff
+classDef docFile fill:#1e5128,stroke:#4caf50,stroke-width:2px,color:#fff
+
+%% Apply styles
+class Root rootNode
+class node_env_example fileNode
+class node_gitignore fileNode
+class node_LICENSE_ndaversis fileNode
+class node_config_json configFile
+class node_ndaversis_py pythonFile
+class node_ndaversis_logs_py pythonFile
+class node_ndaversis_privacy_policy_md docFile
+class node_ndaversis_readme_md docFile
+class node_ndaversis_version_history_py pythonFile
+class node_readme_md docFile
 ```
 
 ## 13. Last Version Summary
 
-The last version is `0.0.65`. Detailed change log and metrics:
+The last version is `0.0.66`. Detailed change log and metrics:
 | File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ./ndaversis.py | modified | 45 | 5 | 2005 | 205 | 0 | 600 |
-| ./ndaversis_logs.py | modified | 1 | 0 | 2377 | 0 | 0 | 362 |
-| ./ndaversis_readme.md | modified | 140 | 148 | 6996 | 6705 | 0 | 1022 |
-| ./ndaversis_state.json | added | 11 | 0 | 226467 | 0 | 0 | 51291 |
+| ./.env.example | added | 19 | 0 | 534 | 0 | 0 | 39 |
+| ./.gitignore | added | 4 | 0 | 42 | 0 | 0 | 0 |
+| ./LICENSE_ndaversis | added | 16 | 0 | 1207 | 0 | 0 | 172 |
+| ./config.json | added | 3 | 0 | 27 | 0 | 0 | 3 |
+| ./ndaversis.py | added | 2014 | 0 | 94609 | 0 | 0 | 29264 |
+| ./ndaversis_logs.py | added | 38 | 0 | 100862 | 0 | 0 | 19989 |
+| ./ndaversis_privacy_policy.md | added | 21 | 0 | 1554 | 0 | 0 | 235 |
+| ./ndaversis_readme.md | added | 560 | 0 | 22014 | 0 | 0 | 3513 |
+| ./ndaversis_version_history.py | added | 94 | 0 | 2459 | 0 | 0 | 590 |
+| ./readme.md | added | 560 | 0 | 22014 | 0 | 0 | 3513 |
 
 
 #### Impact Map
 
 ```mermaid
 graph LR
-    Root["Latest Changes"] --> ndaversis_py & ndaversis_logs_py & ndaversis_readme_md & ndaversis_state_json
-    ndaversis_py["./ndaversis.py: Modified (45 + / 5 -)"]
-    style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_logs_py["./ndaversis_logs.py: Modified (1 + / 0 -)"]
-    style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_readme_md["./ndaversis_readme.md: Modified (140 + / 148 -)"]
-    style ndaversis_readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_state_json["./ndaversis_state.json: Added (11 + / 0 -)"]
-    style ndaversis_state_json fill:#bbdefb,stroke:#333,stroke-width:2px
+    Root["Latest Changes"] --> env_example & gitignore & LICENSE_ndaversis & config_json & ndaversis_py & ndaversis_logs_py & ndaversis_privacy_policy_md & ndaversis_readme_md & ndaversis_version_history_py & readme_md
+    env_example["./.env.example: added (19 + / 0 -)"]
+    gitignore["./.gitignore: added (4 + / 0 -)"]
+    LICENSE_ndaversis["./LICENSE_ndaversis: added (16 + / 0 -)"]
+    config_json["./config.json: added (3 + / 0 -)"]
+    ndaversis_py["./ndaversis.py: added (2014 + / 0 -)"]
+    ndaversis_logs_py["./ndaversis_logs.py: added (38 + / 0 -)"]
+    ndaversis_privacy_policy_md["./ndaversis_privacy_policy.md: added (21 + / 0 -)"]
+    ndaversis_readme_md["./ndaversis_readme.md: added (560 + / 0 -)"]
+    ndaversis_version_history_py["./ndaversis_version_history.py: added (94 + / 0 -)"]
+    readme_md["./readme.md: added (560 + / 0 -)"]
+
+%% Dark mode styling
+classDef rootNode fill:#e74c3c,stroke:#c0392b,stroke-width:3px,color:#fff
+classDef modifiedNode fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+classDef addedNode fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+classDef deletedNode fill:#95a5a6,stroke:#7f8c8d,stroke-width:2px,color:#fff
+
+class Root rootNode
+class env_example addedNode
+class gitignore addedNode
+class LICENSE_ndaversis addedNode
+class config_json addedNode
+class ndaversis_py addedNode
+class ndaversis_logs_py addedNode
+class ndaversis_privacy_policy_md addedNode
+class ndaversis_readme_md addedNode
+class ndaversis_version_history_py addedNode
+class readme_md addedNode
 ```
 
 
 **Practical Impact**: Significant improvement to project maintainability and documentation sync.
 
 ## 14. Version History
+## Version 0.0.66
+### Goals
+The main goals were to expand the project's capabilities with new components, refine existing features for better performance and reliability.
+
+### What Changed
+| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| ./.env.example | added | 19 | 0 | 534 | 0 | 0 | 39 |
+| ./.gitignore | added | 4 | 0 | 42 | 0 | 0 | 0 |
+| ./LICENSE_ndaversis | added | 16 | 0 | 1207 | 0 | 0 | 172 |
+| ./config.json | added | 3 | 0 | 27 | 0 | 0 | 3 |
+| ./ndaversis.py | added | 2014 | 0 | 94609 | 0 | 0 | 29264 |
+| ./ndaversis_logs.py | added | 38 | 0 | 100862 | 0 | 0 | 19989 |
+| ./ndaversis_privacy_policy.md | added | 21 | 0 | 1554 | 0 | 0 | 235 |
+| ./ndaversis_readme.md | added | 560 | 0 | 22014 | 0 | 0 | 3513 |
+| ./ndaversis_version_history.py | added | 94 | 0 | 2459 | 0 | 0 | 590 |
+| ./readme.md | added | 560 | 0 | 22014 | 0 | 0 | 3513 |
+
+
+#### Impact Map
+
+```mermaid
+graph LR
+    Root["Latest Changes"] --> env_example & gitignore & LICENSE_ndaversis & config_json & ndaversis_py & ndaversis_logs_py & ndaversis_privacy_policy_md & ndaversis_readme_md & ndaversis_version_history_py & readme_md
+    env_example["./.env.example: added (19 + / 0 -)"]
+    gitignore["./.gitignore: added (4 + / 0 -)"]
+    LICENSE_ndaversis["./LICENSE_ndaversis: added (16 + / 0 -)"]
+    config_json["./config.json: added (3 + / 0 -)"]
+    ndaversis_py["./ndaversis.py: added (2014 + / 0 -)"]
+    ndaversis_logs_py["./ndaversis_logs.py: added (38 + / 0 -)"]
+    ndaversis_privacy_policy_md["./ndaversis_privacy_policy.md: added (21 + / 0 -)"]
+    ndaversis_readme_md["./ndaversis_readme.md: added (560 + / 0 -)"]
+    ndaversis_version_history_py["./ndaversis_version_history.py: added (94 + / 0 -)"]
+    readme_md["./readme.md: added (560 + / 0 -)"]
+
+%% Dark mode styling
+classDef rootNode fill:#e74c3c,stroke:#c0392b,stroke-width:3px,color:#fff
+classDef modifiedNode fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+classDef addedNode fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+classDef deletedNode fill:#95a5a6,stroke:#7f8c8d,stroke-width:2px,color:#fff
+
+class Root rootNode
+class env_example addedNode
+class gitignore addedNode
+class LICENSE_ndaversis addedNode
+class config_json addedNode
+class ndaversis_py addedNode
+class ndaversis_logs_py addedNode
+class ndaversis_privacy_policy_md addedNode
+class ndaversis_readme_md addedNode
+class ndaversis_version_history_py addedNode
+class readme_md addedNode
+```
+
+
+### What's Good for the User
+### 💎 What's New?
+Expanded project scope by adding 10 new files, including .env.example.
+
+### 🚀 Why Upgrade?
+This update introduces significant new components that improve the overall feature set of the repository.
+
+
+### What's Possibly Next
+Moving forward, you might want to create detailed API documentation for other developers, optimize performance for large-scale repositories.
+
+
 ## Version 0.0.65
 ### Goals
 The main goals were to expand the project's capabilities with new components, refine existing features for better performance and reliability.
@@ -430,7 +637,6 @@ This update introduces significant new components that improve the overall featu
 
 ### What's Possibly Next
 Moving forward, you might want to implement automated benchmarking for core logic, improve robustness by adding a dedicated test suite, add support for more configuration formats (YAML, TOML).
-
 
 ## Version 0.0.64
 ### Goals
@@ -486,61 +692,6 @@ This update introduces significant new components that improve the overall featu
 
 ### What's Possibly Next
 Moving forward, you might want to enhance the user interface for better accessibility, implement a plugin system for extended functionality, add comprehensive error handling and logging.
-
-## Version 0.0.63
-### Goals
-The main goals were to expand the project's capabilities with new components.
-
-### What Changed
-| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ./.gitignore | added | 4 | 0 | 42 | 0 | 0 | 0 |
-| ./LICENSE | added | 16 | 0 | 1207 | 0 | 0 | 172 |
-| ./PRIVACY_POLICY.md | added | 21 | 0 | 1554 | 0 | 0 | 235 |
-| ./config.json | added | 3 | 0 | 27 | 0 | 0 | 3 |
-| ./ndaversis.py | added | 1737 | 0 | 80842 | 0 | 0 | 24018 |
-| ./ndaversis_logs.py | added | 35 | 0 | 95151 | 0 | 0 | 19073 |
-| ./readme.md | added | 552 | 0 | 21509 | 0 | 0 | 3517 |
-| ./requirements.txt | added | 11 | 0 | 261 | 0 | 0 | 33 |
-| ./test_debug.py | added | 54 | 0 | 1978 | 0 | 0 | 351 |
-
-
-#### Impact Map
-
-```mermaid
-graph LR
-    Root["Latest Changes"] --> gitignore & LICENSE & PRIVACY_POLICY_md & config_json & ndaversis_py & ndaversis_logs_py & readme_md & requirements_txt & test_debug_py
-    gitignore["./.gitignore: Added (4 + / 0 -)"]
-    style gitignore fill:#bbdefb,stroke:#333,stroke-width:2px
-    LICENSE["./LICENSE: Added (16 + / 0 -)"]
-    style LICENSE fill:#bbdefb,stroke:#333,stroke-width:2px
-    PRIVACY_POLICY_md["./PRIVACY_POLICY.md: Added (21 + / 0 -)"]
-    style PRIVACY_POLICY_md fill:#bbdefb,stroke:#333,stroke-width:2px
-    config_json["./config.json: Added (3 + / 0 -)"]
-    style config_json fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_py["./ndaversis.py: Added (1737 + / 0 -)"]
-    style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_logs_py["./ndaversis_logs.py: Added (35 + / 0 -)"]
-    style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    readme_md["./readme.md: Added (552 + / 0 -)"]
-    style readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
-    requirements_txt["./requirements.txt: Added (11 + / 0 -)"]
-    style requirements_txt fill:#bbdefb,stroke:#333,stroke-width:2px
-    test_debug_py["./test_debug.py: Added (54 + / 0 -)"]
-    style test_debug_py fill:#bbdefb,stroke:#333,stroke-width:2px
-```
-
-
-### What's Good for the User
-### 💎 What's New?
-Expanded project scope by adding 9 new files, including .gitignore.
-
-### 🚀 Why Upgrade?
-This update introduces significant new components that improve the overall feature set of the repository.
-
-
-### What's Possibly Next
-Moving forward, you might want to integrate with more AI providers for diversity, consider modularizing the code to keep it maintainable as it grows.
 ## 15. Contacts
 
 *   **Email:** n@ndaotec.com

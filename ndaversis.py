@@ -71,7 +71,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.65"
+__version__ = "0.0.66"
 
 # --- AI Service Classes ---
 class AIService:
@@ -688,26 +688,54 @@ class Ndaversis:
             except:
                 practical_labels = {}
 
-        # Universal horizontal diagram for insights with full metrics
+        # Universal horizontal diagram for insights with full metrics and dark mode styling
         summary += "\n#### Impact Map\n\n"
         summary += "```mermaid\ngraph LR\n"
         if diff_data:
-            summary += "    Root[\"Latest Changes\"] --> " + " & ".join([file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ","_").strip("_") for file in diff_data.keys()]) + "\n"
+            summary += "    Root[\"Latest Changes\"] --> " + " & ".join([file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ", "_").strip("_") for file in diff_data.keys()]) + "\n"
         for file, metrics in diff_data.items():
             # Clean name for Mermaid ID
             clean_id = file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ", "_").strip("_")
             
             # Label with practical value if available, else metrics
-            practical_val = practical_labels.get(file)
-            if practical_val:
-                label = f"{file}: {practical_val}"
-            else:
-                # Fallback: ./path/to/file: Added with 4 additions and 0 removals.
-                label = f"{file}: {metrics['status'].capitalize()} ({metrics['lines_added']} + / {metrics['lines_removed']} -)"
-            
+            label = f"{file}: {metrics['status']} ({metrics.get('lines_added', 0)} + / {metrics.get('lines_removed', 0)} -)"
             summary += f"    {clean_id}[\"{label}\"]\n"
-            summary += f"    style {clean_id} fill:#bbdefb,stroke:#333,stroke-width:2px\n"
+        
+        # Add dark mode styling for impact map
+        summary += "\n%% Dark mode styling\n"
+        summary += "classDef rootNode fill:#e74c3c,stroke:#c0392b,stroke-width:3px,color:#fff\n"
+        summary += "classDef modifiedNode fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff\n"
+        summary += "classDef addedNode fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff\n"
+        summary += "classDef deletedNode fill:#95a5a6,stroke:#7f8c8d,stroke-width:2px,color:#fff\n"
+        
+        summary += "\nclass Root rootNode\n"
+        for file, metrics in diff_data.items():
+            clean_id = file.replace(".", "_").replace("/", "_").replace("-", "_").replace(" ", "_").strip("_")
+            if metrics['status'] == 'modified':
+                summary += f"class {clean_id} modifiedNode\n"
+            elif metrics['status'] == 'added':
+                summary += f"class {clean_id} addedNode\n"
+            elif metrics['status'] == 'deleted':
+                summary += f"class {clean_id} deletedNode\n"
+        
         summary += "```\n"
+
+        # Generate practical impact labels via AI or fallback
+        practical_labels = {}
+        if self.ai_service:
+            prompt = (
+                "For each file change listed below, provide a short (max 10 words) human-readable explanation of the practical value or impact of that change. "
+                "Focus on what it means for the user or the project (e.g., 'Improves chart readability' or 'Fixes a bug in version tracking'). "
+                "Format as a JSON object: {\"filename\": \"description\"}\n\n"
+                f"Changes:\n{diff_data}\n"
+            )
+            try:
+                ai_output = self.ai_service.generate_content(prompt, {"diff_data": diff_data})
+                # Clean markdown if AI returns it
+                ai_output = re.sub(r"```json\s*|\s*```", "", ai_output).strip()
+                practical_labels = json.loads(ai_output)
+            except:
+                practical_labels = {}
 
         return summary
 
@@ -901,7 +929,23 @@ class Ndaversis:
                 "```bash\npython ndaversis.py install-hook\n```\n\n"
                 "### 🔍 Detailed Repository Audit\n"
                 "To see a full analysis of your code metrics and project structure without updating anything:\n"
-                "```bash\npython ndaversis.py audit\n```\n"
+                "```bash\npython ndaversis.py audit\n```\n\n"
+                "### 📦 Install\n"
+                "#### 1. Clone and Prepare Environment\n"
+                "```bash\ngit clone https://github.com/lystwork/ndaversis.git\ncd ndaversis\ncp .env.example .env   # see below for what to fill\n```\n\n"
+                "#### 2. Configure Variables\n"
+                "Substitute your own API key (at least one required). Example:\n"
+                "```json\n{\n  \"GEMINI_API_KEY\": \"your-key-here\",\n  \"OPENAI_API_KEY\": \"your-key-here\"\n}\n```\n\n"
+                "#### 3. Launch Entire Infrastructure\n"
+                "```bash\npython ndaversis.py\n```\n\n"
+                "The ndaversis starts polling and is ready with any free port.\n"
+                "Web available at http://localhost:8080\n\n"
+                "### ✅ How to Verify\n"
+                "After installation, verify everything is working:\n"
+                "```bash\n# Check health and configuration\npython ndaversis.py health\n\n# Run a full audit to test analysis\npython ndaversis.py audit\n\n# Test GUI functionality\npython ndaversis.py\n```\n\n"
+                "### 🧪 How to Test\n"
+                "Run the test suite to verify functionality:\n"
+                "```bash\n# Run all tests\npython -m pytest tests_ndaversis/ -v\n\n# Run specific test file\npython -m pytest tests_ndaversis/test_ndaversis.py -v\n\n# Run with coverage\npython -m pytest tests_ndaversis/ --cov=. --cov-report=html\n```\n"
             )
 
         # --- Features ---
@@ -1003,7 +1047,7 @@ class Ndaversis:
             if ".py" in languages:
                 requirements += "**Python Version**: 3.8 or higher required\n\n"
             
-            # Mermaid pie chart for language distribution
+            # Mermaid pie chart for language distribution with dark mode styling
             requirements += "```mermaid\npie title Language Distribution\n"
             for ext, count in sorted(languages.items(), key=lambda x: x[1], reverse=True):
                 requirements += f"    \"{ext}\" : {count}\n"
@@ -1013,6 +1057,11 @@ class Ndaversis:
             requirements += "### Built-in Standard Library (Included with Python)\n"
             requirements += "```mermaid\ngraph LR\n"
             requirements += "    Python --> " + " & ".join([d for d in sorted(stdlib_deps)]) + "\n"
+            requirements += "\n%% Dark mode styling\n"
+            requirements += "classDef pythonNode fill:#3776ab,stroke:#4b8bbe,stroke-width:2px,color:#fff\n"
+            requirements += "class Python pythonNode\n"
+            for d in sorted(stdlib_deps):
+                requirements += f"class {d.replace('-', '_').replace('.', '_')} pythonNode\n"
             requirements += "```\n\n"
             requirements += "The following modules are part of Python's standard library and **do not** require external installation:\n\n"
             requirements += ", ".join([f"`{d}`" for d in sorted(stdlib_deps)]) + "\n\n"
@@ -1187,7 +1236,35 @@ class Ndaversis:
                 for dep in sorted(all_deps):
                     node_id = f"dep_{dep.replace('-', '_').replace('.', '_')}"
                     dependencies_map += f"    {project_node} --> {node_id}[\"{dep}\"]\n"
-        dependencies_map += "```\n"
+        
+        # Add dark mode styling for dependency diagram
+        dependencies_map += "\n%% Dark mode styling\n"
+        dependencies_map += "classDef projectNode fill:#1a1a2e,stroke:#eee,stroke-width:3px,color:#fff\n"
+        dependencies_map += "classDef langNode fill:#0f3460,stroke:#4fbdba,stroke-width:2px,color:#fff\n"
+        dependencies_map += "classDef depNode fill:#16213e,stroke:#e0913f,stroke-width:2px,color:#fff\n"
+        dependencies_map += "classDef stdLibNode fill:#2d033b,stroke:#4caf50,stroke-width:2px,color:#fff\n"
+        
+        dependencies_map += f"\nclass {project_node.replace('-', '_')} projectNode\n"
+        
+        if not all_deps:
+            dependencies_map += "class StdLib stdLibNode\n"
+        else:
+            if len(languages) > 1:
+                for lang_ext, count in languages.items():
+                    lang_name = lang_ext.replace(".", "").upper() or "OTHER"
+                    lang_id = f"lang_{lang_name.replace(' ', '_').replace('-', '_')}"
+                    dependencies_map += f"class {lang_id} langNode\n"
+                    
+                    if lang_ext == ".py":
+                        for dep in sorted(all_deps):
+                            node_id = f"dep_{dep.replace('-', '_').replace('.', '_')}"
+                            dependencies_map += f"class {node_id} depNode\n"
+            else:
+                for dep in sorted(all_deps):
+                    node_id = f"dep_{dep.replace('-', '_').replace('.', '_')}"
+                    dependencies_map += f"class {node_id} depNode\n"
+        
+        dependencies_map += "```"
 
         return "\n".join(filter(None, [use_cases, user_stories, faq, how_to, features_str, requirements, install, modules_map, dependencies_map]))
 
@@ -1242,7 +1319,7 @@ class Ndaversis:
                 files_list.append(display_path)
         project_map += "```\n\n### Project Structure Diagram\n\n"
         
-        # Add Mermaid Project Diagram
+        # Add Mermaid Project Diagram with dark-mode-friendly styling
         project_map += "```mermaid\ngraph TD\n"
         project_map += "    Root[./]\n"
         for f in files_list:
@@ -1256,6 +1333,30 @@ class Ndaversis:
             else:
                 node_id = f"node_{f.lstrip('./').replace('.', '_')}"
                 project_map += f"    Root --> {node_id}[\"{f.lstrip('./')}\"]\n"
+        
+        # Add dark-mode-friendly styling
+        project_map += "\n%% Dark mode styling\n"
+        project_map += "classDef rootNode fill:#1a1a2e,stroke:#eee,stroke-width:2px,color:#fff\n"
+        project_map += "classDef fileNode fill:#16213e,stroke:#ddd,stroke-width:1px,color:#fff\n"
+        project_map += "classDef pythonFile fill:#0f3460,stroke:#4fbdba,stroke-width:2px,color:#fff\n"
+        project_map += "classDef configFile fill:#2d033b,stroke:#e0913f,stroke-width:2px,color:#fff\n"
+        project_map += "classDef docFile fill:#1e5128,stroke:#4caf50,stroke-width:2px,color:#fff\n"
+        
+        project_map += "\n%% Apply styles\n"
+        project_map += "class Root rootNode\n"
+        
+        for f in files_list:
+            node_id = f"node_{f.lstrip('./').replace('.', '_').replace('/', '_')}"
+            ext = f.split('.')[-1] if '.' in f else 'no_ext'
+            if ext == 'py':
+                project_map += f"class {node_id} pythonFile\n"
+            elif ext in ['json', 'yml', 'yaml', 'toml', 'ini']:
+                project_map += f"class {node_id} configFile\n"
+            elif ext in ['md', 'txt', 'rst']:
+                project_map += f"class {node_id} docFile\n"
+            else:
+                project_map += f"class {node_id} fileNode\n"
+        
         project_map += "```"
         return project_map
 
