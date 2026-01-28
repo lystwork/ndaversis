@@ -74,6 +74,192 @@ COPYRIGHT_TEXT = (
 __version__ = "0.0.66"
 
 # --- AI Service Classes ---
+import time
+from collections import deque
+
+class RateLimiter:
+    """
+    Rate limiter using sliding window algorithm.
+    Limits requests globally across all AI providers.
+    """
+    def __init__(self, max_requests: int = 4, time_window: int = 60) -> None:
+        """
+        Initialize rate limiter.
+        
+        Args:
+            max_requests: Maximum number of requests allowed in time window
+            time_window: Time window in seconds
+        """
+        self.max_requests = max_requests
+        self.time_window = time_window
+        self.requests = deque()
+    
+    def can_proceed(self) -> bool:
+        """Check if a new request can proceed without exceeding rate limit."""
+        now = time.time()
+        # Remove requests outside the time window
+        while self.requests and self.requests[0] < now - self.time_window:
+            self.requests.popleft()
+        
+        return len(self.requests) < self.max_requests
+    
+    def wait_if_needed(self) -> None:
+        """Wait if rate limit is exceeded."""
+        while not self.can_proceed():
+            now = time.time()
+            if self.requests:
+                wait_time = self.time_window - (now - self.requests[0])
+                if wait_time > 0:
+                    print(f"Rate limit exceeded. Waiting {wait_time:.1f} seconds...")
+                    time.sleep(min(wait_time + 0.1, 1.0))  # Sleep in small increments
+            else:
+                break
+    
+    def record_request(self) -> None:
+        """Record a new request."""
+        self.requests.append(time.time())
+
+
+class AIServiceManager:
+    """
+    Manages multiple AI service providers with automatic fallback.
+    Implements rate limiting and error handling.
+    """
+    def __init__(self, config: dict) -> None:
+        """
+        Initialize AI service manager.
+        
+        Args:
+            config: Configuration dictionary with provider settings
+        """
+        self.config = config
+        self.providers = {}
+        self.fallback_chain = []
+        
+        # Initialize rate limiter
+        rate_config = config.get("ai_providers", {}).get("rate_limit", {})
+        max_requests = rate_config.get("max_requests", 4)
+        time_window = rate_config.get("time_window_seconds", 60)
+        self.rate_limiter = RateLimiter(max_requests, time_window)
+        
+        # Initialize providers
+        self._initialize_providers()
+    
+    def _initialize_providers(self) -> None:
+        """Initialize all configured AI providers."""
+        ai_config = self.config.get("ai_providers", {})
+        primary = ai_config.get("primary", "gemini")
+        fallback_chain = ai_config.get("fallback_chain", [])
+        providers_config = ai_config.get("providers", {})
+        
+        # Build complete chain: primary + fallbacks
+        self.fallback_chain = [primary] + fallback_chain
+        
+        # Service class mapping
+        service_map = {
+            "gemini": GeminiService,
+            "chatgpt": ChatGPTService,
+            "claude": ClaudeService,
+            "deepseek": DeepSeekService,
+            "groq": GroqService,
+            "openrouter": OpenRouterService,
+            "mistral": MistralService,
+            "qwen": QwenService,
+            "llama": LlamaService,
+            "openai_compatible": OpenAICompatibleService,
+        }
+        
+        # Initialize each provider in the chain
+        for provider_name in self.fallback_chain:
+            api_key_env = f"{provider_name.upper()}_API_KEY"
+            api_key = os.getenv(api_key_env)
+            
+            if not api_key:
+                continue  # Skip providers without API keys
+            
+            service_class = service_map.get(provider_name)
+            if not service_class:
+                continue
+            
+            try:
+                # Get provider-specific config
+                provider_cfg = providers_config.get(provider_name, {})
+                model = provider_cfg.get("model") or os.getenv(f"{provider_name.upper()}_MODEL")
+                api_base = provider_cfg.get("api_base") or os.getenv(f"{provider_name.upper()}_API_BASE")
+                
+                # Initialize service based on requirements
+                if provider_name == "openai_compatible":
+                    if api_base:
+                        self.providers[provider_name] = service_class(api_key, api_base, model or "gpt-3.5-turbo")
+                elif provider_name == "llama":
+                    if model and api_base:
+                        self.providers[provider_name] = service_class(api_key, model, api_base)
+                    elif model:
+                        self.providers[provider_name] = service_class(api_key, model)
+                    else:
+                        self.providers[provider_name] = service_class(api_key)
+                elif model:
+                    self.providers[provider_name] = service_class(api_key, model)
+                else:
+                    self.providers[provider_name] = service_class(api_key)
+                    
+                print(f"Initialized AI provider: {provider_name}")
+            except Exception as e:
+                print(f"Failed to initialize {provider_name}: {e}")
+    
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        """
+        Generate content using available providers with fallback.
+        
+        Args:
+            prompt: The prompt for content generation
+            analysis_data: Code analysis data
+            
+        Returns:
+            Generated content string
+        """
+        # Wait if rate limit is exceeded
+        self.rate_limiter.wait_if_needed()
+        
+        # Try each provider in the fallback chain
+        for provider_name in self.fallback_chain:
+            if provider_name not in self.providers:
+                continue
+            
+            try:
+                print(f"Attempting to use AI provider: {provider_name}")
+                service = self.providers[provider_name]
+                
+                # Record request for rate limiting
+                self.rate_limiter.record_request()
+                
+                # Generate content
+                result = service.generate_content(prompt, analysis_data)
+                print(f"Successfully generated content using: {provider_name}")
+                return result
+                
+            except Exception as e:
+                error_msg = str(e).lower()
+                print(f"Provider {provider_name} failed: {e}")
+                
+                # Check for insufficient balance
+                if "insufficient" in error_msg or "balance" in error_msg or "quota" in error_msg:
+                    print(f"Provider {provider_name} has insufficient balance, trying next provider...")
+                    continue
+                
+                # Check for rate limit errors
+                if "rate" in error_msg or "limit" in error_msg:
+                    print(f"Provider {provider_name} rate limited, trying next provider...")
+                    continue
+                
+                # Other errors - try next provider
+                continue
+        
+        # All providers failed - return empty string or fallback message
+        print("All AI providers failed. Using offline mode.")
+        return ""
+
+
 class AIService:
     """
     Abstract base class for AI services.
@@ -240,6 +426,111 @@ class DeepSeekService(AIService):
         )
         return response.choices[0].message.content
 
+class GroqService(AIService):
+    """
+    An AI service that uses the Groq API.
+    """
+    def __init__(self, api_key: str, model: str = "mixtral-8x7b-32768") -> None:
+        super().__init__()
+        import openai
+        self.client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://api.groq.com/openai/v1"
+        )
+        self.model = model
+
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": full_prompt}]
+        )
+        return response.choices[0].message.content
+
+class OpenRouterService(AIService):
+    """
+    An AI service that uses the OpenRouter API.
+    """
+    def __init__(self, api_key: str, model: str = "anthropic/claude-3-haiku") -> None:
+        super().__init__()
+        import openai
+        self.client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://openrouter.ai/api/v1"
+        )
+        self.model = model
+
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": full_prompt}]
+        )
+        return response.choices[0].message.content
+
+class MistralService(AIService):
+    """
+    An AI service that uses the Mistral API.
+    """
+    def __init__(self, api_key: str, model: str = "mistral-small-latest") -> None:
+        super().__init__()
+        import openai
+        self.client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://api.mistral.ai/v1"
+        )
+        self.model = model
+
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": full_prompt}]
+        )
+        return response.choices[0].message.content
+
+class QwenService(AIService):
+    """
+    An AI service that uses the Qwen API (Alibaba Cloud).
+    """
+    def __init__(self, api_key: str, model: str = "qwen-turbo") -> None:
+        super().__init__()
+        import openai
+        self.client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+        self.model = model
+
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": full_prompt}]
+        )
+        return response.choices[0].message.content
+
+class LlamaService(AIService):
+    """
+    An AI service that uses Llama models via Together AI or similar providers.
+    """
+    def __init__(self, api_key: str, model: str = "meta-llama/Llama-3-70b-chat-hf", base_url: str = "https://api.together.xyz/v1") -> None:
+        super().__init__()
+        import openai
+        self.client = openai.OpenAI(
+            api_key=api_key,
+            base_url=base_url
+        )
+        self.model = model
+
+    def generate_content(self, prompt: str, analysis_data: dict) -> str:
+        full_prompt = self._create_full_prompt(prompt, analysis_data)
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": full_prompt}]
+        )
+        return response.choices[0].message.content
+
 class OpenAICompatibleService(AIService):
     """
     An AI service compatible with the OpenAI API (e.g., for on-premise LLMs, LocalAI, RAG).
@@ -305,6 +596,596 @@ class Version:
         """Increments the patch version."""
         self.patch += 1
 
+# --- Repository Metrics Class ---
+class RepositoryMetrics:
+    """
+    Comprehensive repository evaluation system.
+    Analyzes repository across 15 key metrics with AI-powered summaries.
+    """
+    
+    def __init__(self, ndaversis_instance) -> None:
+        """Initialize metrics analyzer with reference to main Ndaversis instance."""
+        self.ndaversis = ndaversis_instance
+        self.metrics_cache = {}
+        self.cache_timestamp = None
+        self.cache_ttl = 1800  # 30 minutes cache
+    
+    def _get_ai_summary(self, metric_name: str, data: dict) -> str:
+        """Generate AI summary for a metric."""
+        if not self.ndaversis.ai_service:
+            return f"AI summary unavailable. {metric_name} calculated based on code analysis."
+        
+        prompt = (
+            f"Provide a brief 2-3 sentence summary of the {metric_name} metric for this repository. "
+            f"Be specific and actionable. Data: {json.dumps(data, indent=2)}"
+        )
+        
+        try:
+            return self.ndaversis.ai_service.generate_content(prompt, data)
+        except:
+            return f"AI summary generation failed. {metric_name} score: {data.get('score', 0)}%"
+    
+    def calculate_code_quality(self) -> dict:
+        """
+        Evaluate code quality based on docstrings, type hints, and complexity.
+        Returns score (0-100%) and AI summary.
+        """
+        features, _ = self.ndaversis._analyze_codebase()
+        
+        total_functions = len(features["functions"])
+        total_classes = len(features["classes"])
+        total_items = total_functions + total_classes
+        
+        if total_items == 0:
+            return {"score": 50, "summary": "No Python code to analyze", "details": {}}
+        
+        # Count documented items
+        documented = 0
+        for func_data in features["functions"].values():
+            if func_data.get("docstring"):
+                documented += 1
+        
+        for class_data in features["classes"].values():
+            if class_data.get("docstring"):
+                documented += 1
+        
+        doc_coverage = (documented / total_items) * 100 if total_items > 0 else 0
+        
+        # Calculate score (weighted: 70% docstrings, 30% code/comment ratio)
+        metrics = features["metrics"]
+        total_lines = metrics["code_lines"] + metrics["comment_lines"]
+        comment_ratio = (metrics["comment_lines"] / total_lines * 100) if total_lines > 0 else 0
+        
+        score = int((doc_coverage * 0.7) + (min(comment_ratio, 30) * 0.3))
+        
+        details = {
+            "docstring_coverage": f"{doc_coverage:.1f}%",
+            "comment_ratio": f"{comment_ratio:.1f}%",
+            "documented_items": f"{documented}/{total_items}"
+        }
+        
+        summary = self._get_ai_summary("Code Quality", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_code_size(self) -> dict:
+        """Evaluate code size and distribution."""
+        features, _ = self.ndaversis._analyze_codebase()
+        metrics = features["metrics"]
+        
+        total_lines = metrics["total_lines"]
+        code_lines = metrics["code_lines"]
+        
+        # Score based on reasonable size (sweet spot: 1000-10000 lines)
+        if code_lines < 100:
+            score = 30
+        elif code_lines < 1000:
+            score = 50 + int((code_lines / 1000) * 30)
+        elif code_lines <= 10000:
+            score = 90
+        else:
+            score = max(50, 90 - int((code_lines - 10000) / 1000))
+        
+        details = {
+            "total_lines": total_lines,
+            "code_lines": code_lines,
+            "comment_lines": metrics["comment_lines"],
+            "blank_lines": metrics["blank_lines"]
+        }
+        
+        summary = self._get_ai_summary("Code Size", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_security(self) -> dict:
+        """Evaluate security practices."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        # Check for common security issues
+        issues = []
+        score = 100
+        
+        # Check for hardcoded secrets (simple patterns)
+        if re.search(r'(password|secret|api_key)\s*=\s*["\'][^"\']+["\']', code, re.IGNORECASE):
+            issues.append("Potential hardcoded secrets detected")
+            score -= 30
+        
+        # Check for eval/exec usage
+        if 'eval(' in code or 'exec(' in code:
+            issues.append("Use of eval/exec detected (security risk)")
+            score -= 20
+        
+        # Check for SQL injection risks (basic check)
+        if re.search(r'execute\(["\'].*%s.*["\']\s*%', code):
+            issues.append("Potential SQL injection vulnerability")
+            score -= 25
+        
+        # Check for proper error handling
+        if 'except:' in code or 'except Exception:' in code:
+            issues.append("Broad exception handling detected")
+            score -= 10
+        
+        score = max(0, score)
+        
+        details = {
+            "issues_found": len(issues),
+            "issues": issues if issues else ["No major security issues detected"]
+        }
+        
+        summary = self._get_ai_summary("Security", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_applicability(self) -> dict:
+        """Evaluate applicability and use case coverage."""
+        features, _ = self.ndaversis._analyze_codebase()
+        
+        # Score based on number of public functions/classes
+        public_functions = sum(1 for name in features["functions"].keys() if not name.startswith('_'))
+        public_classes = sum(1 for name in features["classes"].keys() if not name.startswith('_'))
+        
+        total_public = public_functions + public_classes
+        
+        if total_public < 5:
+            score = 40
+        elif total_public < 15:
+            score = 60
+        elif total_public < 30:
+            score = 80
+        else:
+            score = 95
+        
+        details = {
+            "public_functions": public_functions,
+            "public_classes": public_classes,
+            "total_public_api": total_public
+        }
+        
+        summary = self._get_ai_summary("Applicability", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_platform_compatibility(self) -> dict:
+        """Evaluate cross-platform compatibility."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        score = 100
+        issues = []
+        
+        # Check for OS-specific code
+        if 'platform.system()' in code or 'os.name' in code:
+            score = 90  # Good - handles platform differences
+        
+        # Check for Windows-specific paths
+        if re.search(r'[A-Z]:\\\\', code):
+            issues.append("Windows-specific paths detected")
+            score -= 15
+        
+        # Check for Unix-specific features
+        if 'os.fork()' in code or '/dev/' in code:
+            issues.append("Unix-specific features detected")
+            score -= 15
+        
+        # Bonus for using pathlib
+        if 'pathlib' in features["imports"] or 'Path' in code:
+            score = min(100, score + 10)
+        
+        score = max(0, score)
+        
+        details = {
+            "estimated_compatibility": f"{score}%",
+            "issues": issues if issues else ["Good cross-platform practices"]
+        }
+        
+        summary = self._get_ai_summary("Platform Compatibility", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_quantity(self) -> dict:
+        """Evaluate quantity of features and functionality."""
+        features, _ = self.ndaversis._analyze_codebase()
+        
+        total_functions = len(features["functions"])
+        total_classes = len(features["classes"])
+        total_files = len([f for f in features["files"] if f.endswith('.py')])
+        
+        # Score based on total functionality
+        total_items = total_functions + total_classes
+        
+        if total_items < 10:
+            score = 30
+        elif total_items < 30:
+            score = 50
+        elif total_items < 100:
+            score = 75
+        else:
+            score = 95
+        
+        details = {
+            "total_functions": total_functions,
+            "total_classes": total_classes,
+            "total_files": total_files,
+            "total_items": total_items
+        }
+        
+        summary = self._get_ai_summary("Quantity", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_performance(self) -> dict:
+        """Evaluate performance considerations."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        score = 70  # Base score
+        optimizations = []
+        concerns = []
+        
+        # Check for performance optimizations
+        if 'cache' in code.lower() or 'memoize' in code.lower():
+            optimizations.append("Caching implemented")
+            score += 10
+        
+        if 'async' in code or 'await' in code:
+            optimizations.append("Async operations used")
+            score += 10
+        
+        # Check for performance concerns
+        if code.count('for ') > 50:
+            concerns.append("Many loops detected")
+            score -= 5
+        
+        if 'sleep(' in code:
+            concerns.append("Blocking sleep calls found")
+            score -= 10
+        
+        score = max(0, min(100, score))
+        
+        details = {
+            "optimizations": optimizations if optimizations else ["No specific optimizations detected"],
+            "concerns": concerns if concerns else ["No major performance concerns"]
+        }
+        
+        summary = self._get_ai_summary("Performance", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_usability(self) -> dict:
+        """Evaluate usability and API clarity."""
+        features, _ = self.ndaversis._analyze_codebase()
+        
+        # Check for README
+        has_readme = any('readme' in f.lower() for f in features["files"])
+        
+        # Check for examples
+        has_examples = any('example' in f.lower() for f in features["files"])
+        
+        # Check for documentation
+        doc_score = self.calculate_code_quality()["score"]
+        
+        score = 0
+        if has_readme:
+            score += 40
+        if has_examples:
+            score += 20
+        score += int(doc_score * 0.4)
+        
+        details = {
+            "has_readme": has_readme,
+            "has_examples": has_examples,
+            "documentation_score": f"{doc_score}%"
+        }
+        
+        summary = self._get_ai_summary("Usability", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_reliability(self) -> dict:
+        """Evaluate reliability through error handling and tests."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        score = 50  # Base score
+        
+        # Check for tests
+        has_tests = any('test' in f.lower() for f in features["files"])
+        if has_tests:
+            score += 30
+        
+        # Check for error handling
+        try_count = code.count('try:')
+        except_count = code.count('except')
+        
+        if try_count > 0 and except_count > 0:
+            score += 20
+        
+        # Check for logging
+        if 'logging' in features["imports"] or 'logger' in code.lower():
+            score += 10
+        
+        score = min(100, score)
+        
+        details = {
+            "has_tests": has_tests,
+            "error_handling": f"{try_count} try blocks",
+            "has_logging": 'logging' in features["imports"]
+        }
+        
+        summary = self._get_ai_summary("Reliability", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_innovation(self) -> dict:
+        """Evaluate innovation and modern practices."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        score = 50  # Base score
+        innovations = []
+        
+        # Check for modern Python features
+        if 'typing' in features["imports"] or 'Type' in code:
+            innovations.append("Type hints used")
+            score += 15
+        
+        if 'dataclass' in code or '@dataclass' in code:
+            innovations.append("Dataclasses used")
+            score += 10
+        
+        if 'async' in code or 'await' in code:
+            innovations.append("Async/await patterns")
+            score += 10
+        
+        if 'pathlib' in features["imports"]:
+            innovations.append("Modern path handling")
+            score += 5
+        
+        # Check for AI/ML
+        if any(lib in features["imports"] for lib in ['tensorflow', 'torch', 'sklearn', 'transformers']):
+            innovations.append("AI/ML integration")
+            score += 15
+        
+        score = min(100, score)
+        
+        details = {
+            "innovations": innovations if innovations else ["Standard implementation"],
+            "modern_features": len(innovations)
+        }
+        
+        summary = self._get_ai_summary("Innovation", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_simplicity(self) -> dict:
+        """Evaluate code simplicity and clarity."""
+        features, code = self.ndaversis._analyze_codebase()
+        metrics = features["metrics"]
+        
+        # Calculate average function length
+        total_code = metrics["code_lines"]
+        total_functions = len(features["functions"]) + sum(len(c["methods"]) for c in features["classes"].values())
+        
+        avg_function_length = total_code / max(total_functions, 1)
+        
+        # Score based on simplicity metrics
+        if avg_function_length < 10:
+            score = 95
+        elif avg_function_length < 20:
+            score = 85
+        elif avg_function_length < 50:
+            score = 70
+        else:
+            score = 50
+        
+        # Adjust for nesting complexity (rough estimate)
+        nesting_level = code.count('    ') / max(metrics["code_lines"], 1)
+        if nesting_level > 3:
+            score -= 15
+        
+        score = max(0, score)
+        
+        details = {
+            "avg_function_length": f"{avg_function_length:.1f} lines",
+            "total_functions": total_functions,
+            "estimated_complexity": "Low" if score > 75 else "Medium" if score > 50 else "High"
+        }
+        
+        summary = self._get_ai_summary("Simplicity", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_aesthetics(self) -> dict:
+        """Evaluate code aesthetics and style."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        score = 70  # Base score
+        style_points = []
+        
+        # Check for consistent naming
+        if all(name.islower() or '_' in name for name in features["functions"].keys()):
+            style_points.append("Consistent function naming")
+            score += 10
+        
+        # Check for PEP 8 compliance indicators
+        if metrics := features["metrics"]:
+            if metrics["tabs"] == 0:  # Spaces over tabs
+                style_points.append("Uses spaces (PEP 8)")
+                score += 10
+        
+        # Check for docstrings
+        if any(f.get("docstring") for f in features["functions"].values()):
+            style_points.append("Functions documented")
+            score += 10
+        
+        score = min(100, score)
+        
+        details = {
+            "style_points": style_points if style_points else ["Basic style compliance"],
+            "uses_tabs": features["metrics"]["tabs"] > 0
+        }
+        
+        summary = self._get_ai_summary("Aesthetics", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_duration(self) -> dict:
+        """Evaluate long-term maintainability."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        score = 70  # Base score
+        factors = []
+        
+        # Check for version control
+        if os.path.exists('.git'):
+            factors.append("Version control in use")
+            score += 10
+        
+        # Check for dependencies management
+        if os.path.exists('requirements.txt') or os.path.exists('pyproject.toml'):
+            factors.append("Dependencies managed")
+            score += 10
+        
+        # Check for TODO/FIXME
+        todo_count = code.count('TODO') + code.count('FIXME')
+        if todo_count > 10:
+            factors.append(f"{todo_count} TODOs found")
+            score -= 10
+        
+        # Check for tests
+        if any('test' in f.lower() for f in features["files"]):
+            factors.append("Test suite exists")
+            score += 10
+        
+        score = max(0, min(100, score))
+        
+        details = {
+            "maintainability_factors": factors,
+            "todo_count": todo_count
+        }
+        
+        summary = self._get_ai_summary("Duration/Maintainability", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_accuracy(self) -> dict:
+        """Evaluate code correctness and testing."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        score = 60  # Base score
+        
+        # Check for tests
+        test_files = [f for f in features["files"] if 'test' in f.lower()]
+        if test_files:
+            score += 25
+        
+        # Check for type hints (helps with correctness)
+        if 'typing' in features["imports"]:
+            score += 15
+        
+        # Check for assertions
+        if 'assert' in code:
+            score += 10
+        
+        score = min(100, score)
+        
+        details = {
+            "test_files": len(test_files),
+            "has_type_hints": 'typing' in features["imports"],
+            "has_assertions": 'assert' in code
+        }
+        
+        summary = self._get_ai_summary("Accuracy", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def calculate_completeness(self) -> dict:
+        """Evaluate feature completeness."""
+        features, code = self.ndaversis._analyze_codebase()
+        
+        score = 70  # Base score
+        completeness_factors = []
+        
+        # Check for README
+        if any('readme' in f.lower() for f in features["files"]):
+            completeness_factors.append("README present")
+            score += 10
+        
+        # Check for LICENSE
+        if any('license' in f.lower() for f in features["files"]):
+            completeness_factors.append("LICENSE present")
+            score += 5
+        
+        # Check for setup/installation files
+        if any(f in features["files"] for f in ['setup.py', 'pyproject.toml', 'requirements.txt']):
+            completeness_factors.append("Installation files present")
+            score += 10
+        
+        # Check for TODOs (incompleteness indicator)
+        todo_count = code.count('TODO') + code.count('FIXME') + code.count('XXX')
+        if todo_count > 0:
+            completeness_factors.append(f"{todo_count} TODOs remaining")
+            score -= min(20, todo_count * 2)
+        
+        score = max(0, min(100, score))
+        
+        details = {
+            "completeness_factors": completeness_factors,
+            "todo_count": todo_count
+        }
+        
+        summary = self._get_ai_summary("Completeness", {"score": score, **details})
+        return {"score": score, "summary": summary, "details": details}
+    
+    def get_all_metrics(self) -> dict:
+        """Calculate all metrics and return comprehensive report."""
+        import time
+        
+        # Check cache
+        if self.metrics_cache and self.cache_timestamp:
+            if time.time() - self.cache_timestamp < self.cache_ttl:
+                print("Using cached metrics...")
+                return self.metrics_cache
+        
+        print("Calculating repository metrics...")
+        
+        metrics = {
+            "code_quality": self.calculate_code_quality(),
+            "code_size": self.calculate_code_size(),
+            "security": self.calculate_security(),
+            "applicability": self.calculate_applicability(),
+            "platform_compatibility": self.calculate_platform_compatibility(),
+            "quantity": self.calculate_quantity(),
+            "performance": self.calculate_performance(),
+            "usability": self.calculate_usability(),
+            "reliability": self.calculate_reliability(),
+            "innovation": self.calculate_innovation(),
+            "simplicity": self.calculate_simplicity(),
+            "aesthetics": self.calculate_aesthetics(),
+            "duration": self.calculate_duration(),
+            "accuracy": self.calculate_accuracy(),
+            "completeness": self.calculate_completeness(),
+        }
+        
+        # Calculate overall score
+        total_score = sum(m["score"] for m in metrics.values())
+        avg_score = total_score / len(metrics)
+        
+        result = {
+            "overall_score": int(avg_score),
+            "metrics": metrics,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        
+        # Update cache
+        self.metrics_cache = result
+        self.cache_timestamp = time.time()
+        
+        return result
+
+
 # --- Main Application Class ---
 class Ndaversis:
     """
@@ -333,6 +1214,7 @@ class Ndaversis:
         self.ai_config: dict = self.load_ai_config()
         self.previous_code_state: dict = self.load_previous_code_state()
         self.ai_service: Optional[AIService] = self.get_ai_service()
+        self.metrics: RepositoryMetrics = RepositoryMetrics(self)
 
     def is_ndaversis_repo(self):
         """
@@ -418,10 +1300,19 @@ class Ndaversis:
             return {}
 
     def get_ai_service(self):
-        """Factory function to get an AI service instance."""
+        """Factory function to get an AI service manager instance with fallback support."""
         if not self.ai_config:
             return None
 
+        # Check if using new multi-provider config
+        if "ai_providers" in self.ai_config:
+            try:
+                return AIServiceManager(self.ai_config)
+            except Exception as e:
+                print(f"Failed to initialize AI Service Manager: {e}")
+                return None
+        
+        # Fallback to legacy single-provider config
         provider = self.ai_config.get("ai_provider")
         if not provider:
             print("No AI provider specified in the config. AI service disabled.")
@@ -435,6 +1326,11 @@ class Ndaversis:
             "chatgpt": ChatGPTService,
             "claude": ClaudeService,
             "deepseek": DeepSeekService,
+            "groq": GroqService,
+            "openrouter": OpenRouterService,
+            "mistral": MistralService,
+            "qwen": QwenService,
+            "llama": LlamaService,
             "openai_compatible": OpenAICompatibleService,
         }
 
@@ -1983,7 +2879,7 @@ class Ndaversis:
 
 # --- Entry Point ---
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Version Manager")
+    parser = argparse.ArgumentParser(description="Ndaversis - Agentic Semantic Version Info System")
     subparsers = parser.add_subparsers(dest="command")
 
     gui_parser = subparsers.add_parser("gui", help="Run the GUI")
@@ -1996,7 +2892,9 @@ if __name__ == "__main__":
     group.add_argument("--patch", action="store_true", help="Increment patch version")
 
     install_parser = subparsers.add_parser("install-hook", help="Install pre-commit hook")
-    health_check_parser = subparsers.add_parser("health-check", help="Run a health check")
+    health_parser = subparsers.add_parser("health", help="Run a health check")
+    audit_parser = subparsers.add_parser("audit", help="Run repository audit")
+    metrics_parser = subparsers.add_parser("metrics", help="Calculate repository evaluation metrics")
 
     app = Ndaversis()
 
@@ -2008,7 +2906,54 @@ if __name__ == "__main__":
         app.main_cli(args)
     elif args.command == "install-hook":
         app.install_pre_commit_hook()
-    elif args.command == "health-check":
+    elif args.command == "health":
         app.health_check()
+    elif args.command == "audit":
+        print("Running repository audit...")
+        features, _ = app._analyze_codebase()
+        print(f"\nRepository Analysis:")
+        print(f"  Total Lines: {features['metrics']['total_lines']}")
+        print(f"  Code Lines: {features['metrics']['code_lines']}")
+        print(f"  Comment Lines: {features['metrics']['comment_lines']}")
+        print(f"  Functions: {len(features['functions'])}")
+        print(f"  Classes: {len(features['classes'])}")
+        print(f"  Imports: {len(features['imports'])}")
+    elif args.command == "metrics":
+        print("Calculating repository metrics...")
+        metrics_result = app.metrics.get_all_metrics()
+        
+        # Display results
+        print(f"\n{'='*60}")
+        print(f"REPOSITORY EVALUATION METRICS")
+        print(f"{'='*60}")
+        print(f"\nOverall Score: {metrics_result['overall_score']}%")
+        print(f"Timestamp: {metrics_result['timestamp']}")
+        print(f"\n{'='*60}\n")
+        
+        # Display each metric
+        for metric_name, metric_data in metrics_result['metrics'].items():
+            metric_title = metric_name.replace('_', ' ').title()
+            score = metric_data['score']
+            summary = metric_data['summary']
+            
+            # Color code based on score
+            if score >= 80:
+                status = "✓ EXCELLENT"
+            elif score >= 60:
+                status = "○ GOOD"
+            elif score >= 40:
+                status = "△ FAIR"
+            else:
+                status = "✗ NEEDS IMPROVEMENT"
+            
+            print(f"{metric_title}: {score}% {status}")
+            print(f"  {summary}")
+            print()
+        
+        # Save to file
+        metrics_file = "ndaversis_metrics.json"
+        with open(metrics_file, "w") as f:
+            json.dump(metrics_result, f, indent=2)
+        print(f"\nDetailed metrics saved to: {metrics_file}")
     else:
         app.main_gui()

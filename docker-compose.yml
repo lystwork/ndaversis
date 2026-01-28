@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  ndaversis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ndaversis
+    volumes:
+      # Mount current directory for live code updates
+      - ./:/app
+      # Persistent state storage
+      - ndaversis_state:/app/state
+      # Persistent logs
+      - ndaversis_logs:/app/logs
+    environment:
+      # AI Provider API Keys
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - LLAMA_API_KEY=${LLAMA_API_KEY:-}
+      
+      # Optional: Custom API endpoints
+      - GEMINI_API_BASE=${GEMINI_API_BASE:-}
+      - GROQ_API_BASE=${GROQ_API_BASE:-}
+      - OPENROUTER_API_BASE=${OPENROUTER_API_BASE:-}
+      - MISTRAL_API_BASE=${MISTRAL_API_BASE:-}
+      - DEEPSEEK_API_BASE=${DEEPSEEK_API_BASE:-}
+      - QWEN_API_BASE=${QWEN_API_BASE:-}
+      - LLAMA_API_BASE=${LLAMA_API_BASE:-https://api.together.xyz/v1}
+      
+      # Optional: Custom models
+      - GEMINI_MODEL=${GEMINI_MODEL:-}
+      - GROQ_MODEL=${GROQ_MODEL:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-}
+      - MISTRAL_MODEL=${MISTRAL_MODEL:-}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-}
+      - QWEN_MODEL=${QWEN_MODEL:-}
+      - LLAMA_MODEL=${LLAMA_MODEL:-}
+      
+      # Application settings
+      - WEB_PORT=${WEB_PORT:-8080}
+      - WEB_HOST=${WEB_HOST:-0.0.0.0}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    command: python ndaversis.py
+
+volumes:
+  ndaversis_state:
+    driver: local
+  ndaversis_logs:
+    driver: local

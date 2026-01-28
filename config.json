@@ -1,3 +1,40 @@
 {
-  "ai_provider": "gemini"
+  "ai_providers": {
+    "primary": "gemini",
+    "fallback_chain": ["groq", "openrouter", "mistral", "deepseek", "qwen", "llama"],
+    "rate_limit": {
+      "max_requests": 4,
+      "time_window_seconds": 60
+    },
+    "providers": {
+      "gemini": {
+        "model": "gemini-2.0-flash",
+        "api_base": null
+      },
+      "groq": {
+        "model": "mixtral-8x7b-32768",
+        "api_base": null
+      },
+      "openrouter": {
+        "model": "anthropic/claude-3-haiku",
+        "api_base": null
+      },
+      "mistral": {
+        "model": "mistral-small-latest",
+        "api_base": null
+      },
+      "deepseek": {
+        "model": "deepseek-chat",
+        "api_base": null
+      },
+      "qwen": {
+        "model": "qwen-turbo",
+        "api_base": null
+      },
+      "llama": {
+        "model": "meta-llama/Llama-3-70b-chat-hf",
+        "api_base": "https://api.together.xyz/v1"
+      }
+    }
+  }
 }

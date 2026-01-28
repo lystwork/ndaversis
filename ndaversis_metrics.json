@@ -1,0 +1,161 @@
+{
+  "overall_score": 78,
+  "metrics": {
+    "code_quality": {
+      "score": 72,
+      "summary": "",
+      "details": {
+        "docstring_coverage": "100.0%",
+        "comment_ratio": "9.2%",
+        "documented_items": "21/21"
+      }
+    },
+    "code_size": {
+      "score": 90,
+      "summary": "",
+      "details": {
+        "total_lines": 5149,
+        "code_lines": 3921,
+        "comment_lines": 395,
+        "blank_lines": 833
+      }
+    },
+    "security": {
+      "score": 70,
+      "summary": "",
+      "details": {
+        "issues_found": 2,
+        "issues": [
+          "Use of eval/exec detected (security risk)",
+          "Broad exception handling detected"
+        ]
+      }
+    },
+    "applicability": {
+      "score": 80,
+      "summary": "",
+      "details": {
+        "public_functions": 4,
+        "public_classes": 16,
+        "total_public_api": 20
+      }
+    },
+    "platform_compatibility": {
+      "score": 85,
+      "summary": "",
+      "details": {
+        "estimated_compatibility": "85%",
+        "issues": [
+          "Unix-specific features detected"
+        ]
+      }
+    },
+    "quantity": {
+      "score": 50,
+      "summary": "",
+      "details": {
+        "total_functions": 5,
+        "total_classes": 16,
+        "total_files": 3,
+        "total_items": 21
+      }
+    },
+    "performance": {
+      "score": 75,
+      "summary": "",
+      "details": {
+        "optimizations": [
+          "Caching implemented",
+          "Async operations used"
+        ],
+        "concerns": [
+          "Many loops detected",
+          "Blocking sleep calls found"
+        ]
+      }
+    },
+    "usability": {
+      "score": 88,
+      "summary": "",
+      "details": {
+        "has_readme": true,
+        "has_examples": true,
+        "documentation_score": "72%"
+      }
+    },
+    "reliability": {
+      "score": 80,
+      "summary": "",
+      "details": {
+        "has_tests": false,
+        "error_handling": "21 try blocks",
+        "has_logging": false
+      }
+    },
+    "innovation": {
+      "score": 85,
+      "summary": "",
+      "details": {
+        "innovations": [
+          "Type hints used",
+          "Dataclasses used",
+          "Async/await patterns"
+        ],
+        "modern_features": 3
+      }
+    },
+    "simplicity": {
+      "score": 70,
+      "summary": "",
+      "details": {
+        "avg_function_length": "42.2 lines",
+        "total_functions": 93,
+        "estimated_complexity": "Medium"
+      }
+    },
+    "aesthetics": {
+      "score": 100,
+      "summary": "",
+      "details": {
+        "style_points": [
+          "Consistent function naming",
+          "Uses spaces (PEP 8)",
+          "Functions documented"
+        ],
+        "uses_tabs": false
+      }
+    },
+    "duration": {
+      "score": 80,
+      "summary": "",
+      "details": {
+        "maintainability_factors": [
+          "Version control in use"
+        ],
+        "todo_count": 9
+      }
+    },
+    "accuracy": {
+      "score": 85,
+      "summary": "",
+      "details": {
+        "test_files": 0,
+        "has_type_hints": true,
+        "has_assertions": true
+      }
+    },
+    "completeness": {
+      "score": 65,
+      "summary": "",
+      "details": {
+        "completeness_factors": [
+          "README present",
+          "LICENSE present",
+          "10 TODOs remaining"
+        ],
+        "todo_count": 10
+      }
+    }
+  },
+  "timestamp": "2026-01-28T20:10:16.785948"
+}

@@ -1,4 +1,33 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ndaversis specific
 ndaversis_state.json
-*.txt
+*.log
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Environment
+.env
