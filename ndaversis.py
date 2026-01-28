@@ -32,11 +32,17 @@ import datetime
 import getpass
 from typing import Optional
 
-# Flet for modern GUI
+# PyQt6 for modern GUI
 try:
-    import flet as ft
+    from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+                                QHBoxLayout, QLabel, QLineEdit, QPushButton, 
+                                QProgressBar, QTextEdit, QTabWidget, QScrollArea,
+                                QFrame, QSizePolicy, QMessageBox)
+    from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize
+    from PyQt6.QtGui import QFont, QIcon, QPalette, QColor, QGradient, QLinearGradient, QBrush
+    HAS_PYQT = True
 except ImportError:
-    ft = None
+    HAS_PYQT = False
 
 # import google.generativeai as genai
 # import openai
@@ -1965,7 +1971,7 @@ class Ndaversis:
         if external_deps:
             requirements += "### External Libraries\n\n"
             
-            mandatory = ["flet"]
+            mandatory = ["pyqt6"]
             ai_providers = ["openai", "google-genai", "anthropic", "deepseek"]
             optional_deps = [d for d in external_deps if d.lower() not in mandatory and d.lower() not in ai_providers]
             
@@ -2090,7 +2096,7 @@ class Ndaversis:
             if all_external:
                 dependencies_map += "### Custom/External Frameworks\n\n"
                 dep_descriptions = {
-                    "flet": "Modern framework for building beautiful and fast interactive user interfaces.",
+                    "PyQt6": "Set of Python bindings for The Qt Company's Qt application framework.",
                     "google-genai": "Google's official library for accessing high-performance Gemini AI models.",
                     "openai": "Standard interface for integrating ChatGPT and other OpenAI language models.",
                     "anthropic": "Client for Claude, a highly reliable and safe institutional-grade AI.",
@@ -2612,410 +2618,38 @@ class Ndaversis:
         print(f"Version updated to {self.version}")
 
     def main_gui(self, test_mode=False):
-        """Run the Flet GUI with futuristic Neumorphism/Brutalism design."""
-        if not ft:
-            print("Flet not installed. Please run 'pip install flet' to use the GUI.")
+        """Run the PyQt6 GUI with futuristic Neumorphism/Brutalism design."""
+        if not HAS_PYQT:
+            print("PyQt6 not installed. Please run 'pip install PyQt6' to use the GUI.")
             return
 
-        def main(page: ft.Page):
-            page.title = "NDAVERSIS - Agentic Version System"
-            page.theme_mode = ft.ThemeMode.DARK
-            page.bgcolor = "#0a0e27"  # Deep space blue
-            page.padding = 0
-            page.window_width = 700
-            page.window_height = 850
-            page.scroll = ft.ScrollMode.ADAPTIVE
-            
-            # Neumorphic card container
-            def create_neomorphic_card(content, padding=30):
-                return ft.Container(
-                    content=content,
-                    padding=padding,
-                    margin=20,
-                    border_radius=20,
-                    bgcolor="#151b35",
-                    shadow=ft.BoxShadow(
-                        spread_radius=1,
-                        blur_radius=20,
-                        color="#00000040",
-                        offset=ft.Offset(0, 10)
-                    ),
-                    border=ft.border.all(1, "#1f2847")
-                )
-            
-            # Brutalist header with geometric design
-            header = ft.Container(
-                content=ft.Column([
-                    ft.Text(
-                        "NDAVERSIS",
-                        size=48,
-                        weight=ft.FontWeight.BOLD,
-                        font_family="Courier New",  # Brutalist monospace
-                        color="#00d9ff"  # Cyan
-                    ),
-                    ft.Text(
-                        f"v{self.version}",
-                        size=18,
-                        weight=ft.FontWeight.W_300,
-                        color="#6c7a9b"
-                    ),
-                    ft.Container(
-                        width=100,
-                        height=4,
-                        bgcolor="#00d9ff",
-                        border_radius=2,
-                        margin=ft.margin.only(top=10)
-                    )
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                padding=40,
-                gradient=ft.LinearGradient(
-                    begin=ft.alignment.top_left,
-                    end=ft.alignment.bottom_right,
-                    colors=["#0a0e27", "#1a1f3a", "#0f1729"]
-                )
-            )
-            
-            # Neumorphic input field
-            change_input = ft.TextField(
-                label="Version Changes",
-                label_style=ft.TextStyle(color="#6c7a9b", size=14),
-                multiline=True,
-                min_lines=4,
-                max_lines=6,
-                hint_text="Describe what changed in this version...",
-                hint_style=ft.TextStyle(color="#3d4663"),
-                border_color="#1f2847",
-                focused_border_color="#00d9ff",
-                bgcolor="#0d1128",
-                color="#e0e6f0",
-                text_size=15,
-                border_radius=15,
-                content_padding=20
-            )
-            
-            # Status indicator
-            status_text = ft.Text("", size=14, color="#00d9ff", text_align=ft.TextAlign.CENTER)
-            pb = ft.ProgressBar(
-                width=500,
-                height=4,
-                color="#00d9ff",
-                bgcolor="#1f2847",
-                visible=False,
-                border_radius=2
-            )
-            
-            def on_increment(increment_type):
-                if not change_input.value.strip():
-                    status_text.value = "⚠️ Please describe what changed first!"
-                    status_text.color = "#ff9500"  # Orange warning
-                    page.update()
-                    return
+        app = QApplication(sys.argv)
+        app.setStyle("Fusion")
+        
+        # Dark Theme Palette
+        palette = QPalette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(10, 14, 39))
+        palette.setColor(QPalette.ColorRole.WindowText, QColor(224, 230, 240))
+        palette.setColor(QPalette.ColorRole.Base, QColor(13, 17, 40))
+        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(21, 27, 53))
+        palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(224, 230, 240))
+        palette.setColor(QPalette.ColorRole.ToolTipText, QColor(224, 230, 240))
+        palette.setColor(QPalette.ColorRole.Text, QColor(224, 230, 240))
+        palette.setColor(QPalette.ColorRole.Button, QColor(21, 27, 53))
+        palette.setColor(QPalette.ColorRole.ButtonText, QColor(224, 230, 240))
+        palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+        palette.setColor(QPalette.ColorRole.Link, QColor(0, 217, 255))
+        palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 217, 255))
+        palette.setColor(QPalette.ColorRole.HighlightedText, QColor(10, 14, 39))
+        app.setPalette(palette)
 
-                status_text.value = f"Processing {increment_type} update..."
-                status_text.color = "#00d9ff"
-                pb.visible = True
-                page.update()
-
-                try:
-                    # Logic
-                    if increment_type == "Major":
-                        self.version.increment_major()
-                    elif increment_type == "Minor":
-                        self.version.increment_minor()
-                    else:
-                        self.version.increment_patch()
-                    what_changed = change_input.value.strip()
-                    analysis_data, _ = self._analyze_codebase()
-                    readme_content = self.generate_readme_content(self.version, analysis_data, what_changed)
-                    self.update_readme(readme_content)
-                    self.save_version(str(self.version))
-                    
-                    # Save to version history if module available
-                    if version_history:
-                        version_data = {
-                            "version": str(self.version),
-                            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "author": getpass.getuser(),
-                            "changes": what_changed,
-                            "goals": self.infer_goals_from_summary(what_changed, analysis_data)
-                        }
-                        version_history.add_version(version_data)
-
-                    status_text.value = f"✅ Success! Version updated to {self.version}"
-                    status_text.color = "#00ff88"  # Bright green
-                    pb.visible = False
-                    change_input.value = ""
-                    page.update()
-                    
-                    # Small delay before closing
-                    import time
-                    time.sleep(1.5)
-                    page.window_close()
-                except Exception as e:
-                    status_text.value = f"❌ Error: {str(e)}"
-                    status_text.color = "#ff3366"  # Bright red
-                    pb.visible = False
-                    page.update()
-            
-            # Brutalist geometric buttons with gradients
-            def create_version_button(label, icon, increment_type, gradient_colors):
-                return ft.Container(
-                    content=ft.ElevatedButton(
-                        content=ft.Row([
-                            ft.Icon(icon, size=20, color="#ffffff"),
-                            ft.Text(label, size=14, weight=ft.FontWeight.BOLD, color="#ffffff")
-                        ], alignment=ft.MainAxisAlignment.CENTER, spacing=8),
-                        on_click=lambda _: on_increment(increment_type),
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(radius=12),
-                            padding=ft.padding.symmetric(horizontal=25, vertical=18),
-                            bgcolor="#1a1f3a",
-                            overlay_color="#00000020"
-                        ),
-                        width=180,
-                        height=60
-                    ),
-                    gradient=ft.LinearGradient(
-                        colors=gradient_colors,
-                        begin=ft.alignment.top_left,
-                        end=ft.alignment.bottom_right
-                    ),
-                    border_radius=12,
-                    padding=2  # Border effect
-                )
-            
-            buttons = ft.Column([
-                create_version_button("PATCH +0.0.1", ft.icons.UPGRADE, "Patch", ["#00d9ff", "#0099cc"]),
-                create_version_button("MINOR +0.1.0", ft.icons.ROCKET_LAUNCH, "Minor", ["#5e60ce", "#7b2cbf"]),
-                create_version_button("MAJOR +1.0.0", ft.icons.STAR, "Major", ["#ff6b35", "#f72585"])
-            ], spacing=15, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-            
-            # Version Update Tab Content
-            version_tab_content = create_neomorphic_card(
-                ft.Column([
-                    ft.Text("CHANGE LOG", size=16, weight=ft.FontWeight.BOLD, color="#6c7a9b", font_family="Courier New"),
-                    ft.Container(height=10),
-                    change_input,
-                    ft.Container(height=25),
-                    buttons,
-                    ft.Container(height=20),
-                    ft.Column([status_text, pb], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-                ])
-            )
-            
-            # Metrics Dashboard Tab Content
-            metrics_status = ft.Text("", size=14, color="#00d9ff", text_align=ft.TextAlign.CENTER)
-            metrics_container = ft.Column([], scroll=ft.ScrollMode.ADAPTIVE)
-            
-            def calculate_metrics_ui():
-                metrics_status.value = "Calculating metrics..."
-                metrics_status.color = "#00d9ff"
-                page.update()
-                
-                try:
-                    metrics_result = self.metrics.get_all_metrics()
-                    
-                    # Clear previous metrics
-                    metrics_container.controls.clear()
-                    
-                    # Overall score card
-                    overall_score = metrics_result['overall_score']
-                    score_color = "#00ff88" if overall_score >= 80 else "#00d9ff" if overall_score >= 60 else "#ff9500"
-                    
-                    metrics_container.controls.append(
-                        ft.Container(
-                            content=ft.Column([
-                                ft.Text("OVERALL SCORE", size=14, color="#6c7a9b", weight=ft.FontWeight.BOLD),
-                                ft.Text(f"{overall_score}%", size=48, color=score_color, weight=ft.FontWeight.BOLD),
-                                ft.ProgressBar(value=overall_score/100, color=score_color, bgcolor="#1f2847", height=8, border_radius=4)
-                            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                            padding=20,
-                            border_radius=15,
-                            bgcolor="#151b35",
-                            border=ft.border.all(1, "#1f2847"),
-                            margin=ft.margin.only(bottom=20)
-                        )
-                    )
-                    
-                    # Individual metrics
-                    for metric_name, metric_data in metrics_result['metrics'].items():
-                        score = metric_data['score']
-                        summary = metric_data.get('summary', 'No summary available')
-                        details = metric_data.get('details', {})
-                        
-                        # Color based on score
-                        if score >= 80:
-                            color = "#00ff88"
-                            status_icon = "✓"
-                        elif score >= 60:
-                            color = "#00d9ff"
-                            status_icon = "○"
-                        elif score >= 40:
-                            color = "#ff9500"
-                            status_icon = "△"
-                        else:
-                            color = "#ff3366"
-                            status_icon = "✗"
-                        
-                        metric_title = metric_name.replace('_', ' ').title()
-                        
-                        # Create expandable tile
-                        details_text = "\n".join([f"{k}: {v}" for k, v in details.items()])
-                        
-                        metric_tile = ft.ExpansionTile(
-                            title=ft.Row([
-                                ft.Text(status_icon, size=20, color=color),
-                                ft.Text(metric_title, size=14, color="#e0e6f0", weight=ft.FontWeight.BOLD),
-                                ft.Container(expand=True),
-                                ft.Text(f"{score}%", size=16, color=color, weight=ft.FontWeight.BOLD)
-                            ]),
-                            subtitle=ft.ProgressBar(value=score/100, color=color, bgcolor="#1f2847", height=4, border_radius=2),
-                            controls=[
-                                ft.Container(
-                                    content=ft.Column([
-                                        ft.Text("Summary:", size=12, color="#6c7a9b", weight=ft.FontWeight.BOLD),
-                                        ft.Text(summary if summary else "AI summary unavailable", size=12, color="#e0e6f0"),
-                                        ft.Container(height=10),
-                                        ft.Text("Details:", size=12, color="#6c7a9b", weight=ft.FontWeight.BOLD),
-                                        ft.Text(details_text if details_text else "No details", size=11, color="#9ca3b8")
-                                    ]),
-                                    padding=15,
-                                    bgcolor="#0d1128",
-                                    border_radius=10
-                                )
-                            ],
-                            bgcolor="#151b35",
-                            collapsed_bgcolor="#151b35",
-                            text_color="#e0e6f0",
-                            icon_color="#00d9ff"
-                        )
-                        
-                        metrics_container.controls.append(
-                            ft.Container(
-                                content=metric_tile,
-                                margin=ft.margin.only(bottom=10),
-                                border_radius=10,
-                                border=ft.border.all(1, "#1f2847")
-                            )
-                        )
-                    
-                    metrics_status.value = f"✅ Metrics calculated! Overall: {overall_score}%"
-                    metrics_status.color = "#00ff88"
-                    page.update()
-                    
-                except Exception as e:
-                    metrics_status.value = f"❌ Error: {str(e)}"
-                    metrics_status.color = "#ff3366"
-                    page.update()
-            
-            def export_metrics():
-                try:
-                    import json
-                    metrics_result = self.metrics.get_all_metrics()
-                    with open("ndaversis_metrics.json", "w") as f:
-                        json.dump(metrics_result, f, indent=2)
-                    metrics_status.value = "✅ Exported to ndaversis_metrics.json"
-                    metrics_status.color = "#00ff88"
-                    page.update()
-                except Exception as e:
-                    metrics_status.value = f"❌ Export failed: {str(e)}"
-                    metrics_status.color = "#ff3366"
-                    page.update()
-            
-            metrics_tab_content = ft.Column([
-                ft.Container(
-                    content=ft.Row([
-                        ft.ElevatedButton(
-                            "Calculate Metrics",
-                            icon=ft.icons.ANALYTICS,
-                            on_click=lambda _: calculate_metrics_ui(),
-                            style=ft.ButtonStyle(
-                                bgcolor="#00d9ff",
-                                color="#ffffff",
-                                padding=15
-                            )
-                        ),
-                        ft.ElevatedButton(
-                            "Export JSON",
-                            icon=ft.icons.DOWNLOAD,
-                            on_click=lambda _: export_metrics(),
-                            style=ft.ButtonStyle(
-                                bgcolor="#5e60ce",
-                                color="#ffffff",
-                                padding=15
-                            )
-                        )
-                    ], alignment=ft.MainAxisAlignment.CENTER, spacing=15),
-                    padding=20
-                ),
-                metrics_status,
-                ft.Container(height=10),
-                metrics_container
-            ], scroll=ft.ScrollMode.ADAPTIVE)
-            
-            # Create tabs
-            tabs = ft.Tabs(
-                selected_index=0,
-                animation_duration=300,
-                tabs=[
-                    ft.Tab(
-                        text="Version Update",
-                        icon=ft.icons.UPGRADE,
-                        content=version_tab_content
-                    ),
-                    ft.Tab(
-                        text="Metrics Dashboard",
-                        icon=ft.icons.DASHBOARD,
-                        content=metrics_tab_content
-                    )
-                ],
-                label_color="#00d9ff",
-                unselected_label_color="#6c7a9b",
-                indicator_color="#00d9ff"
-            )
-            
-            # Footer with geometric accent
-            footer = ft.Container(
-                content=ft.Column([
-                    ft.Container(height=2, bgcolor="#1f2847", width=200),
-                    ft.Text(
-                        "Agentic Automation • ndaotec.com",
-                        size=11,
-                        color="#3d4663",
-                        text_align=ft.TextAlign.CENTER,
-                        font_family="Courier New"
-                    )
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
-                margin=ft.margin.only(top=20, bottom=20)
-            )
-            
-            # Main layout with gradient background
-            page.add(
-                ft.Stack([
-                    # Gradient background
-                    ft.Container(
-                        gradient=ft.LinearGradient(
-                            begin=ft.alignment.top_left,
-                            end=ft.alignment.bottom_right,
-                            colors=["#0a0e27", "#1a1f3a", "#0f1729"]
-                        ),
-                        expand=True
-                    ),
-                    # Content
-                    ft.Column([
-                        header,
-                        ft.Container(
-                            content=tabs,
-                            padding=20,
-                            expand=True
-                        ),
-                        footer
-                    ], scroll=ft.ScrollMode.ADAPTIVE, expand=True)
-                ], expand=True)
-            )
-
-
-        ft.app(target=main, view=ft.AppView.FLET_APP)
+        window = GUIApp(self)
+        if test_mode:
+            # In test mode, we might just want to verify initialization or run specific tests later
+            # For now, just showing the window is enough
+            pass
+        window.show()
+        sys.exit(app.exec())
 
     def health_check(self):
         """Runs a health check on the project setup."""
@@ -3057,6 +2691,380 @@ class Ndaversis:
             print(f"Error installing pre-commit hook: {e}")
 
 # --- Entry Point ---
+if HAS_PYQT:
+    class GUIApp(QMainWindow):
+        """Main Window for the Ndaversis GUI Application."""
+        
+        def __init__(self, ndaversis_instance):
+            super().__init__()
+            self.ndaversis = ndaversis_instance
+            self.setWindowTitle("NDAVERSIS - Agentic Version System")
+            self.resize(700, 850)
+            
+            # Main Widget and Layout
+            main_widget = QWidget()
+            self.setCentralWidget(main_widget)
+            main_layout = QVBoxLayout(main_widget)
+            main_layout.setContentsMargins(0, 0, 0, 0)
+            main_layout.setSpacing(0)
+            
+            # Header
+            self.create_header(main_layout)
+            
+            # Tabs
+            self.tabs = QTabWidget()
+            self.tabs.setStyleSheet("""
+                QTabWidget::pane { border: 0; background-color: #0a0e27; }
+                QTabBar::tab { background-color: #1a1f3a; color: #6c7a9b; padding: 10px 20px; border-top-left-radius: 10px; border-top-right-radius: 10px; margin-right: 2px; }
+                QTabBar::tab:selected { background-color: #0a0e27; color: #00d9ff; border-bottom: 2px solid #00d9ff; }
+            """)
+            main_layout.addWidget(self.tabs)
+            
+            # Version Tab
+            self.create_version_tab()
+            
+            # Metrics Tab
+            self.create_metrics_tab()
+            
+            # Footer
+            self.create_footer(main_layout)
+
+        def create_header(self, layout):
+            header_frame = QFrame()
+            header_frame.setStyleSheet("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #0a0e27, stop:1 #0f1729); border-bottom: 1px solid #1f2847;")
+            header_layout = QVBoxLayout(header_frame)
+            header_layout.setContentsMargins(40, 40, 40, 40)
+            
+            title = QLabel("NDAVERSIS")
+            title.setFont(QFont("Courier New", 48, QFont.Weight.Bold))
+            title.setStyleSheet("color: #00d9ff;")
+            title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            header_layout.addWidget(title)
+            
+            version = QLabel(f"v{self.ndaversis.version}")
+            version.setFont(QFont("Arial", 18, QFont.Weight.Light))
+            version.setStyleSheet("color: #6c7a9b;")
+            version.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            header_layout.addWidget(version)
+            
+            line = QFrame()
+            line.setFixedSize(100, 4)
+            line.setStyleSheet("background-color: #00d9ff; border-radius: 2px;")
+            line_container = QWidget()
+            line_layout = QHBoxLayout(line_container)
+            line_layout.addWidget(line)
+            line_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            header_layout.addWidget(line_container)
+            
+            layout.addWidget(header_frame)
+
+        def create_version_tab(self):
+            tab = QWidget()
+            layout = QVBoxLayout(tab)
+            layout.setContentsMargins(40, 40, 40, 40)
+            
+            # Neumorphic Card container for content
+            card = QFrame()
+            card.setStyleSheet("""
+                QFrame {
+                    background-color: #151b35;
+                    border-radius: 20px;
+                    border: 1px solid #1f2847;
+                }
+            """)
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(30, 30, 30, 30)
+            
+            title = QLabel("CHANGE LOG")
+            title.setFont(QFont("Courier New", 16, QFont.Weight.Bold))
+            title.setStyleSheet("color: #6c7a9b;")
+            card_layout.addWidget(title)
+            
+            self.change_input = QTextEdit()
+            self.change_input.setPlaceholderText("Describe what changed in this version...")
+            self.change_input.setStyleSheet("""
+                QTextEdit {
+                    background-color: #0d1128;
+                    color: #e0e6f0;
+                    border: 1px solid #1f2847;
+                    border-radius: 15px;
+                    padding: 15px;
+                    font-size: 15px;
+                }
+                QTextEdit:focus {
+                    border: 1px solid #00d9ff;
+                }
+            """)
+            self.change_input.setMinimumHeight(120)
+            card_layout.addWidget(self.change_input)
+            
+            card_layout.addSpacing(20)
+            
+            # Buttons
+            btn_layout = QVBoxLayout()
+            btn_layout.setSpacing(15)
+            
+            self.create_version_button("PATCH +0.0.1", "#0099cc", lambda: self.on_increment("Patch"), btn_layout)
+            self.create_version_button("MINOR +0.1.0", "#7b2cbf", lambda: self.on_increment("Minor"), btn_layout)
+            self.create_version_button("MAJOR +1.0.0", "#f72585", lambda: self.on_increment("Major"), btn_layout)
+            
+            card_layout.addLayout(btn_layout)
+            
+            card_layout.addSpacing(20)
+            
+            self.status_label = QLabel("")
+            self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            card_layout.addWidget(self.status_label)
+            
+            self.progress_bar = QProgressBar()
+            self.progress_bar.setStyleSheet("""
+                QProgressBar {
+                    background-color: #1f2847;
+                    border-radius: 2px;
+                    height: 4px;
+                    text-align: center;
+                }
+                QProgressBar::chunk {
+                    background-color: #00d9ff;
+                    border-radius: 2px;
+                }
+            """)
+            self.progress_bar.setTextVisible(False)
+            self.progress_bar.setVisible(False)
+            card_layout.addWidget(self.progress_bar)
+            
+            layout.addWidget(card)
+            self.tabs.addTab(tab, "Version Update")
+
+        def create_version_button(self, text, color, callback, layout):
+            btn = QPushButton(text)
+            btn.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #1a1f3a;
+                    color: white;
+                    border-radius: 12px;
+                    padding: 18px;
+                    border: 2px solid {{color}};
+                }}
+                QPushButton:hover {{
+                    background-color: {{color}};
+                }}
+            """)
+            btn.clicked.connect(callback)
+            btn.setFixedWidth(240)
+            container = QWidget()
+            c_layout = QHBoxLayout(container)
+            c_layout.addWidget(btn)
+            c_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(container)
+
+        def create_metrics_tab(self):
+            tab = QWidget()
+            layout = QVBoxLayout(tab)
+            layout.setContentsMargins(20, 20, 20, 20)
+            
+            # Actions
+            actions_layout = QHBoxLayout()
+            
+            calc_btn = QPushButton("Calculate Metrics")
+            calc_btn.setStyleSheet("""
+                QPushButton { background-color: #00d9ff; color: white; border-radius: 5px; padding: 10px 20px; font-weight: bold; }
+                QPushButton:hover { background-color: #00b8d9; }
+            """)
+            calc_btn.clicked.connect(self.calculate_metrics_ui)
+            actions_layout.addWidget(calc_btn)
+            
+            export_btn = QPushButton("Export JSON")
+            export_btn.setStyleSheet("""
+                QPushButton { background-color: #5e60ce; color: white; border-radius: 5px; padding: 10px 20px; font-weight: bold; }
+                QPushButton:hover { background-color: #4a4cb8; }
+            """)
+            export_btn.clicked.connect(self.export_metrics_ui)
+            actions_layout.addWidget(export_btn)
+            
+            layout.addLayout(actions_layout)
+            
+            self.metrics_status = QLabel("")
+            self.metrics_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.metrics_status.setStyleSheet("font-weight: bold;")
+            layout.addWidget(self.metrics_status)
+            
+            # Scroll Area for metrics
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
+            self.metrics_container = QWidget()
+            self.metrics_container.setStyleSheet("background-color: transparent;")
+            self.metrics_layout = QVBoxLayout(self.metrics_container)
+            scroll.setWidget(self.metrics_container)
+            layout.addWidget(scroll)
+            
+            self.tabs.addTab(tab, "Metrics Dashboard")
+
+        def create_footer(self, layout):
+            footer = QWidget()
+            f_layout = QVBoxLayout(footer)
+            
+            line = QFrame()
+            line.setFixedSize(200, 2)
+            line.setStyleSheet("background-color: #1f2847;")
+            
+            text = QLabel("Agentic Automation • ndaotec.com")
+            text.setFont(QFont("Courier New", 11))
+            text.setStyleSheet("color: #3d4663;")
+            
+            l_container = QWidget()
+            lc = QHBoxLayout(l_container)
+            lc.addWidget(line)
+            lc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            f_layout.addWidget(l_container)
+            f_layout.addWidget(text)
+            f_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(footer)
+
+        def on_increment(self, increment_type):
+            change_text = self.change_input.toPlainText().strip()
+            if not change_text:
+                self.status_label.setText("⚠️ Please describe what changed first!")
+                self.status_label.setStyleSheet("color: #ff9500;")
+                return
+
+            self.status_label.setText(f"Processing {increment_type} update...")
+            self.status_label.setStyleSheet("color: #00d9ff;")
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setRange(0, 0) # Indeterminate
+            QApplication.processEvents()
+
+            try:
+                # Logic
+                if increment_type == "Major":
+                    self.ndaversis.version.increment_major()
+                elif increment_type == "Minor":
+                    self.ndaversis.version.increment_minor()
+                else:
+                    self.ndaversis.version.increment_patch()
+                
+                # Since generating readme takes time and blocked UI is bad, ideally thread this.
+                # For simplicity in this migration, running synchronously but with processEvents
+                analysis_data, _ = self.ndaversis._analyze_codebase()
+                readme_content = self.ndaversis.generate_readme_content(self.ndaversis.version, analysis_data, change_text)
+                self.ndaversis.update_readme(readme_content)
+                self.ndaversis.save_version(str(self.ndaversis.version))
+                
+                # Save to history
+                if version_history:
+                    version_data = {
+                        "version": str(self.ndaversis.version),
+                        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "author": getpass.getuser(),
+                        "changes": change_text,
+                        "goals": self.ndaversis.infer_goals_from_summary(change_text, analysis_data)
+                    }
+                    version_history.add_version(version_data)
+                
+                self.status_label.setText(f"✅ Success! Version updated to {self.ndaversis.version}")
+                self.status_label.setStyleSheet("color: #00ff88;")
+            except Exception as e:
+                self.status_label.setText(f"❌ Error: {str(e)}")
+                self.status_label.setStyleSheet("color: #ff3366;")
+            finally:
+                self.progress_bar.setVisible(False)
+                self.change_input.clear()
+
+        def calculate_metrics_ui(self):
+            self.metrics_status.setText("Calculating metrics...")
+            self.metrics_status.setStyleSheet("color: #00d9ff;")
+            QApplication.processEvents()
+            
+            try:
+                metrics_result = self.ndaversis.metrics.get_all_metrics()
+                
+                # Clear previous
+                for i in reversed(range(self.metrics_layout.count())): 
+                    self.metrics_layout.itemAt(i).widget().setParent(None)
+                
+                # Overall Score
+                overall_score = metrics_result['overall_score']
+                color = "#00ff88" if overall_score >= 80 else "#00d9ff" if overall_score >= 60 else "#ff9500"
+                
+                score_card = QFrame()
+                score_card.setStyleSheet(f"background-color: #151b35; border-radius: 15px; border: 1px solid #1f2847;")
+                sc_layout = QVBoxLayout(score_card)
+                
+                lbl_title = QLabel("OVERALL SCORE")
+                lbl_title.setStyleSheet("color: #6c7a9b; font-weight: bold;")
+                lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                sc_layout.addWidget(lbl_title)
+                
+                lbl_score = QLabel(f"{overall_score}%")
+                lbl_score.setStyleSheet(f"color: {color}; font-size: 48px; font-weight: bold;")
+                lbl_score.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                sc_layout.addWidget(lbl_score)
+                
+                self.metrics_layout.addWidget(score_card)
+                
+                # Individual Metrics
+                for metric_name, metric_data in metrics_result['metrics'].items():
+                    score = metric_data['score']
+                    m_color = "#00ff88" if score >= 80 else "#00d9ff" if score >= 60 else "#ff9500"
+                    if score < 40: m_color = "#ff3366"
+                    
+                    m_frame = QFrame()
+                    m_frame.setStyleSheet("background-color: #151b35; border-radius: 10px; border: 1px solid #1f2847; margin-top: 10px;")
+                    mf_layout = QVBoxLayout(m_frame)
+                    
+                    # Title Row
+                    title_row = QWidget()
+                    tr_layout = QHBoxLayout(title_row)
+                    tr_layout.setContentsMargins(0,0,0,0)
+                    
+                    m_title = QLabel(metric_name.replace('_', ' ').title())
+                    m_title.setStyleSheet("color: #e0e6f0; font-weight: bold;")
+                    
+                    m_score = QLabel(f"{score}%")
+                    m_score.setStyleSheet(f"color: {m_color}; font-weight: bold;")
+                    
+                    tr_layout.addWidget(m_title)
+                    tr_layout.addStretch()
+                    tr_layout.addWidget(m_score)
+                    mf_layout.addWidget(title_row)
+                    
+                    # Summary and Details
+                    summary = metric_data.get('summary', 'No summary')
+                    details = metric_data.get('details', {})
+                    details_text = "\n".join([f"{k}: {v}" for k, v in details.items()])
+                    
+                    m_desc = QLabel(f"Summary: {summary}\n\nDetails:\n{details_text}")
+                    m_desc.setStyleSheet("color: #9ca3b8; font-size: 11px;")
+                    m_desc.setWordWrap(True)
+                    mf_layout.addWidget(m_desc)
+                    
+                    self.metrics_layout.addWidget(m_frame)
+
+                self.metrics_status.setText(f"✅ Metrics calculated! Overall: {overall_score}%")
+                self.metrics_status.setStyleSheet("color: #00ff88;")
+                
+            except Exception as e:
+                self.metrics_status.setText(f"❌ Error: {str(e)}")
+                self.metrics_status.setStyleSheet("color: #ff3366;")
+
+        def export_metrics_ui(self):
+            try:
+                metrics_result = self.ndaversis.metrics.get_all_metrics()
+                with open("ndaversis_metrics.json", "w") as f:
+                    json.dump(metrics_result, f, indent=2)
+                self.metrics_status.setText("✅ Exported to ndaversis_metrics.json")
+                self.metrics_status.setStyleSheet("color: #00ff88;")
+            except Exception as e:
+                self.metrics_status.setText(f"❌ Export failed: {str(e)}")
+                self.metrics_status.setStyleSheet("color: #ff3366;")
+else:
+    class GUIApp:
+        pass
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ndaversis - Agentic Semantic Version Info System")
     subparsers = parser.add_subparsers(dest="command")

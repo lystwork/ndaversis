@@ -2,7 +2,7 @@
 # Agentic Semantic Version Info System
 
 # Core GUI Framework (Required)
-flet>=0.21.0
+PyQt6>=6.6.0
 
 # AI Provider SDKs (Optional - for AI-powered features)
 # The system works in offline mode without these

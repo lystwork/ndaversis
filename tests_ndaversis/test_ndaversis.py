@@ -286,7 +286,7 @@ class TestNdaversis(unittest.TestCase):
         analysis_data = {
             "functions": {"my_func": {"docstring": "test: doc"}},
             "classes": {"MyClass": {"methods": {"my_method": {}}}},
-            "imports": ["os", "sys", "requests", "openai", "flet"],
+            "imports": ["os", "sys", "requests", "openai", "PyQt6"],
             "files": {"ndaversis.py": {"docstring": "main module"}},
             "languages": {".py": 1, ".md": 1}
         }
@@ -612,3 +612,87 @@ class TestRepositoryMetrics(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
 
+
+# --- GUI Tests ---
+try:
+    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtCore import Qt
+    HAS_PYQT_TEST = True
+except ImportError:
+    HAS_PYQT_TEST = False
+
+@unittest.skipUnless(HAS_PYQT_TEST, "PyQt6 not installed")
+class TestNdaversisGUI(unittest.TestCase):
+    """Test suite for the PyQt6 GUI."""
+    
+    @classmethod
+    def setUpClass(cls):
+        # Create a single QApplication instance for all tests
+        if not QApplication.instance():
+            cls.app = QApplication(sys.argv)
+        else:
+            cls.app = QApplication.instance()
+
+    def setUp(self):
+        self.ndaversis_app = Ndaversis()
+        # Mock important parts that GUI interacts with
+        self.ndaversis_app.version = Version(1, 0, 0)
+        self.ndaversis_app._analyze_codebase = MagicMock(return_value=({}, {}))
+        self.ndaversis_app.generate_readme_content = MagicMock(return_value="Test Content")
+        self.ndaversis_app.update_readme = MagicMock()
+        self.ndaversis_app.save_version = MagicMock()
+        self.ndaversis_app.infer_goals_from_summary = MagicMock(return_value="Test Goals")
+        self.ndaversis_app.metrics.get_all_metrics = MagicMock(return_value={
+            'overall_score': 85,
+            'timestamp': '2023-01-01',
+            'metrics': {'code_quality': {'score': 90, 'summary': 'Good', 'details': {}}}
+        })
+        
+        # Import GUIApp directly from the module if possible, or access it 
+        # But since it's defined inside ndaversis.py, we need to import it.
+        # It was imported at the top of this file via 'from ndaversis import ...'
+        from ndaversis import GUIApp
+        self.window = GUIApp(self.ndaversis_app)
+
+    def tearDown(self):
+        self.window.close()
+        self.window.deleteLater()
+
+    def test_gui_initialization(self):
+        """Test that the GUI initializes without error."""
+        self.assertIsNotNone(self.window)
+        self.assertEqual(self.window.windowTitle(), "NDAVERSIS - Agentic Version System")
+
+    def test_tabs_existence(self):
+        """Test that tabs are created."""
+        self.assertEqual(self.window.tabs.count(), 2)
+        self.assertEqual(self.window.tabs.tabText(0), "Version Update")
+        self.assertEqual(self.window.tabs.tabText(1), "Metrics Dashboard")
+
+    def test_version_increment_flow(self):
+        """Test the version increment logic via GUI methods."""
+        # Simulate typing in the change input
+        self.window.change_input.setText("Test Change")
+        
+        # Call the increment method directly (simulating button click)
+        self.window.on_increment("Patch")
+        
+        # Verify calls
+        self.ndaversis_app._analyze_codebase.assert_called()
+        self.ndaversis_app.update_readme.assert_called()
+        self.ndaversis_app.save_version.assert_called()
+        self.assertEqual(self.window.status_label.text(), "✅ Success! Version updated to 1.0.1")
+
+    def test_metrics_calculation_flow(self):
+        """Test the metrics calculation logic via GUI methods."""
+        # Call metrics calculation
+        self.window.calculate_metrics_ui()
+        
+        # Verify metrics were fetched
+        self.ndaversis_app.metrics.get_all_metrics.assert_called()
+        self.assertIn("Overall: 85%", self.window.metrics_status.text())
+        
+        # Verify widgets were added (Header + 1 metric)
+        # Note: layout count might include spacers or other items depending on implementation
+        # But should be > 0
+        self.assertGreater(self.window.metrics_layout.count(), 0)
