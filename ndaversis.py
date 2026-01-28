@@ -1046,7 +1046,7 @@ class RepositoryMetrics:
             score += 10
         
         # Check for dependencies management
-        if os.path.exists('requirements.txt') or os.path.exists('pyproject.toml'):
+        if os.path.exists('ndaversis_requirements.txt') or os.path.exists('pyproject.toml'):
             factors.append("Dependencies managed")
             score += 10
         
@@ -1119,7 +1119,7 @@ class RepositoryMetrics:
             score += 5
         
         # Check for setup/installation files
-        if any(f in features["files"] for f in ['setup.py', 'pyproject.toml', 'requirements.txt']):
+        if any(f in features["files"] for f in ['setup.py', 'pyproject.toml', 'ndaversis_requirements.txt']):
             completeness_factors.append("Installation files present")
             score += 10
         
@@ -1438,9 +1438,9 @@ class Ndaversis:
         }
 
         # Load requirements from file if it exists
-        if os.path.exists("requirements.txt"):
+        if os.path.exists("ndaversis_requirements.txt"):
             try:
-                with open("requirements.txt", "r") as f:
+                with open("ndaversis_requirements.txt", "r") as f:
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith("#"):
@@ -2009,11 +2009,11 @@ class Ndaversis:
         
         install += "### Step 2: Clone & Setup\n"
         install += "Clone this repository and install the framework dependencies:\n"
-        install += "```bash\npip install -r requirements.txt\n```\n\n"
+        install += "```bash\npip install -r ndaversis_requirements.txt\n```\n\n"
         
         install += "### Step 3: Join with Your Project 🚀\n"
         install += "To use Ndaversis with your own code, follow these steps:\n"
-        install += "1.  **Copy**: Copy `ndaversis.py` and `requirements.txt` into your project's root folder.\n"
+        install += "1.  **Copy**: Copy `ndaversis.py` and `ndaversis_requirements.txt` into your project's root folder.\n"
         install += "2.  **Initialize**: Run `python ndaversis.py` once to create the initial state.\n"
         install += "3.  **Integrate**: (Optional) Run `python ndaversis.py install-hook` to automate everything via Git.\n\n"
         
@@ -2611,7 +2611,7 @@ class Ndaversis:
 
         print(f"Version updated to {self.version}")
 
-    def main_gui(self):
+    def main_gui(self, test_mode=False):
         """Run the Flet GUI with futuristic Neumorphism/Brutalism design."""
         if not ft:
             print("Flet not installed. Please run 'pip install flet' to use the GUI.")
@@ -2785,10 +2785,194 @@ class Ndaversis:
                 )
             
             buttons = ft.Column([
-                create_version_button("PATCH +0.0.1", ft.Icons.UPGRADE, "Patch", ["#00d9ff", "#0099cc"]),
-                create_version_button("MINOR +0.1.0", ft.Icons.ROCKET_LAUNCH, "Minor", ["#5e60ce", "#7b2cbf"]),
-                create_version_button("MAJOR +1.0.0", ft.Icons.STAR, "Major", ["#ff6b35", "#f72585"])
+                create_version_button("PATCH +0.0.1", ft.icons.UPGRADE, "Patch", ["#00d9ff", "#0099cc"]),
+                create_version_button("MINOR +0.1.0", ft.icons.ROCKET_LAUNCH, "Minor", ["#5e60ce", "#7b2cbf"]),
+                create_version_button("MAJOR +1.0.0", ft.icons.STAR, "Major", ["#ff6b35", "#f72585"])
             ], spacing=15, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+            
+            # Version Update Tab Content
+            version_tab_content = create_neomorphic_card(
+                ft.Column([
+                    ft.Text("CHANGE LOG", size=16, weight=ft.FontWeight.BOLD, color="#6c7a9b", font_family="Courier New"),
+                    ft.Container(height=10),
+                    change_input,
+                    ft.Container(height=25),
+                    buttons,
+                    ft.Container(height=20),
+                    ft.Column([status_text, pb], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                ])
+            )
+            
+            # Metrics Dashboard Tab Content
+            metrics_status = ft.Text("", size=14, color="#00d9ff", text_align=ft.TextAlign.CENTER)
+            metrics_container = ft.Column([], scroll=ft.ScrollMode.ADAPTIVE)
+            
+            def calculate_metrics_ui():
+                metrics_status.value = "Calculating metrics..."
+                metrics_status.color = "#00d9ff"
+                page.update()
+                
+                try:
+                    metrics_result = self.metrics.get_all_metrics()
+                    
+                    # Clear previous metrics
+                    metrics_container.controls.clear()
+                    
+                    # Overall score card
+                    overall_score = metrics_result['overall_score']
+                    score_color = "#00ff88" if overall_score >= 80 else "#00d9ff" if overall_score >= 60 else "#ff9500"
+                    
+                    metrics_container.controls.append(
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Text("OVERALL SCORE", size=14, color="#6c7a9b", weight=ft.FontWeight.BOLD),
+                                ft.Text(f"{overall_score}%", size=48, color=score_color, weight=ft.FontWeight.BOLD),
+                                ft.ProgressBar(value=overall_score/100, color=score_color, bgcolor="#1f2847", height=8, border_radius=4)
+                            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                            padding=20,
+                            border_radius=15,
+                            bgcolor="#151b35",
+                            border=ft.border.all(1, "#1f2847"),
+                            margin=ft.margin.only(bottom=20)
+                        )
+                    )
+                    
+                    # Individual metrics
+                    for metric_name, metric_data in metrics_result['metrics'].items():
+                        score = metric_data['score']
+                        summary = metric_data.get('summary', 'No summary available')
+                        details = metric_data.get('details', {})
+                        
+                        # Color based on score
+                        if score >= 80:
+                            color = "#00ff88"
+                            status_icon = "✓"
+                        elif score >= 60:
+                            color = "#00d9ff"
+                            status_icon = "○"
+                        elif score >= 40:
+                            color = "#ff9500"
+                            status_icon = "△"
+                        else:
+                            color = "#ff3366"
+                            status_icon = "✗"
+                        
+                        metric_title = metric_name.replace('_', ' ').title()
+                        
+                        # Create expandable tile
+                        details_text = "\n".join([f"{k}: {v}" for k, v in details.items()])
+                        
+                        metric_tile = ft.ExpansionTile(
+                            title=ft.Row([
+                                ft.Text(status_icon, size=20, color=color),
+                                ft.Text(metric_title, size=14, color="#e0e6f0", weight=ft.FontWeight.BOLD),
+                                ft.Container(expand=True),
+                                ft.Text(f"{score}%", size=16, color=color, weight=ft.FontWeight.BOLD)
+                            ]),
+                            subtitle=ft.ProgressBar(value=score/100, color=color, bgcolor="#1f2847", height=4, border_radius=2),
+                            controls=[
+                                ft.Container(
+                                    content=ft.Column([
+                                        ft.Text("Summary:", size=12, color="#6c7a9b", weight=ft.FontWeight.BOLD),
+                                        ft.Text(summary if summary else "AI summary unavailable", size=12, color="#e0e6f0"),
+                                        ft.Container(height=10),
+                                        ft.Text("Details:", size=12, color="#6c7a9b", weight=ft.FontWeight.BOLD),
+                                        ft.Text(details_text if details_text else "No details", size=11, color="#9ca3b8")
+                                    ]),
+                                    padding=15,
+                                    bgcolor="#0d1128",
+                                    border_radius=10
+                                )
+                            ],
+                            bgcolor="#151b35",
+                            collapsed_bgcolor="#151b35",
+                            text_color="#e0e6f0",
+                            icon_color="#00d9ff"
+                        )
+                        
+                        metrics_container.controls.append(
+                            ft.Container(
+                                content=metric_tile,
+                                margin=ft.margin.only(bottom=10),
+                                border_radius=10,
+                                border=ft.border.all(1, "#1f2847")
+                            )
+                        )
+                    
+                    metrics_status.value = f"✅ Metrics calculated! Overall: {overall_score}%"
+                    metrics_status.color = "#00ff88"
+                    page.update()
+                    
+                except Exception as e:
+                    metrics_status.value = f"❌ Error: {str(e)}"
+                    metrics_status.color = "#ff3366"
+                    page.update()
+            
+            def export_metrics():
+                try:
+                    import json
+                    metrics_result = self.metrics.get_all_metrics()
+                    with open("ndaversis_metrics.json", "w") as f:
+                        json.dump(metrics_result, f, indent=2)
+                    metrics_status.value = "✅ Exported to ndaversis_metrics.json"
+                    metrics_status.color = "#00ff88"
+                    page.update()
+                except Exception as e:
+                    metrics_status.value = f"❌ Export failed: {str(e)}"
+                    metrics_status.color = "#ff3366"
+                    page.update()
+            
+            metrics_tab_content = ft.Column([
+                ft.Container(
+                    content=ft.Row([
+                        ft.ElevatedButton(
+                            "Calculate Metrics",
+                            icon=ft.icons.ANALYTICS,
+                            on_click=lambda _: calculate_metrics_ui(),
+                            style=ft.ButtonStyle(
+                                bgcolor="#00d9ff",
+                                color="#ffffff",
+                                padding=15
+                            )
+                        ),
+                        ft.ElevatedButton(
+                            "Export JSON",
+                            icon=ft.icons.DOWNLOAD,
+                            on_click=lambda _: export_metrics(),
+                            style=ft.ButtonStyle(
+                                bgcolor="#5e60ce",
+                                color="#ffffff",
+                                padding=15
+                            )
+                        )
+                    ], alignment=ft.MainAxisAlignment.CENTER, spacing=15),
+                    padding=20
+                ),
+                metrics_status,
+                ft.Container(height=10),
+                metrics_container
+            ], scroll=ft.ScrollMode.ADAPTIVE)
+            
+            # Create tabs
+            tabs = ft.Tabs(
+                selected_index=0,
+                animation_duration=300,
+                tabs=[
+                    ft.Tab(
+                        text="Version Update",
+                        icon=ft.icons.UPGRADE,
+                        content=version_tab_content
+                    ),
+                    ft.Tab(
+                        text="Metrics Dashboard",
+                        icon=ft.icons.DASHBOARD,
+                        content=metrics_tab_content
+                    )
+                ],
+                label_color="#00d9ff",
+                unselected_label_color="#6c7a9b",
+                indicator_color="#00d9ff"
+            )
             
             # Footer with geometric accent
             footer = ft.Container(
@@ -2802,7 +2986,7 @@ class Ndaversis:
                         font_family="Courier New"
                     )
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
-                margin=ft.margin.only(top=30, bottom=20)
+                margin=ft.margin.only(top=20, bottom=20)
             )
             
             # Main layout with gradient background
@@ -2820,21 +3004,16 @@ class Ndaversis:
                     # Content
                     ft.Column([
                         header,
-                        create_neomorphic_card(
-                            ft.Column([
-                                ft.Text("CHANGE LOG", size=16, weight=ft.FontWeight.BOLD, color="#6c7a9b", font_family="Courier New"),
-                                ft.Container(height=10),
-                                change_input,
-                                ft.Container(height=25),
-                                buttons,
-                                ft.Container(height=20),
-                                ft.Column([status_text, pb], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-                            ])
+                        ft.Container(
+                            content=tabs,
+                            padding=20,
+                            expand=True
                         ),
                         footer
-                    ], scroll=ft.ScrollMode.ADAPTIVE)
+                    ], scroll=ft.ScrollMode.ADAPTIVE, expand=True)
                 ], expand=True)
             )
+
 
         ft.app(target=main)
 

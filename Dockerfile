@@ -10,11 +10,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY ndaversis_requirements.txt* requirements.txt* ./
+COPY ndaversis_requirements.txt* ./
 RUN if [ -f ndaversis_requirements.txt ]; then \
         pip install --no-cache-dir -r ndaversis_requirements.txt; \
-    elif [ -f requirements.txt ]; then \
-        pip install --no-cache-dir -r requirements.txt; \
     fi
 
 # Production stage
