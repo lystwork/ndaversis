@@ -208,7 +208,7 @@ The following modules are part of Python's standard library and **do not** requi
 ### External Libraries
 
 #### Mandatory (Required for correct work)
-*   `flet` - Required for GUI functionality
+*   `PyQt6` - Required for GUI functionality
 
 #### Optional - AI Providers (Could be used without)
 > [!NOTE]
@@ -359,7 +359,7 @@ classDiagram
 
 ### Custom/External Frameworks
 
-*   **flet** (pip): Modern framework for building beautiful and fast interactive user interfaces.
+*   **PyQt6** (pip): Specialized library that supports the system's core automation logic.
 *   **ndaversis_version_history** (pip): Specialized library that supports the system's core automation logic.
 *   **openai** (pip): Standard interface for integrating ChatGPT and other OpenAI language models.
 
@@ -379,7 +379,7 @@ graph TD
     lang_PY --> dep_ast["ast"]
     lang_PY --> dep_datetime["datetime"]
     lang_PY --> dep_difflib["difflib"]
-    lang_PY --> dep_flet["flet"]
+    lang_PY --> dep_PyQt6["PyQt6"]
     lang_PY --> dep_getpass["getpass"]
     lang_PY --> dep_json["json"]
     lang_PY --> dep_ndaversis_version_history["ndaversis_version_history"]
@@ -407,7 +407,7 @@ class dep_argparse depNode
 class dep_ast depNode
 class dep_datetime depNode
 class dep_difflib depNode
-class dep_flet depNode
+class dep_PyQt6 depNode
 class dep_getpass depNode
 class dep_json depNode
 class dep_ndaversis_version_history depNode

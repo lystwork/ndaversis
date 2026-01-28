@@ -76,10 +76,10 @@ Example configuration in config.json:
   }
 }
 
-Block 4: GUI (Flet Framework)
+Block 4: GUI (PyQt6 Framework)
 Requirements:
 
-Modern graphical interface based on Flet
+Modern graphical interface based on PyQt6
 Support for desktop and web modes
 Intuitive navigation with tabs
 
@@ -248,7 +248,7 @@ README.md should include:
    Examples of use
 
 7. Decisions Made
-   Why Flet was chosen for the GUI
+   Why PyQt6 was chosen for the GUI
    Why multi-provider fallback
    Why these specific metrics
 
@@ -288,7 +288,7 @@ Total: ~30 hours saved
 Technical requirements
 Mandatory:
 Python 3.8+
-Flet (for GUI)
+PyQt6 (for GUI)
 Multiple AI provider SDKs (google-generativeai, groq, openai, anthropic, etc.)
 Docker and Docker Compose
 pytest (for testing)
