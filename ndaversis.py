@@ -77,7 +77,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.66"
+__version__ = "0.0.69"
 
 # --- AI Service Classes ---
 import time
@@ -1705,13 +1705,8 @@ class Ndaversis:
     def generate_use_case_diagram(self, analysis_data: dict) -> str:
         """
         Generates a UML Use Case diagram in Mermaid syntax.
-
-        Args:
-            analysis_data (dict): The code analysis data.
-
-        Returns:
-            str: The Mermaid syntax for the Use Case diagram.
         """
+        result = ""
         if self.ai_service:
             prompt = (
                 "Generate a UML Use Case diagram in Mermaid syntax based on the "
@@ -1719,27 +1714,46 @@ class Ndaversis:
                 "and use cases that represent the key functionalities of the "
                 "application."
             )
-            return self.ai_service.generate_content(prompt, analysis_data)
-        return ""
+            result = self.ai_service.generate_content(prompt, analysis_data)
+        
+        if result:
+            return result
+        
+        # Static fallback for offline mode
+        return (
+            "graph TD\n"
+            "    Developer((Developer)) --> UC1(Update Version)\n"
+            "    Developer --> UC2(Generate README)\n"
+            "    Developer --> UC3(Audit Repository)\n"
+            "    CI_CD((CI/CD System)) --> UC1\n"
+            "    CI_CD --> UC2"
+        )
 
     def generate_bpmn_diagram(self, analysis_data: dict) -> str:
         """
         Generates a BPMN diagram in Mermaid syntax.
-
-        Args:
-            analysis_data (dict): The code analysis data.
-
-        Returns:
-            str: The Mermaid syntax for the BPMN diagram.
         """
+        result = ""
         if self.ai_service:
             prompt = (
                 "Generate a BPMN diagram in Mermaid syntax based on the "
                 "provided codebase analysis. The diagram should illustrate the "
                 "key business processes and workflows of the application."
             )
-            return self.ai_service.generate_content(prompt, analysis_data)
-        return ""
+            result = self.ai_service.generate_content(prompt, analysis_data)
+        
+        if result:
+            return result
+        
+        # Static fallback for offline mode
+        return (
+            "graph LR\n"
+            "    Start((Start)) --> Analyze[Analyze Codebase]\n"
+            "    Analyze --> Detect[Detect Changes]\n"
+            "    Detect --> Bump[Suggest Version Bump]\n"
+            "    Bump --> Docs[Update README]\n"
+            "    Docs --> End((End))"
+        )
 
     def _generate_section(self, title, analysis_data, prefix, format_str):
         """Helper function to generate a section of the README."""
@@ -1760,9 +1774,12 @@ class Ndaversis:
         """Generate the dynamic sections of the README file."""
         # --- Use Cases ---
         use_cases = "## 3. Use Cases\n\n"
+        ai_content = ""
         if self.ai_service:
-            content = self.ai_service.generate_content(self._generate_use_cases_prompt(), analysis_data)
-            use_cases += re.sub(r"^#+ (3\.)? ?Use Cases\n*", "", content, flags=re.MULTILINE).strip()
+            ai_content = self.ai_service.generate_content(self._generate_use_cases_prompt(), analysis_data)
+        
+        if ai_content:
+            use_cases += re.sub(r"^#+ (3\.)? ?Use Cases\n*", "", ai_content, flags=re.MULTILINE).strip()
             use_cases += "\n\n### Use Case Diagram\n\n"
             use_cases += f"```mermaid\n{self.generate_use_case_diagram(analysis_data)}\n```\n"
         else:
@@ -1778,12 +1795,17 @@ class Ndaversis:
                 )
             else:
                 use_cases += content_items + "\n"
+            use_cases += "\n\n### Use Case Diagram\n\n"
+            use_cases += f"```mermaid\n{self.generate_use_case_diagram(analysis_data)}\n```\n"
 
         # --- User Stories ---
         user_stories = "## 4. User Stories\n\n"
+        ai_stories = ""
         if self.ai_service:
-            content = self.ai_service.generate_content(self._generate_user_stories_prompt(), analysis_data)
-            user_stories += re.sub(r"^#+ (4\.)? ?User Stories\n*", "", content, flags=re.MULTILINE).strip()
+            ai_stories = self.ai_service.generate_content(self._generate_user_stories_prompt(), analysis_data)
+        
+        if ai_stories:
+            user_stories += re.sub(r"^#+ (4\.)? ?User Stories\n*", "", ai_stories, flags=re.MULTILINE).strip()
             user_stories += "\n\n### BPMN Diagram\n\n"
             user_stories += f"```mermaid\n{self.generate_bpmn_diagram(analysis_data)}\n```\n"
         else:
@@ -1799,6 +1821,8 @@ class Ndaversis:
                 )
             else:
                 user_stories += content_items + "\n"
+            user_stories += "\n\n### BPMN Diagram\n\n"
+            user_stories += f"```mermaid\n{self.generate_bpmn_diagram(analysis_data)}\n```\n"
 
         # --- FAQ ---
         faq = "## 5. FAQ\n\n"
@@ -1866,6 +1890,12 @@ class Ndaversis:
             "generate_bpmn_diagram": "Visual Logic Maps: Automatically generates process diagrams (BPMN) in Mermaid syntax to show how your code's logic flows visually.",
             "generate_use_case_diagram": "Automatic Architecture Charts: Creates UML Use Case diagrams to visually communicate project goals and user interactions to stakeholders.",
             "health_check": "Project Integrity Check: Automatically verifies your environment and configuration to ensure everything is set up for flawless automation.",
+            "add_version": "Add Version: Add a new version to the history.",
+            "get_recent_versions": "Get Recent Versions: Get the most recent N versions.",
+            "get_all_versions": "Get All Versions: Get all version history.",
+            "load_history": "Load History: Load version history (already loaded at module import).",
+            "is_ndaversis_repo": "Is Ndaversis Repo: Detect if running in the ndaversis repository itself.",
+            "suggest_version_bump": "Suggest Version Bump: Suggest a version bump based on the change summary.",
         }
 
         # Features to EXCLUDE from the main human-readable list (too technical or redundant)
@@ -1876,7 +1906,14 @@ class Ndaversis:
             "generate_project_description", "generate_project_map",
             "update_changelog", "generate_user_benefit_analysis",
             "infer_goals_from_summary", "suggest_next_steps", "update_readme",
-            "main_cli", "_process_python_file", "_analyze_codebase"
+            "main_cli", "_process_python_file", "_analyze_codebase",
+            "can_proceed", "wait_if_needed", "record_request", "record_usage",
+            "get_all_metrics", "calculate_code_quality", "calculate_code_size",
+            "calculate_security", "calculate_applicability", "calculate_platform_compatibility",
+            "calculate_quantity", "calculate_performance", "calculate_usability",
+            "calculate_reliability", "calculate_innovation", "calculate_simplicity",
+            "calculate_aesthetics", "calculate_duration", "calculate_accuracy",
+            "calculate_completeness"
         ]
 
         features_items = []
@@ -2181,7 +2218,9 @@ class Ndaversis:
                 "the user never has to change it manually when the project changes. "
                 "The description should be useful for a human developer, not just a technical summary."
             )
-            return self.ai_service.generate_content(prompt, (features, code))
+            result = self.ai_service.generate_content(prompt, (features, code))
+            if result:
+                return result
         
         try:
             with open(README_FILE, "r", encoding="utf-8") as f:

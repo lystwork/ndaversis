@@ -284,8 +284,25 @@ class TestNdaversis(unittest.TestCase):
     def test_readme_sections_and_diagrams(self):
         """Test that all required sections and Mermaid diagrams are present."""
         analysis_data = {
-            "functions": {"my_func": {"docstring": "test: doc"}},
-            "classes": {"MyClass": {"methods": {"my_method": {}}}},
+            "functions": {
+                "my_func": {"docstring": "test: doc"},
+                "generate_content": {"docstring": "AI logic"},
+                "generate_bpmn_diagram": {},
+                "generate_use_case_diagram": {},
+                "health_check": {}
+            },
+            "classes": {
+                "MyClass": {"methods": {"my_method": {}}},
+                "Ndaversis": {"methods": {
+                    "increment_patch": {}, 
+                    "analyze_repository": {},
+                    "install_pre_commit_hook": {},
+                    "main_gui": {},
+                    "generate_readme_content": {},
+                    "is_ndaversis_repo": {},
+                    "suggest_version_bump": {}
+                }}
+            },
             "imports": ["os", "sys", "requests", "openai", "PyQt6"],
             "files": {"ndaversis.py": {"docstring": "main module"}},
             "languages": {".py": 1, ".md": 1}
@@ -301,11 +318,22 @@ class TestNdaversis(unittest.TestCase):
         self.assertIn("pie title Language Distribution", content)
         self.assertIn("graph LR", content) # stdlib diagram
         self.assertIn("Python --\u003e", content)
+        
+        # Check high-quality diagram fallbacks (offline mode)
+        self.assertIn("UC1(Update Version)", content)
+        self.assertIn("Analyze[Analyze Codebase]", content)
+
         # Check new dependency structure
         self.assertIn("Optional - AI Providers (Could be used without)", content)
         self.assertIn("For AI-powered documentation insights", content)
         self.assertIn("Mandatory (Required for correct work)", content)
         self.assertIn("local on-prem mode", content)
+        
+        # Check high-quality Product Features
+        self.assertIn("Set-and-Forget Automation", content)
+        self.assertIn("AI-Powered Documentation", content)
+        self.assertIn("Intelligent Version Management", content)
+        self.assertIn("Visual Logic Maps", content)
         
         # Check Fallbacks (using no docstrings for some sections)
         analysis_empty = {
@@ -314,8 +342,11 @@ class TestNdaversis(unittest.TestCase):
             "languages": {}
         }
         content_fallback = self.app.generate_readme_content("0.1.0", analysis_empty, what_changed)
-        self.assertIn("graph LR", content_fallback) # stdlib is still shown (empty)
+        self.assertIn("graph LR", content_fallback) 
         self.assertIn("## 13. Last Version Summary", content_fallback)
+        # Should still have professional templates in fallback
+        self.assertIn("Automated Release Cycles", content_fallback)
+        self.assertIn("DevOps Engineer", content_fallback)
 
     def test_shadow_repo_agnostic_generation(self):
         """Verify that README sections describe the shadow repo and not Ndaversis."""
