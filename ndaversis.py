@@ -3015,7 +3015,7 @@ class Ndaversis:
             )
 
 
-        ft.app(target=main)
+        ft.app(target=main, view=ft.AppView.FLET_APP)
 
     def health_check(self):
         """Runs a health check on the project setup."""

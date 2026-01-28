@@ -1,12 +1,12 @@
 {
-  "overall_score": 79,
+  "overall_score": 82,
   "metrics": {
     "code_quality": {
       "score": 72,
       "summary": "",
       "details": {
         "docstring_coverage": "100.0%",
-        "comment_ratio": "9.0%",
+        "comment_ratio": "8.3%",
         "documented_items": "21/21"
       }
     },
@@ -14,10 +14,10 @@
       "score": 90,
       "summary": "",
       "details": {
-        "total_lines": 5322,
-        "code_lines": 4084,
-        "comment_lines": 402,
-        "blank_lines": 836
+        "total_lines": 5553,
+        "code_lines": 4338,
+        "comment_lines": 394,
+        "blank_lines": 821
       }
     },
     "security": {
@@ -84,11 +84,11 @@
       }
     },
     "reliability": {
-      "score": 80,
+      "score": 100,
       "summary": "",
       "details": {
-        "has_tests": false,
-        "error_handling": "21 try blocks",
+        "has_tests": true,
+        "error_handling": "23 try blocks",
         "has_logging": false
       }
     },
@@ -108,7 +108,7 @@
       "score": 70,
       "summary": "",
       "details": {
-        "avg_function_length": "43.9 lines",
+        "avg_function_length": "46.6 lines",
         "total_functions": 93,
         "estimated_complexity": "Medium"
       }
@@ -126,21 +126,22 @@
       }
     },
     "duration": {
-      "score": 90,
+      "score": 100,
       "summary": "",
       "details": {
         "maintainability_factors": [
           "Version control in use",
-          "Dependencies managed"
+          "Dependencies managed",
+          "Test suite exists"
         ],
         "todo_count": 9
       }
     },
     "accuracy": {
-      "score": 85,
+      "score": 100,
       "summary": "",
       "details": {
-        "test_files": 0,
+        "test_files": 1,
         "has_type_hints": true,
         "has_assertions": true
       }
@@ -158,5 +159,5 @@
       }
     }
   },
-  "timestamp": "2026-01-28T21:42:40.059622"
+  "timestamp": "2026-01-28T19:44:57.692646"
 }

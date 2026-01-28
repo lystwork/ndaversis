@@ -1,11 +1,11 @@
 # 1. NDAVERSIS: Agentic Semantic Version Info System
 
-**Current Version:** `0.0.66`
+**Current Version:** `0.1.1`
 
 ## 2. Description Summary
 
 <!-- AUTO-DESCRIPTION-START -->
-**NDAVERSIS** is designed with a simple goal: to let you **'set and forget'** your documentation and versioning. It automatically generates and maintains an accurate README.md and manages semantic versioning directly within your code, ensuring your project info is always up-to-date even as you change the code. Whether you have an internet connection or not, it works locally to keep your repository professional and informative with zero manual effort.
+**Test Readme** is designed with a simple goal: to let you **'set and forget'** your documentation and versioning. It automatically generates and maintains an accurate README.md and manages semantic versioning directly within your code, ensuring your project info is always up-to-date even as you change the code. Whether you have an internet connection or not, it works locally to keep your repository professional and informative with zero manual effort.
 <!-- AUTO-DESCRIPTION-END -->
 
 <!-- AUTO-SUMMARY-START -->
@@ -18,29 +18,31 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Total Lines | 3329 |
-| Code Lines | 2555 |
-| Comment Lines | 259 |
-| Blank Lines | 515 |
+| Total Lines | 5552 |
+| Code Lines | 4332 |
+| Comment Lines | 397 |
+| Blank Lines | 823 |
 | Tabs | 0 |
-| Strings | 1949 |
+| Strings | 2535 |
 
 
 ### Language Breakdown
 
 | Extension | Count |
 | :--- | :--- |
-| .py | 3 |
-| .md | 3 |
-| no extension | 2 |
-| .json | 1 |
+| .md | 4 |
+| .py | 4 |
+| .json | 4 |
+| no extension | 4 |
+| .txt | 3 |
+| .yml | 1 |
 | .example | 1 |
 
 
 ### File Statistics
-- **Total Files:** 10
-- **Python Files:** 3
-- **Repository Size:** 242.96 KB
+- **Total Files:** 21
+- **Python Files:** 4
+- **Repository Size:** 317.82 KB
 ----- 
 
 <!-- AUTO-SUMMARY-END -->
@@ -152,17 +154,17 @@ python -m pytest tests_ndaversis/ --cov=. --cov-report=html
 *   **Get Recent Versions**: Get the most recent N versions.
 *   **Get All Versions**: Get all version history.
 *   **Load History**: Load version history (already loaded at module import).
+*   **Can Proceed**: Check if a new request can proceed without exceeding rate limit.
+*   **Wait If Needed**: Wait if rate limit is exceeded.
+*   **Record Request**: Record a new request.
 *   **AI-Powered Documentation**: Automatically drafts FAQs, User Stories, and Use Cases by analyzing your code structure with AI, ensuring your README is professional even if you haven't written a word.
 *   **Intelligent Version Management**: Handles semantic versioning (Major.Minor.Patch) automatically, calculating the right bump based on your actual code changes.
-*   **Is Ndaversis Repo**: Detect if running in the ndaversis repository itself.
-*   **Automatic Architecture Charts**: Creates UML Use Case diagrams to visually communicate project goals and user interactions to stakeholders.
-*   **Visual Logic Maps**: Automatically generates process diagrams (BPMN) in Mermaid syntax to show how your code's logic flows visually.
-*   **Comprehensive Project Analysis**: Gains a birds-eye view of your codebase with automatic calculation of line counts, language distribution, and complexity metrics.
-*   **Suggest Version Bump**: Suggest a version bump based on the change summary.
-*   **Instant README Refresh**: Keeps your entire project front-page up-to-date with structural maps, dependency graphs, and latest feature lists in one click.
-*   **User-Friendly Interface**: Provides a sleek graphical window for managing your project updates, making it accessible even for those who avoid the terminal.
-*   **Project Integrity Check**: Automatically verifies your environment and configuration to ensure everything is set up for flawless automation.
-*   **Set-and-Forget Workflow**: One-time integration into your Git workflow that triggers documentation and version updates automatically before every commit.
+*   **Calculate Code Quality**: Evaluate code quality based on docstrings, type hints, and complexity.
+*   **Calculate Code Size**: Evaluate code size and distribution.
+*   **Calculate Security**: Evaluate security practices.
+*   **Calculate Applicability**: Evaluate applicability and use case coverage.
+*   **Calculate Platform Compatibility**: Evaluate cross-platform compatibility.
+*   **Calculate Quantity**: Evaluate quantity of features and functionality.
 
 ## 8. Requirements
 
@@ -172,23 +174,26 @@ python -m pytest tests_ndaversis/ --cov=. --cov-report=html
 
 ```mermaid
 pie title Language Distribution
-    ".py" : 3
-    ".md" : 3
-    "no extension" : 2
-    ".json" : 1
+    ".md" : 4
+    ".py" : 4
+    ".json" : 4
+    "no extension" : 4
+    ".txt" : 3
+    ".yml" : 1
     ".example" : 1
 ```
 
 ### Built-in Standard Library (Included with Python)
 ```mermaid
 graph LR
-    Python --> argparse & ast & datetime & difflib & getpass & json & os & random & re & sys & time & typing
+    Python --> argparse & ast & collections & datetime & difflib & getpass & json & os & random & re & sys & time & typing
 
 %% Dark mode styling
 classDef pythonNode fill:#3776ab,stroke:#4b8bbe,stroke-width:2px,color:#fff
 class Python pythonNode
 class argparse pythonNode
 class ast pythonNode
+class collections pythonNode
 class datetime pythonNode
 class difflib pythonNode
 class getpass pythonNode
@@ -203,7 +208,7 @@ class typing pythonNode
 
 The following modules are part of Python's standard library and **do not** require external installation:
 
-`argparse`, `ast`, `datetime`, `difflib`, `getpass`, `json`, `os`, `random`, `re`, `sys`, `time`, `typing`
+`argparse`, `ast`, `collections`, `datetime`, `difflib`, `getpass`, `json`, `os`, `random`, `re`, `sys`, `time`, `typing`
 
 ### External Libraries
 
@@ -235,12 +240,12 @@ Ensure you have Python 3.8 or newer. Download it from [python.org](https://www.p
 ### Step 2: Clone & Setup
 Clone this repository and install the framework dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -r ndaversis_requirements.txt
 ```
 
 ### Step 3: Join with Your Project 🚀
 To use Ndaversis with your own code, follow these steps:
-1.  **Copy**: Copy `ndaversis.py` and `requirements.txt` into your project's root folder.
+1.  **Copy**: Copy `ndaversis.py` and `ndaversis_requirements.txt` into your project's root folder.
 2.  **Initialize**: Run `python ndaversis.py` once to create the initial state.
 3.  **Integrate**: (Optional) Run `python ndaversis.py install-hook` to automate everything via Git.
 
@@ -268,22 +273,44 @@ python ndaversis.py
 
 ## 11. Modules Map
 
+*   **.dockerignore**: Project resource file: .dockerignore
 *   **.env.example**: Project resource file: .env.example
 *   **.gitignore**: Git ignore rules for version control
+*   **Dockerfile**: Project resource file: Dockerfile
 *   **LICENSE_ndaversis**: Project resource file: LICENSE_ndaversis
 *   **config.json**: Configuration file: config.json
+*   **docker-compose.yml**: Project resource file: docker-compose.yml
 *   **ndaversis.py**: Ndaversis: Agentic Semantic Version Information System.
-*   **ndaversis_logs.py**: Python module implementing AIService, GeminiService, ChatGPTService and more
+*   **ndaversis_logs.py**: Python module implementing RateLimiter, AIServiceManager, AIService and more
+*   **ndaversis_metrics.json**: Configuration file: ndaversis_metrics.json
 *   **ndaversis_privacy_policy.md**: Documentation file: ndaversis_privacy_policy.md
 *   **ndaversis_readme.md**: Documentation file: ndaversis_readme.md
+*   **ndaversis_requirements.txt**: Text resource file: ndaversis_requirements.txt
+*   **ndaversis_state.json**: Configuration file: ndaversis_state.json
 *   **ndaversis_version_history.py**: NDAVERSIS Version History Module
 *   **readme.md**: Documentation file: readme.md
+*   **task.txt**: Text resource file: task.txt
+*   **test.txt**: Text resource file: test.txt
+*   **test_config.json**: Configuration file: test_config.json
+*   **test_ndaversis.py**: Python module implementing RateLimiter, AIServiceManager, AIService and more
+*   **test_ndaversis_readme.md**: Documentation file: test_ndaversis_readme.md
 
 
 ### Module Structure Diagram
 
 ```mermaid
 classDiagram
+    class RateLimiter {
+        +__init__()
+        +can_proceed()
+        +wait_if_needed()
+        +record_request()
+    }
+    class AIServiceManager {
+        +__init__()
+        +_initialize_providers()
+        +generate_content()
+    }
     class AIService {
         +__init__()
         +_create_full_prompt()
@@ -305,6 +332,26 @@ classDiagram
         +__init__()
         +generate_content()
     }
+    class GroqService {
+        +__init__()
+        +generate_content()
+    }
+    class OpenRouterService {
+        +__init__()
+        +generate_content()
+    }
+    class MistralService {
+        +__init__()
+        +generate_content()
+    }
+    class QwenService {
+        +__init__()
+        +generate_content()
+    }
+    class LlamaService {
+        +__init__()
+        +generate_content()
+    }
     class OpenAICompatibleService {
         +__init__()
         +generate_content()
@@ -315,6 +362,26 @@ classDiagram
         +increment_major()
         +increment_minor()
         +increment_patch()
+    }
+    class RepositoryMetrics {
+        +__init__()
+        +_get_ai_summary()
+        +calculate_code_quality()
+        +calculate_code_size()
+        +calculate_security()
+        +calculate_applicability()
+        +calculate_platform_compatibility()
+        +calculate_quantity()
+        +calculate_performance()
+        +calculate_usability()
+        +calculate_reliability()
+        +calculate_innovation()
+        +calculate_simplicity()
+        +calculate_aesthetics()
+        +calculate_duration()
+        +calculate_accuracy()
+        +calculate_completeness()
+        +get_all_metrics()
     }
     class Ndaversis {
         +__init__()
@@ -367,16 +434,18 @@ classDiagram
 
 These modules are built into Python (no installation required):
 
-`argparse`, `ast`, `datetime`, `difflib`, `getpass`, `json`, `os`, `random`, `re`, `sys`, `time`, `typing`
+`argparse`, `ast`, `collections`, `datetime`, `difflib`, `getpass`, `json`, `os`, `random`, `re`, `sys`, `time`, `typing`
 
 
 ### Library Dependency Diagram
 
 ```mermaid
 graph TD
-    Project --> lang_PY["PY Overview (3 files)"]
+    Project --> lang_MD["MD Overview (4 files)"]
+    Project --> lang_PY["PY Overview (4 files)"]
     lang_PY --> dep_argparse["argparse"]
     lang_PY --> dep_ast["ast"]
+    lang_PY --> dep_collections["collections"]
     lang_PY --> dep_datetime["datetime"]
     lang_PY --> dep_difflib["difflib"]
     lang_PY --> dep_flet["flet"]
@@ -390,9 +459,10 @@ graph TD
     lang_PY --> dep_sys["sys"]
     lang_PY --> dep_time["time"]
     lang_PY --> dep_typing["typing"]
-    Project --> lang_NO_EXTENSION["NO EXTENSION Overview (2 files)"]
-    Project --> lang_MD["MD Overview (3 files)"]
-    Project --> lang_JSON["JSON Overview (1 files)"]
+    Project --> lang_JSON["JSON Overview (4 files)"]
+    Project --> lang_NO_EXTENSION["NO EXTENSION Overview (4 files)"]
+    Project --> lang_TXT["TXT Overview (3 files)"]
+    Project --> lang_YML["YML Overview (1 files)"]
     Project --> lang_EXAMPLE["EXAMPLE Overview (1 files)"]
 
 %% Dark mode styling
@@ -402,9 +472,11 @@ classDef depNode fill:#16213e,stroke:#e0913f,stroke-width:2px,color:#fff
 classDef stdLibNode fill:#2d033b,stroke:#4caf50,stroke-width:2px,color:#fff
 
 class Project projectNode
+class lang_MD langNode
 class lang_PY langNode
 class dep_argparse depNode
 class dep_ast depNode
+class dep_collections depNode
 class dep_datetime depNode
 class dep_difflib depNode
 class dep_flet depNode
@@ -418,24 +490,36 @@ class dep_re depNode
 class dep_sys depNode
 class dep_time depNode
 class dep_typing depNode
-class lang_NO_EXTENSION langNode
-class lang_MD langNode
 class lang_JSON langNode
+class lang_NO_EXTENSION langNode
+class lang_TXT langNode
+class lang_YML langNode
 class lang_EXAMPLE langNode
 ```
 ## 10. Project Map
 
 ```
+./.dockerignore
 ./.env.example
 ./.gitignore
+./Dockerfile
 ./LICENSE_ndaversis
 ./config.json
+./docker-compose.yml
 ./ndaversis.py
 ./ndaversis_logs.py
+./ndaversis_metrics.json
 ./ndaversis_privacy_policy.md
 ./ndaversis_readme.md
+./ndaversis_requirements.txt
+./ndaversis_state.json
 ./ndaversis_version_history.py
 ./readme.md
+./task.txt
+./test.txt
+./test_config.json
+./test_ndaversis.py
+./test_ndaversis_readme.md
 ```
 
 ### Project Structure Diagram
@@ -443,16 +527,27 @@ class lang_EXAMPLE langNode
 ```mermaid
 graph TD
     Root[./]
+    Root --> node_dockerignore["dockerignore"]
     Root --> node_env_example["env.example"]
     Root --> node_gitignore["gitignore"]
+    Root --> node_Dockerfile["Dockerfile"]
     Root --> node_LICENSE_ndaversis["LICENSE_ndaversis"]
     Root --> node_config_json["config.json"]
+    Root --> node_docker-compose_yml["docker-compose.yml"]
     Root --> node_ndaversis_py["ndaversis.py"]
     Root --> node_ndaversis_logs_py["ndaversis_logs.py"]
+    Root --> node_ndaversis_metrics_json["ndaversis_metrics.json"]
     Root --> node_ndaversis_privacy_policy_md["ndaversis_privacy_policy.md"]
     Root --> node_ndaversis_readme_md["ndaversis_readme.md"]
+    Root --> node_ndaversis_requirements_txt["ndaversis_requirements.txt"]
+    Root --> node_ndaversis_state_json["ndaversis_state.json"]
     Root --> node_ndaversis_version_history_py["ndaversis_version_history.py"]
     Root --> node_readme_md["readme.md"]
+    Root --> node_task_txt["task.txt"]
+    Root --> node_test_txt["test.txt"]
+    Root --> node_test_config_json["test_config.json"]
+    Root --> node_test_ndaversis_py["test_ndaversis.py"]
+    Root --> node_test_ndaversis_readme_md["test_ndaversis_readme.md"]
 
 %% Dark mode styling
 classDef rootNode fill:#1a1a2e,stroke:#eee,stroke-width:2px,color:#fff
@@ -463,50 +558,83 @@ classDef docFile fill:#1e5128,stroke:#4caf50,stroke-width:2px,color:#fff
 
 %% Apply styles
 class Root rootNode
+class node_dockerignore fileNode
 class node_env_example fileNode
 class node_gitignore fileNode
+class node_Dockerfile fileNode
 class node_LICENSE_ndaversis fileNode
 class node_config_json configFile
+class node_docker-compose_yml configFile
 class node_ndaversis_py pythonFile
 class node_ndaversis_logs_py pythonFile
+class node_ndaversis_metrics_json configFile
 class node_ndaversis_privacy_policy_md docFile
 class node_ndaversis_readme_md docFile
+class node_ndaversis_requirements_txt docFile
+class node_ndaversis_state_json configFile
 class node_ndaversis_version_history_py pythonFile
 class node_readme_md docFile
+class node_task_txt docFile
+class node_test_txt docFile
+class node_test_config_json configFile
+class node_test_ndaversis_py pythonFile
+class node_test_ndaversis_readme_md docFile
 ```
 
 ## 13. Last Version Summary
 
-The last version is `0.0.66`. Detailed change log and metrics:
+The last version is `0.1.1`. Detailed change log and metrics:
 | File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ./.env.example | added | 19 | 0 | 534 | 0 | 0 | 39 |
-| ./.gitignore | added | 4 | 0 | 42 | 0 | 0 | 0 |
+| ./.dockerignore | added | 22 | 0 | 169 | 0 | 0 | 0 |
+| ./.env.example | added | 53 | 0 | 1913 | 0 | 0 | 153 |
+| ./.gitignore | added | 33 | 0 | 249 | 0 | 0 | 9 |
+| ./Dockerfile | added | 41 | 0 | 950 | 0 | 0 | 119 |
 | ./LICENSE_ndaversis | added | 16 | 0 | 1207 | 0 | 0 | 172 |
-| ./config.json | added | 3 | 0 | 27 | 0 | 0 | 3 |
-| ./ndaversis.py | added | 2014 | 0 | 94609 | 0 | 0 | 29264 |
-| ./ndaversis_logs.py | added | 38 | 0 | 100862 | 0 | 0 | 19989 |
+| ./config.json | added | 40 | 0 | 876 | 0 | 0 | 269 |
+| ./docker-compose.yml | added | 59 | 0 | 1703 | 0 | 0 | 354 |
+| ./ndaversis.py | added | 3138 | 0 | 137870 | 0 | 0 | 44364 |
+| ./ndaversis_logs.py | added | 39 | 0 | 103348 | 0 | 0 | 20358 |
+| ./ndaversis_metrics.json | added | 163 | 0 | 3317 | 0 | 0 | 1206 |
 | ./ndaversis_privacy_policy.md | added | 21 | 0 | 1554 | 0 | 0 | 235 |
-| ./ndaversis_readme.md | added | 560 | 0 | 22014 | 0 | 0 | 3513 |
+| ./ndaversis_readme.md | added | 711 | 0 | 26532 | 0 | 0 | 3938 |
+| ./ndaversis_requirements.txt | added | 12 | 0 | 371 | 0 | 0 | 48 |
+| ./ndaversis_state.json | added | 1 | 0 | 25 | 0 | 0 | 1 |
 | ./ndaversis_version_history.py | added | 94 | 0 | 2459 | 0 | 0 | 590 |
-| ./readme.md | added | 560 | 0 | 22014 | 0 | 0 | 3513 |
+| ./readme.md | added | 780 | 0 | 28288 | 0 | 0 | 4339 |
+| ./task.txt | added | 320 | 0 | 8768 | 0 | 0 | 1280 |
+| ./test.txt | modified | 1 | 0 | 5 | 0 | 0 | 0 |
+| ./test_config.json | added | 1 | 0 | 25 | 0 | 0 | 1 |
+| ./test_ndaversis.py | added | 1 | 0 | 21 | 0 | 0 | 2 |
+| ./test_ndaversis_readme.md | added | 5 | 0 | 53 | 0 | 0 | 8 |
 
 
 #### Impact Map
 
 ```mermaid
 graph LR
-    Root["Latest Changes"] --> env_example & gitignore & LICENSE_ndaversis & config_json & ndaversis_py & ndaversis_logs_py & ndaversis_privacy_policy_md & ndaversis_readme_md & ndaversis_version_history_py & readme_md
-    env_example["./.env.example: added (19 + / 0 -)"]
-    gitignore["./.gitignore: added (4 + / 0 -)"]
+    Root["Latest Changes"] --> dockerignore & env_example & gitignore & Dockerfile & LICENSE_ndaversis & config_json & docker_compose_yml & ndaversis_py & ndaversis_logs_py & ndaversis_metrics_json & ndaversis_privacy_policy_md & ndaversis_readme_md & ndaversis_requirements_txt & ndaversis_state_json & ndaversis_version_history_py & readme_md & task_txt & test_txt & test_config_json & test_ndaversis_py & test_ndaversis_readme_md
+    dockerignore["./.dockerignore: added (22 + / 0 -)"]
+    env_example["./.env.example: added (53 + / 0 -)"]
+    gitignore["./.gitignore: added (33 + / 0 -)"]
+    Dockerfile["./Dockerfile: added (41 + / 0 -)"]
     LICENSE_ndaversis["./LICENSE_ndaversis: added (16 + / 0 -)"]
-    config_json["./config.json: added (3 + / 0 -)"]
-    ndaversis_py["./ndaversis.py: added (2014 + / 0 -)"]
-    ndaversis_logs_py["./ndaversis_logs.py: added (38 + / 0 -)"]
+    config_json["./config.json: added (40 + / 0 -)"]
+    docker_compose_yml["./docker-compose.yml: added (59 + / 0 -)"]
+    ndaversis_py["./ndaversis.py: added (3138 + / 0 -)"]
+    ndaversis_logs_py["./ndaversis_logs.py: added (39 + / 0 -)"]
+    ndaversis_metrics_json["./ndaversis_metrics.json: added (163 + / 0 -)"]
     ndaversis_privacy_policy_md["./ndaversis_privacy_policy.md: added (21 + / 0 -)"]
-    ndaversis_readme_md["./ndaversis_readme.md: added (560 + / 0 -)"]
+    ndaversis_readme_md["./ndaversis_readme.md: added (711 + / 0 -)"]
+    ndaversis_requirements_txt["./ndaversis_requirements.txt: added (12 + / 0 -)"]
+    ndaversis_state_json["./ndaversis_state.json: added (1 + / 0 -)"]
     ndaversis_version_history_py["./ndaversis_version_history.py: added (94 + / 0 -)"]
-    readme_md["./readme.md: added (560 + / 0 -)"]
+    readme_md["./readme.md: added (780 + / 0 -)"]
+    task_txt["./task.txt: added (320 + / 0 -)"]
+    test_txt["./test.txt: modified (1 + / 0 -)"]
+    test_config_json["./test_config.json: added (1 + / 0 -)"]
+    test_ndaversis_py["./test_ndaversis.py: added (1 + / 0 -)"]
+    test_ndaversis_readme_md["./test_ndaversis_readme.md: added (5 + / 0 -)"]
 
 %% Dark mode styling
 classDef rootNode fill:#e74c3c,stroke:#c0392b,stroke-width:3px,color:#fff
@@ -515,56 +643,89 @@ classDef addedNode fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
 classDef deletedNode fill:#95a5a6,stroke:#7f8c8d,stroke-width:2px,color:#fff
 
 class Root rootNode
+class dockerignore addedNode
 class env_example addedNode
 class gitignore addedNode
+class Dockerfile addedNode
 class LICENSE_ndaversis addedNode
 class config_json addedNode
+class docker_compose_yml addedNode
 class ndaversis_py addedNode
 class ndaversis_logs_py addedNode
+class ndaversis_metrics_json addedNode
 class ndaversis_privacy_policy_md addedNode
 class ndaversis_readme_md addedNode
+class ndaversis_requirements_txt addedNode
+class ndaversis_state_json addedNode
 class ndaversis_version_history_py addedNode
 class readme_md addedNode
+class task_txt addedNode
+class test_txt modifiedNode
+class test_config_json addedNode
+class test_ndaversis_py addedNode
+class test_ndaversis_readme_md addedNode
 ```
 
 
 **Practical Impact**: Significant improvement to project maintainability and documentation sync.
 
 ## 14. Version History
-## Version 0.0.66
+## Version 0.1.1
 ### Goals
 The main goals were to expand the project's capabilities with new components, refine existing features for better performance and reliability.
 
 ### What Changed
 | File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ./.env.example | added | 19 | 0 | 534 | 0 | 0 | 39 |
-| ./.gitignore | added | 4 | 0 | 42 | 0 | 0 | 0 |
+| ./.dockerignore | added | 22 | 0 | 169 | 0 | 0 | 0 |
+| ./.env.example | added | 53 | 0 | 1913 | 0 | 0 | 153 |
+| ./.gitignore | added | 33 | 0 | 249 | 0 | 0 | 9 |
+| ./Dockerfile | added | 41 | 0 | 950 | 0 | 0 | 119 |
 | ./LICENSE_ndaversis | added | 16 | 0 | 1207 | 0 | 0 | 172 |
-| ./config.json | added | 3 | 0 | 27 | 0 | 0 | 3 |
-| ./ndaversis.py | added | 2014 | 0 | 94609 | 0 | 0 | 29264 |
-| ./ndaversis_logs.py | added | 38 | 0 | 100862 | 0 | 0 | 19989 |
+| ./config.json | added | 40 | 0 | 876 | 0 | 0 | 269 |
+| ./docker-compose.yml | added | 59 | 0 | 1703 | 0 | 0 | 354 |
+| ./ndaversis.py | added | 3138 | 0 | 137870 | 0 | 0 | 44364 |
+| ./ndaversis_logs.py | added | 39 | 0 | 103348 | 0 | 0 | 20358 |
+| ./ndaversis_metrics.json | added | 163 | 0 | 3317 | 0 | 0 | 1206 |
 | ./ndaversis_privacy_policy.md | added | 21 | 0 | 1554 | 0 | 0 | 235 |
-| ./ndaversis_readme.md | added | 560 | 0 | 22014 | 0 | 0 | 3513 |
+| ./ndaversis_readme.md | added | 711 | 0 | 26532 | 0 | 0 | 3938 |
+| ./ndaversis_requirements.txt | added | 12 | 0 | 371 | 0 | 0 | 48 |
+| ./ndaversis_state.json | added | 1 | 0 | 25 | 0 | 0 | 1 |
 | ./ndaversis_version_history.py | added | 94 | 0 | 2459 | 0 | 0 | 590 |
-| ./readme.md | added | 560 | 0 | 22014 | 0 | 0 | 3513 |
+| ./readme.md | added | 780 | 0 | 28288 | 0 | 0 | 4339 |
+| ./task.txt | added | 320 | 0 | 8768 | 0 | 0 | 1280 |
+| ./test.txt | modified | 1 | 0 | 5 | 0 | 0 | 0 |
+| ./test_config.json | added | 1 | 0 | 25 | 0 | 0 | 1 |
+| ./test_ndaversis.py | added | 1 | 0 | 21 | 0 | 0 | 2 |
+| ./test_ndaversis_readme.md | added | 5 | 0 | 53 | 0 | 0 | 8 |
 
 
 #### Impact Map
 
 ```mermaid
 graph LR
-    Root["Latest Changes"] --> env_example & gitignore & LICENSE_ndaversis & config_json & ndaversis_py & ndaversis_logs_py & ndaversis_privacy_policy_md & ndaversis_readme_md & ndaversis_version_history_py & readme_md
-    env_example["./.env.example: added (19 + / 0 -)"]
-    gitignore["./.gitignore: added (4 + / 0 -)"]
+    Root["Latest Changes"] --> dockerignore & env_example & gitignore & Dockerfile & LICENSE_ndaversis & config_json & docker_compose_yml & ndaversis_py & ndaversis_logs_py & ndaversis_metrics_json & ndaversis_privacy_policy_md & ndaversis_readme_md & ndaversis_requirements_txt & ndaversis_state_json & ndaversis_version_history_py & readme_md & task_txt & test_txt & test_config_json & test_ndaversis_py & test_ndaversis_readme_md
+    dockerignore["./.dockerignore: added (22 + / 0 -)"]
+    env_example["./.env.example: added (53 + / 0 -)"]
+    gitignore["./.gitignore: added (33 + / 0 -)"]
+    Dockerfile["./Dockerfile: added (41 + / 0 -)"]
     LICENSE_ndaversis["./LICENSE_ndaversis: added (16 + / 0 -)"]
-    config_json["./config.json: added (3 + / 0 -)"]
-    ndaversis_py["./ndaversis.py: added (2014 + / 0 -)"]
-    ndaversis_logs_py["./ndaversis_logs.py: added (38 + / 0 -)"]
+    config_json["./config.json: added (40 + / 0 -)"]
+    docker_compose_yml["./docker-compose.yml: added (59 + / 0 -)"]
+    ndaversis_py["./ndaversis.py: added (3138 + / 0 -)"]
+    ndaversis_logs_py["./ndaversis_logs.py: added (39 + / 0 -)"]
+    ndaversis_metrics_json["./ndaversis_metrics.json: added (163 + / 0 -)"]
     ndaversis_privacy_policy_md["./ndaversis_privacy_policy.md: added (21 + / 0 -)"]
-    ndaversis_readme_md["./ndaversis_readme.md: added (560 + / 0 -)"]
+    ndaversis_readme_md["./ndaversis_readme.md: added (711 + / 0 -)"]
+    ndaversis_requirements_txt["./ndaversis_requirements.txt: added (12 + / 0 -)"]
+    ndaversis_state_json["./ndaversis_state.json: added (1 + / 0 -)"]
     ndaversis_version_history_py["./ndaversis_version_history.py: added (94 + / 0 -)"]
-    readme_md["./readme.md: added (560 + / 0 -)"]
+    readme_md["./readme.md: added (780 + / 0 -)"]
+    task_txt["./task.txt: added (320 + / 0 -)"]
+    test_txt["./test.txt: modified (1 + / 0 -)"]
+    test_config_json["./test_config.json: added (1 + / 0 -)"]
+    test_ndaversis_py["./test_ndaversis.py: added (1 + / 0 -)"]
+    test_ndaversis_readme_md["./test_ndaversis_readme.md: added (5 + / 0 -)"]
 
 %% Dark mode styling
 classDef rootNode fill:#e74c3c,stroke:#c0392b,stroke-width:3px,color:#fff
@@ -573,125 +734,43 @@ classDef addedNode fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
 classDef deletedNode fill:#95a5a6,stroke:#7f8c8d,stroke-width:2px,color:#fff
 
 class Root rootNode
+class dockerignore addedNode
 class env_example addedNode
 class gitignore addedNode
+class Dockerfile addedNode
 class LICENSE_ndaversis addedNode
 class config_json addedNode
+class docker_compose_yml addedNode
 class ndaversis_py addedNode
 class ndaversis_logs_py addedNode
+class ndaversis_metrics_json addedNode
 class ndaversis_privacy_policy_md addedNode
 class ndaversis_readme_md addedNode
+class ndaversis_requirements_txt addedNode
+class ndaversis_state_json addedNode
 class ndaversis_version_history_py addedNode
 class readme_md addedNode
+class task_txt addedNode
+class test_txt modifiedNode
+class test_config_json addedNode
+class test_ndaversis_py addedNode
+class test_ndaversis_readme_md addedNode
 ```
 
 
 ### What's Good for the User
 ### 💎 What's New?
-Expanded project scope by adding 10 new files, including .env.example.
+Expanded project scope by adding 20 new files, including .dockerignore.
 
 ### 🚀 Why Upgrade?
 This update introduces significant new components that improve the overall feature set of the repository.
 
 
 ### What's Possibly Next
-Moving forward, you might want to create detailed API documentation for other developers, optimize performance for large-scale repositories.
+Moving forward, you might want to implement a plugin system for extended functionality, integrate with more AI providers for diversity, implement automated benchmarking for core logic.
 
 
-## Version 0.0.65
-### Goals
-The main goals were to expand the project's capabilities with new components, refine existing features for better performance and reliability.
 
-### What Changed
-| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ./ndaversis.py | modified | 45 | 5 | 2005 | 205 | 0 | 600 |
-| ./ndaversis_logs.py | modified | 1 | 0 | 2377 | 0 | 0 | 362 |
-| ./ndaversis_readme.md | modified | 140 | 148 | 6996 | 6705 | 0 | 1022 |
-| ./ndaversis_state.json | added | 11 | 0 | 226467 | 0 | 0 | 51291 |
-
-
-#### Impact Map
-
-```mermaid
-graph LR
-    Root["Latest Changes"] --> ndaversis_py & ndaversis_logs_py & ndaversis_readme_md & ndaversis_state_json
-    ndaversis_py["./ndaversis.py: Modified (45 + / 5 -)"]
-    style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_logs_py["./ndaversis_logs.py: Modified (1 + / 0 -)"]
-    style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_readme_md["./ndaversis_readme.md: Modified (140 + / 148 -)"]
-    style ndaversis_readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_state_json["./ndaversis_state.json: Added (11 + / 0 -)"]
-    style ndaversis_state_json fill:#bbdefb,stroke:#333,stroke-width:2px
-```
-
-
-### What's Good for the User
-### 💎 What's New?
-Expanded project scope by adding 1 new files, including ndaversis_state.json.
-
-### 🚀 Why Upgrade?
-This update introduces significant new components that improve the overall feature set of the repository.
-
-
-### What's Possibly Next
-Moving forward, you might want to implement automated benchmarking for core logic, improve robustness by adding a dedicated test suite, add support for more configuration formats (YAML, TOML).
-
-## Version 0.0.64
-### Goals
-The main goals were to expand the project's capabilities with new components.
-
-### What Changed
-| File | Status | Lines + | Lines - | Chars + | Chars - | Tabs | Spaces |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ./.gitignore | added | 4 | 0 | 42 | 0 | 0 | 0 |
-| ./LICENSE_ndaversis | added | 16 | 0 | 1207 | 0 | 0 | 172 |
-| ./config.json | added | 3 | 0 | 27 | 0 | 0 | 3 |
-| ./ndaversis.py | added | 1873 | 0 | 86526 | 0 | 0 | 27000 |
-| ./ndaversis_logs.py | added | 36 | 0 | 97253 | 0 | 0 | 19435 |
-| ./ndaversis_privacy_policy.md | added | 21 | 0 | 1554 | 0 | 0 | 235 |
-| ./ndaversis_readme.md | added | 584 | 0 | 22914 | 0 | 0 | 3796 |
-| ./ndaversis_requirements.txt | added | 11 | 0 | 261 | 0 | 0 | 33 |
-| ./ndaversis_version_history.py | added | 94 | 0 | 2459 | 0 | 0 | 590 |
-
-
-#### Impact Map
-
-```mermaid
-graph LR
-    Root["Latest Changes"] --> gitignore & LICENSE_ndaversis & config_json & ndaversis_py & ndaversis_logs_py & ndaversis_privacy_policy_md & ndaversis_readme_md & ndaversis_requirements_txt & ndaversis_version_history_py
-    gitignore["./.gitignore: Added (4 + / 0 -)"]
-    style gitignore fill:#bbdefb,stroke:#333,stroke-width:2px
-    LICENSE_ndaversis["./LICENSE_ndaversis: Added (16 + / 0 -)"]
-    style LICENSE_ndaversis fill:#bbdefb,stroke:#333,stroke-width:2px
-    config_json["./config.json: Added (3 + / 0 -)"]
-    style config_json fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_py["./ndaversis.py: Added (1873 + / 0 -)"]
-    style ndaversis_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_logs_py["./ndaversis_logs.py: Added (36 + / 0 -)"]
-    style ndaversis_logs_py fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_privacy_policy_md["./ndaversis_privacy_policy.md: Added (21 + / 0 -)"]
-    style ndaversis_privacy_policy_md fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_readme_md["./ndaversis_readme.md: Added (584 + / 0 -)"]
-    style ndaversis_readme_md fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_requirements_txt["./ndaversis_requirements.txt: Added (11 + / 0 -)"]
-    style ndaversis_requirements_txt fill:#bbdefb,stroke:#333,stroke-width:2px
-    ndaversis_version_history_py["./ndaversis_version_history.py: Added (94 + / 0 -)"]
-    style ndaversis_version_history_py fill:#bbdefb,stroke:#333,stroke-width:2px
-```
-
-
-### What's Good for the User
-### 💎 What's New?
-Expanded project scope by adding 9 new files, including .gitignore.
-
-### 🚀 Why Upgrade?
-This update introduces significant new components that improve the overall feature set of the repository.
-
-
-### What's Possibly Next
-Moving forward, you might want to enhance the user interface for better accessibility, implement a plugin system for extended functionality, add comprehensive error handling and logging.
 ## 15. Contacts
 
 *   **Email:** n@ndaotec.com
