@@ -1,6 +1,7 @@
-# 1. NDAVERSIS: Agentic Semantic Version Info System
+# 1. NDAVERSIS: Agentic Semantic Version Info System (BETA Version)
 
-**Current Version:** `0.1.1`
+*Important*: Ndaversis is an experimental project under active development. 
+Many things may not work exactly as intended.
 
 ## 2. Description Summary
 
