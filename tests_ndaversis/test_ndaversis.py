@@ -137,6 +137,25 @@ class TestNdaversis(unittest.TestCase):
 
         os.remove("./test.txt")
 
+    def test_excluded_files(self):
+        """Verify that files in EXCLUDED_METRIC_FILES are ignored by metrics."""
+        from ndaversis import EXCLUDED_METRIC_FILES
+        
+        # Create an excluded file
+        excl_file = EXCLUDED_METRIC_FILES[0]
+        with open(excl_file, "w") as f:
+            f.write("Some content that should be ignored")
+        
+        features, _ = self.app._analyze_codebase()
+        self.assertNotIn(excl_file, features["files"])
+        
+        # Verify it's not in repo state either
+        state = self.app._capture_repo_state()
+        self.assertNotIn(f"./{excl_file}", state)
+        
+        if os.path.exists(excl_file):
+            os.remove(excl_file)
+
     # @patch('os.getenv')
     # def test_get_ai_service(self, mock_getenv):
     #     """Test the AI service factory function."""
@@ -696,9 +715,10 @@ class TestNdaversisGUI(unittest.TestCase):
 
     def test_tabs_existence(self):
         """Test that tabs are created."""
-        self.assertEqual(self.window.tabs.count(), 2)
+        self.assertEqual(self.window.tabs.count(), 3)
         self.assertEqual(self.window.tabs.tabText(0), "Version Update")
         self.assertEqual(self.window.tabs.tabText(1), "Metrics Dashboard")
+        self.assertEqual(self.window.tabs.tabText(2), "Workflow & CLI")
 
     def test_version_increment_flow(self):
         """Test the version increment logic via GUI methods."""
@@ -727,3 +747,13 @@ class TestNdaversisGUI(unittest.TestCase):
         # Note: layout count might include spacers or other items depending on implementation
         # But should be > 0
         self.assertGreater(self.window.metrics_layout.count(), 0)
+
+    def test_gui_console_logging(self):
+        """Test that the GUI console can log messages."""
+        self.window.log_message("Test Console Message")
+        self.assertIn("Test Console Message", self.window.console_output.toPlainText())
+
+    def test_gui_workflow_tab_exists(self):
+        """Test that the Workflow & CLI tab exists."""
+        tab_names = [self.window.tabs.tabText(i) for i in range(self.window.tabs.count())]
+        self.assertIn("Workflow & CLI", tab_names)

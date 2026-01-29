@@ -1,33 +1,32 @@
 {
-  "overall_score": 82,
+  "overall_score": 80,
   "metrics": {
     "code_quality": {
-      "score": 72,
+      "score": 64,
       "summary": "",
       "details": {
-        "docstring_coverage": "100.0%",
-        "comment_ratio": "8.3%",
-        "documented_items": "21/21"
+        "docstring_coverage": "87.5%",
+        "comment_ratio": "12.0%",
+        "documented_items": "21/24"
       }
     },
     "code_size": {
       "score": 90,
       "summary": "",
       "details": {
-        "total_lines": 5553,
-        "code_lines": 4338,
-        "comment_lines": 394,
-        "blank_lines": 821
+        "total_lines": 6273,
+        "code_lines": 4626,
+        "comment_lines": 628,
+        "blank_lines": 1019
       }
     },
     "security": {
-      "score": 70,
+      "score": 100,
       "summary": "",
       "details": {
-        "issues_found": 2,
+        "issues_found": 0,
         "issues": [
-          "Use of eval/exec detected (security risk)",
-          "Broad exception handling detected"
+          "No major security issues detected"
         ]
       }
     },
@@ -35,18 +34,18 @@
       "score": 80,
       "summary": "",
       "details": {
-        "public_functions": 4,
-        "public_classes": 16,
-        "total_public_api": 20
+        "public_functions": 2,
+        "public_classes": 22,
+        "total_public_api": 24
       }
     },
     "platform_compatibility": {
-      "score": 85,
+      "score": 100,
       "summary": "",
       "details": {
-        "estimated_compatibility": "85%",
+        "estimated_compatibility": "100%",
         "issues": [
-          "Unix-specific features detected"
+          "Good cross-platform practices"
         ]
       }
     },
@@ -54,62 +53,58 @@
       "score": 50,
       "summary": "",
       "details": {
-        "total_functions": 5,
-        "total_classes": 16,
-        "total_files": 3,
-        "total_items": 21
+        "total_functions": 2,
+        "total_classes": 22,
+        "total_files": 4,
+        "total_items": 24
       }
     },
     "performance": {
-      "score": 75,
+      "score": 70,
       "summary": "",
       "details": {
         "optimizations": [
-          "Caching implemented",
-          "Async operations used"
+          "No specific optimizations detected"
         ],
         "concerns": [
-          "Many loops detected",
-          "Blocking sleep calls found"
+          "No major performance concerns"
         ]
       }
     },
     "usability": {
-      "score": 88,
+      "score": 65,
       "summary": "",
       "details": {
         "has_readme": true,
-        "has_examples": true,
-        "documentation_score": "72%"
+        "has_examples": false,
+        "documentation_score": "64%"
       }
     },
     "reliability": {
-      "score": 100,
+      "score": 80,
       "summary": "",
       "details": {
         "has_tests": true,
-        "error_handling": "23 try blocks",
+        "error_handling": "0 try blocks",
         "has_logging": false
       }
     },
     "innovation": {
-      "score": 85,
+      "score": 65,
       "summary": "",
       "details": {
         "innovations": [
-          "Type hints used",
-          "Dataclasses used",
-          "Async/await patterns"
+          "Type hints used"
         ],
-        "modern_features": 3
+        "modern_features": 1
       }
     },
     "simplicity": {
       "score": 70,
       "summary": "",
       "details": {
-        "avg_function_length": "46.6 lines",
-        "total_functions": 93,
+        "avg_function_length": "30.6 lines",
+        "total_functions": 151,
         "estimated_complexity": "Medium"
       }
     },
@@ -134,30 +129,28 @@
           "Dependencies managed",
           "Test suite exists"
         ],
-        "todo_count": 9
+        "todo_count": 0
       }
     },
     "accuracy": {
       "score": 100,
       "summary": "",
       "details": {
-        "test_files": 1,
+        "test_files": 4,
         "has_type_hints": true,
-        "has_assertions": true
+        "has_assertions": false
       }
     },
     "completeness": {
-      "score": 65,
+      "score": 80,
       "summary": "",
       "details": {
         "completeness_factors": [
-          "README present",
-          "LICENSE present",
-          "10 TODOs remaining"
+          "README present"
         ],
-        "todo_count": 10
+        "todo_count": 0
       }
     }
   },
-  "timestamp": "2026-01-28T19:44:57.692646"
+  "timestamp": "2026-01-30T01:19:07.546508"
 }

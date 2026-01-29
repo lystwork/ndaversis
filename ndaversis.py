@@ -26,6 +26,7 @@ import os
 import re
 import argparse
 import sys
+import subprocess
 import ast
 import json
 import datetime
@@ -47,10 +48,30 @@ try:
 except ImportError:
     HAS_PYQT = False
 
-# import google.generativeai as genai
-# import openai
-# import anthropic
-# from deepseek import DeepSeekAPI
+# AI Provider SDKs (optional - for AI-powered features)
+try:
+    import google.generativeai as genai
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
+
+try:
+    import openai
+    HAS_OPENAI = True
+except ImportError:
+    HAS_OPENAI = False
+
+try:
+    import anthropic
+    HAS_ANTHROPIC = True
+except ImportError:
+    HAS_ANTHROPIC = False
+
+try:
+    from deepseek import DeepSeekAPI
+    HAS_DEEPSEEK = True
+except ImportError:
+    HAS_DEEPSEEK = False
 
 import difflib
 
@@ -80,7 +101,24 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.1.2"
+__version__ = "0.69.0"
+
+# Files to exclude from change metrics to prevent inflated numbers
+EXCLUDED_METRIC_FILES = [
+    STATE_FILE,
+    LOGS_FILE,
+    "ndaversis_metrics.json",
+    "readme.md.bak",
+    ".env",
+    ".env.example",
+    "Dockerfile",
+    "docker-compose.yml",
+    "LICENSE_ndaversis.txt",
+    "ndaversis_requirements.txt",
+    "config.json",
+    "ndaversis_version_history.py",
+    "ndaversis_logs.py"
+]
 
 # --- AI Service Classes ---
 import time
@@ -331,6 +369,8 @@ class GeminiService(AIService):
             model (str): The model name to use.
         """
         super().__init__()
+        if not HAS_GENAI:
+            raise ImportError("google.generativeai is required for GeminiService. Install with: pip install google-generativeai")
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model)
 
@@ -353,6 +393,8 @@ class ChatGPTService(AIService):
     """An AI service that uses the OpenAI ChatGPT API."""
     def __init__(self, api_key):
         super().__init__()
+        if not HAS_OPENAI:
+            raise ImportError("openai is required for ChatGPTService. Install with: pip install openai")
         self.client = openai.OpenAI(api_key=api_key)
 
     def generate_content(self, prompt, analysis_data):
@@ -379,6 +421,8 @@ class ClaudeService(AIService):
             model (str): The model name to use.
         """
         super().__init__()
+        if not HAS_ANTHROPIC:
+            raise ImportError("anthropic is required for ClaudeService. Install with: pip install anthropic")
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
 
@@ -420,6 +464,8 @@ class DeepSeekService(AIService):
             model (str): The model name to use.
         """
         super().__init__()
+        if not HAS_DEEPSEEK:
+            raise ImportError("deepseek is required for DeepSeekService. Install with: pip install deepseek")
         self.client = DeepSeekAPI(api_key=api_key)
         self.model = model
 
@@ -446,7 +492,8 @@ class GroqService(AIService):
     """
     def __init__(self, api_key: str, model: str = "mixtral-8x7b-32768") -> None:
         super().__init__()
-        import openai
+        if not HAS_OPENAI:
+            raise ImportError("openai is required for GroqService. Install with: pip install openai")
         self.client = openai.OpenAI(
             api_key=api_key,
             base_url="https://api.groq.com/openai/v1"
@@ -467,7 +514,8 @@ class OpenRouterService(AIService):
     """
     def __init__(self, api_key: str, model: str = "anthropic/claude-3-haiku") -> None:
         super().__init__()
-        import openai
+        if not HAS_OPENAI:
+            raise ImportError("openai is required for OpenRouterService. Install with: pip install openai")
         self.client = openai.OpenAI(
             api_key=api_key,
             base_url="https://openrouter.ai/api/v1"
@@ -488,7 +536,8 @@ class MistralService(AIService):
     """
     def __init__(self, api_key: str, model: str = "mistral-small-latest") -> None:
         super().__init__()
-        import openai
+        if not HAS_OPENAI:
+            raise ImportError("openai is required for MistralService. Install with: pip install openai")
         self.client = openai.OpenAI(
             api_key=api_key,
             base_url="https://api.mistral.ai/v1"
@@ -509,7 +558,8 @@ class QwenService(AIService):
     """
     def __init__(self, api_key: str, model: str = "qwen-turbo") -> None:
         super().__init__()
-        import openai
+        if not HAS_OPENAI:
+            raise ImportError("openai is required for QwenService. Install with: pip install openai")
         self.client = openai.OpenAI(
             api_key=api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -530,7 +580,8 @@ class LlamaService(AIService):
     """
     def __init__(self, api_key: str, model: str = "meta-llama/Llama-3-70b-chat-hf", base_url: str = "https://api.together.xyz/v1") -> None:
         super().__init__()
-        import openai
+        if not HAS_OPENAI:
+            raise ImportError("openai is required for LlamaService. Install with: pip install openai")
         self.client = openai.OpenAI(
             api_key=api_key,
             base_url=base_url
@@ -551,7 +602,8 @@ class OpenAICompatibleService(AIService):
     """
     def __init__(self, api_key: str, base_url: str, model: str = "gpt-3.5-turbo") -> None:
         super().__init__()
-        import openai
+        if not HAS_OPENAI:
+            raise ImportError("openai is required for OpenAICompatibleService. Install with: pip install openai")
         self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
         self.model = model
 
@@ -1393,7 +1445,7 @@ class Ndaversis:
                 stripped = line.strip()
                 if not stripped:
                     features["metrics"]["blank_lines"] += 1
-                elif stripped.startswith("#"):
+                elif stripped.startswith(("#", '"""', "'''")):
                     features["metrics"]["comment_lines"] += 1
                 else:
                     features["metrics"]["code_lines"] += 1
@@ -1463,11 +1515,20 @@ class Ndaversis:
                 pass
         method_names = set()
         last_code = ""
-        for root, _, files in os.walk("."):
-            if any(exclude in root for exclude in [".git", "__pycache__", "tests_ndaversis"]):
-                continue
+        for root, dirs, files in os.walk("."):
+            # Skip hidden directories and known irrelevant ones
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ["__pycache__", "venv", ".venv", "node_modules", "logs", "state"]]
+            
             for file in files:
+                # Skip hidden files and excluded files
+                if file.startswith('.') or any(excl == file or file.endswith(excl) for excl in EXCLUDED_METRIC_FILES):
+                    continue
+                
                 filepath = os.path.join(root, file)
+                # Use relative path for consistency if needed, but os.walk root is already '.' relative mostly
+                if filepath.startswith("./"):
+                    filepath = filepath[2:]
+                    
                 ext = os.path.splitext(file)[1].lower() or "no extension"
                 features["languages"][ext] = features["languages"].get(ext, 0) + 1
                 
@@ -1498,15 +1559,14 @@ class Ndaversis:
         """Capture the state of all files in the repository."""
         state = {}
         for root, dirs, files in os.walk(path):
-            # Exclude specified directories
-            if '.git' in dirs:
-                dirs.remove('.git')
-            if 'tests_ndaversis' in dirs:
-                dirs.remove('tests_ndaversis')
-            if '__pycache__' in dirs:
-                dirs.remove('__pycache__')
-
+            # Skip hidden directories and known irrelevant ones
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ["__pycache__", "venv", ".venv", "node_modules", "logs", "state"]]
+            
             for file in files:
+                # Skip hidden files and excluded files
+                if file.startswith('.') or any(excl == file or file.endswith(excl) for excl in EXCLUDED_METRIC_FILES):
+                    continue
+                
                 filepath = os.path.join(root, file)
                 try:
                     with open(filepath, "r", encoding="utf-8") as f:
@@ -1871,7 +1931,7 @@ class Ndaversis:
                 "Substitute your own API key (at least one required). Example:\n"
                 "```json\n{\n  \"GEMINI_API_KEY\": \"your-key-here\",\n  \"OPENAI_API_KEY\": \"your-key-here\"\n}\n```\n\n"
                 "#### 3. Launch Entire Infrastructure\n"
-                "```bash\npython ndaversis.py\n```\n\n"
+                "```bash\n# Ensure environment is prepared\nsource venv/bin/activate\npython ndaversis.py health\n# Launch\npython ndaversis.py\n```\n\n"
                 "The ndaversis starts polling and is ready with any free port.\n"
                 "Web available at http://localhost:8080\n\n"
                 "### ✅ How to Verify\n"
@@ -2078,8 +2138,8 @@ class Ndaversis:
         install += "If you leave them blank, the tool will still work perfectly using its built-in 'smart' logic!\n\n"
         
         install += "### Step 5: Run\n"
-        install += "Start the GUI or CLI to maintain your project:\n"
-        install += "```bash\npython ndaversis.py\n```\n"
+        install += "Start the GUI or CLI to maintain your project (ensure you are in your virtual environment):\n"
+        install += "```bash\n# Activate venv if not already active\nsource venv/bin/activate\npython ndaversis.py\n```\n"
 
         # --- Modules Map ---
         modules_map = "## 11. Modules Map\n\n"
@@ -2780,8 +2840,15 @@ if HAS_PYQT:
             # Metrics Tab
             self.create_metrics_tab()
             
+            # Workflow Tab
+            self.create_workflow_tab()
+            
             # Footer
             self.create_footer(main_layout)
+            
+            # Initialize with metrics and console message
+            self.log_message("System initialized. Ready for operations.")
+            self.calculate_metrics_ui()
 
         def create_header(self, layout):
             header_frame = QFrame()
@@ -2861,6 +2928,9 @@ if HAS_PYQT:
             self.create_version_button("PATCH +0.0.1", "#0099cc", lambda: self.on_increment("Patch"), btn_layout)
             self.create_version_button("MINOR +0.1.0", "#7b2cbf", lambda: self.on_increment("Minor"), btn_layout)
             self.create_version_button("MAJOR +1.0.0", "#f72585", lambda: self.on_increment("Major"), btn_layout)
+            
+            btn_layout.addSpacing(10)
+            self.create_version_button("SUGGEST VERSION BUMP", "#fbb13c", self.on_suggest_bump, btn_layout)
             
             card_layout.addLayout(btn_layout)
             
@@ -2957,6 +3027,108 @@ if HAS_PYQT:
             
             self.tabs.addTab(tab, "Metrics Dashboard")
 
+        def create_workflow_tab(self):
+            tab = QWidget()
+            layout = QVBoxLayout(tab)
+            layout.setContentsMargins(20, 20, 20, 20)
+            
+            # Workflow Visualization
+            wf_card = QFrame()
+            wf_card.setStyleSheet("background-color: #151b35; border-radius: 15px; border: 1px solid #1f2847;")
+            wf_layout = QVBoxLayout(wf_card)
+            
+            title = QLabel("AUTOMATION WORKFLOW")
+            title.setFont(QFont("Courier New", 14, QFont.Weight.Bold))
+            title.setStyleSheet("color: #6c7a9b;")
+            wf_layout.addWidget(title)
+            
+            steps = [
+                "1. Analyze Codebase (AST Parsing)",
+                "2. Detect Repository State Changes",
+                "3. Calculate Metrics & Quality Scores",
+                "4. Suggest Version Bump (AI/Heuristic)",
+                "5. Generate Dynamic README Documentation"
+            ]
+            
+            for step in steps:
+                step_container = QWidget()
+                step_h_layout = QHBoxLayout(step_container)
+                step_h_layout.setContentsMargins(0, 0, 0, 0)
+                
+                step_lbl = QLabel(step)
+                step_lbl.setStyleSheet("color: #e0e6f0; padding: 5px;")
+                step_h_layout.addWidget(step_lbl)
+                
+                step_btn = QPushButton("Run")
+                step_btn.setFixedWidth(60)
+                step_btn.setStyleSheet("""
+                    QPushButton { background-color: #1a1f3a; color: #00d9ff; border: 1px solid #00d9ff; border-radius: 4px; padding: 2px; font-size: 10px; }
+                    QPushButton:hover { background-color: #00d9ff; color: #1a1f3a; }
+                """)
+                # Link buttons to actions
+                if "Analyze" in step:
+                    step_btn.clicked.connect(lambda: self.execute_console_command_direct(f"{sys.executable} ndaversis.py audit"))
+                elif "Metrics" in step:
+                    step_btn.clicked.connect(self.calculate_metrics_ui)
+                elif "Bump" in step:
+                    step_btn.clicked.connect(self.on_suggest_bump)
+                elif "README" in step:
+                    step_btn.clicked.connect(lambda: self.execute_console_command_direct(f"{sys.executable} ndaversis.py cli --patch"))
+                else:
+                    step_btn.clicked.connect(lambda s=step: self.log_message(f"Triggered: {s}"))
+                
+                step_h_layout.addWidget(step_btn)
+                wf_layout.addWidget(step_container)
+            
+            layout.addWidget(wf_card)
+            
+            # Integrated Console
+            console_card = QFrame()
+            console_card.setStyleSheet("background-color: #0d1128; border-radius: 10px; border: 1px solid #1f2847; margin-top: 15px;")
+            console_layout = QVBoxLayout(console_card)
+            
+            console_title = QLabel("INTEGRATED CLI CONSOLE")
+            console_title.setFont(QFont("Courier New", 10, QFont.Weight.Bold))
+            console_title.setStyleSheet("color: #00d9ff;")
+            console_layout.addWidget(console_title)
+            
+            self.console_output = QTextEdit()
+            self.console_output.setReadOnly(True)
+            self.console_output.setStyleSheet("""
+                QTextEdit {
+                    background-color: black;
+                    color: #00ff00;
+                    font-family: 'Courier New';
+                    font-size: 12px;
+                    border: none;
+                }
+            """)
+            console_layout.addWidget(self.console_output)
+            
+            self.console_input = QLineEdit()
+            self.console_input.setPlaceholderText("Enter command (e.g. ls, python --version)...")
+            self.console_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #0d1128;
+                    color: #00ff00;
+                    border: 1px solid #1f2847;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-family: 'Courier New';
+                }
+            """)
+            self.console_input.returnPressed.connect(self.execute_console_command)
+            console_layout.addWidget(self.console_input)
+            
+            layout.addWidget(console_card)
+            
+            self.tabs.addTab(tab, "Workflow & CLI")
+
+        def log_message(self, message):
+            timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+            self.console_output.append(f"[{timestamp}] {message}")
+            self.console_output.ensureCursorVisible()
+
         def create_footer(self, layout):
             footer = QWidget()
             f_layout = QVBoxLayout(footer)
@@ -2994,6 +3166,7 @@ if HAS_PYQT:
 
             try:
                 # Logic
+                self.log_message(f"Starting {increment_type} version bump...")
                 if increment_type == "Major":
                     self.ndaversis.version.increment_major()
                 elif increment_type == "Minor":
@@ -3001,15 +3174,23 @@ if HAS_PYQT:
                 else:
                     self.ndaversis.version.increment_patch()
                 
+                self.log_message(f"Version bumped to {self.ndaversis.version}")
+                
                 # Since generating readme takes time and blocked UI is bad, ideally thread this.
                 # For simplicity in this migration, running synchronously but with processEvents
+                self.log_message("Analyzing codebase structure...")
                 analysis_data, _ = self.ndaversis._analyze_codebase()
+                
+                self.log_message("Generating dynamic documentation...")
                 readme_content = self.ndaversis.generate_readme_content(self.ndaversis.version, analysis_data, change_text)
+                
+                self.log_message("Updating README.md and saving state...")
                 self.ndaversis.update_readme(readme_content)
                 self.ndaversis.save_version(str(self.ndaversis.version))
                 
                 # Save to history
                 if version_history:
+                    self.log_message("Writing to version history...")
                     version_data = {
                         "version": str(self.ndaversis.version),
                         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -3019,9 +3200,12 @@ if HAS_PYQT:
                     }
                     version_history.add_version(version_data)
                 
+                self.log_message(f"Flow complete for v{self.ndaversis.version}")
                 self.status_label.setText(f"✅ Success! Version updated to {self.ndaversis.version}")
                 self.status_label.setStyleSheet("color: #00ff88;")
+                self.calculate_metrics_ui()
             except Exception as e:
+                self.log_message(f"ERROR: {str(e)}")
                 self.status_label.setText(f"❌ Error: {str(e)}")
                 self.status_label.setStyleSheet("color: #ff3366;")
             finally:
@@ -3112,8 +3296,10 @@ if HAS_PYQT:
 
                 self.metrics_status.setText(f"✅ Metrics calculated! Overall: {overall_score}%")
                 self.metrics_status.setStyleSheet("color: #00ff88;")
+                self.log_message(f"Metrics recalculated. Overall Score: {overall_score}%")
                 
             except Exception as e:
+                self.log_message(f"METRICS ERROR: {str(e)}")
                 self.metrics_status.setText(f"❌ Error: {str(e)}")
                 self.metrics_status.setStyleSheet("color: #ff3366;")
 
@@ -3127,6 +3313,98 @@ if HAS_PYQT:
             except Exception as e:
                 self.metrics_status.setText(f"❌ Export failed: {str(e)}")
                 self.metrics_status.setStyleSheet("color: #ff3366;")
+
+        def on_suggest_bump(self):
+            self.log_message("Requesting version bump suggestion...")
+            self.status_label.setText("Analyzing code for bump suggestion...")
+            self.status_label.setStyleSheet("color: #00d9ff;")
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setRange(0, 0)
+            QApplication.processEvents()
+            
+            try:
+                # Capture current state and compare with previous
+                new_state = self.ndaversis._capture_repo_state()
+                diff_data = self.ndaversis._generate_diff(self.ndaversis.previous_code_state, new_state)
+                
+                if not diff_data:
+                    self.log_message("No changes detected since last update.")
+                    self.status_label.setText("✅ Code is up to date")
+                    return
+
+                # Get bump suggestion
+                change_summary = self.ndaversis.generate_change_summary(self.ndaversis.previous_code_state, new_state, diff_data=diff_data)
+                suggested = self.ndaversis.suggest_version_bump(change_summary)
+                self.log_message(f"AI/Heuristic suggests: {suggested}")
+                
+                # Get human-readable changelog via AI if available
+                if self.ndaversis.ai_service:
+                    self.log_message("Generating human-readable change log...")
+                    prompt = (
+                        "Generate a concise, professional, and human-readable Change Log entry based on the following file diffs. "
+                        "Group changes logically and use bullet points. Focus on technical improvements and user-facing benefits. "
+                        "Avoid raw diff tables or percentages; use descriptive sentences.\n\n"
+                        f"Changes:\n{change_summary}"
+                    )
+                    ai_log = self.ndaversis.ai_service.generate_content(prompt, {"diff_data": diff_data})
+                    self.change_input.setPlainText(ai_log.strip())
+                else:
+                    self.change_input.setPlainText(change_summary)
+                
+                self.status_label.setText(f"✅ Suggestion complete: {suggested}")
+                self.status_label.setStyleSheet("color: #00ff88;")
+                self.log_message(f"Recommended action: Click {suggested.upper()} update.")
+            except Exception as e:
+                self.log_message(f"Suggestion failed: {e}")
+                self.status_label.setText("❌ Suggestion failed")
+            finally:
+                self.progress_bar.setVisible(False)
+
+        def execute_console_command(self):
+            cmd = self.console_input.text().strip()
+            if not cmd:
+                return
+            self.console_input.clear()
+            self.execute_console_command_direct(cmd)
+
+        def execute_console_command_direct(self, cmd):
+            self.log_message(f"EXEC $> {cmd}")
+            QApplication.processEvents()
+            
+            def run_command_in_thread():
+                try:
+                    process = subprocess.Popen(
+                        cmd, 
+                        shell=True, 
+                        stdout=subprocess.PIPE, 
+                        stderr=subprocess.PIPE, 
+                        text=True,
+                        cwd=os.getcwd()
+                    )
+                    
+                    # Read output line by line (basic streaming simulation)
+                    while True:
+                        output = process.stdout.readline()
+                        if output == '' and process.poll() is not None:
+                            break
+                        if output:
+                            # Use meta-object to safely update UI from thread
+                            from PyQt6.QtCore import QMetaObject, Q_ARG
+                            QMetaObject.invokeMethod(self, "log_message", Qt.ConnectionType.QueuedConnection, Q_ARG(str, output.strip()))
+                            
+                    stderr_output = process.stderr.read()
+                    if stderr_output:
+                        for line in stderr_output.splitlines():
+                            QMetaObject.invokeMethod(self, "log_message", Qt.ConnectionType.QueuedConnection, Q_ARG(str, f"ERR: {line.strip()}"))
+                    
+                    if process.returncode == 0:
+                        QMetaObject.invokeMethod(self, "log_message", Qt.ConnectionType.QueuedConnection, Q_ARG(str, "Command completed successfully."))
+                    else:
+                        QMetaObject.invokeMethod(self, "log_message", Qt.ConnectionType.QueuedConnection, Q_ARG(str, f"Command exited with code {process.returncode}"))
+                except Exception as e:
+                    QMetaObject.invokeMethod(self, "log_message", Qt.ConnectionType.QueuedConnection, Q_ARG(str, f"Execution Error: {str(e)}"))
+
+            threading.Thread(target=run_command_in_thread, daemon=True).start()
 
 # --- Web Interface ---
 class MetricsHandler(http.server.SimpleHTTPRequestHandler):

@@ -1,10 +1,10 @@
 # Multi-stage build for optimized image size
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for GUI
 RUN apt-get update && apt-get install -y \
     git \
     libgl1 \
@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
     libxtst6 \
     libdbus-1-3 \
     libxkbcommon-x11-0 \
+    xvfb \
+    x11-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -45,6 +47,8 @@ RUN apt-get update && apt-get install -y \
     libxtst6 \
     libdbus-1-3 \
     libxkbcommon-x11-0 \
+    xvfb \
+    x11-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages from base stage
@@ -57,12 +61,19 @@ COPY . .
 # Create directories for persistent data
 RUN mkdir -p /app/state /app/logs
 
-# Expose port for GUI (if running in web mode)
-EXPOSE 8080
-
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV DISPLAY=:99
 
-# Default command - run GUI
-CMD ["python", "ndaversis.py"]
+# Create startup script for GUI
+RUN echo '#!/bin/bash\n\
+# Start virtual display\n\
+Xvfb :99 -screen 0 1024x768x24 &\n\
+# Wait a moment for display to start\n\
+sleep 2\n\
+# Run the application\n\
+python ndaversis.py' > /app/start.sh && chmod +x /app/start.sh
+
+# Default command - run GUI with virtual display
+CMD ["/app/start.sh"]

@@ -16,8 +16,29 @@ Each version entry contains:
 import json
 import os
 
-VERSION_HISTORY = []
-
+VERSION_HISTORY = [
+    {
+        "version": "1.0.1",
+        "timestamp": "2026-01-30 01:18:05",
+        "author": "admin",
+        "changes": "Test Change",
+        "goals": "Test Goals"
+    },
+    {
+        "version": "1.0.1",
+        "timestamp": "2026-01-30 00:45:10",
+        "author": "admin",
+        "changes": "Test Change",
+        "goals": "Test Goals"
+    },
+    {
+        "version": "1.0.1",
+        "timestamp": "2026-01-30 00:41:56",
+        "author": "admin",
+        "changes": "Test Change",
+        "goals": "Test Goals"
+    }
+]
 def add_version(version_data):
     """
     Add a new version to the history.
@@ -69,7 +90,7 @@ def _save_history():
     
     # Rebuild the file with updated VERSION_HISTORY
     new_lines = lines[:start_idx]
-    new_lines.append(f'VERSION_HISTORY = {json.dumps(VERSION_HISTORY, indent=4, ensure_ascii=False)}\\n')
+    new_lines.append(f'VERSION_HISTORY = {json.dumps(VERSION_HISTORY, indent=4, ensure_ascii=False)}\n')
     
     # Find the end of the old VERSION_HISTORY
     bracket_count = 0

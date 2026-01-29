@@ -42,10 +42,10 @@ services:
       
       # Application settings
       - WEB_PORT=${WEB_PORT:-8080}
-      - WEB_HOST=${WEB_HOST:-0.0.0.0}
+      - WEB_HOST=${WEB_HOST:-127.0.0.1}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-    ports:
-      - "${WEB_PORT:-8080}:8080"
+      - DISPLAY=${DISPLAY:-:0}
+    # No ports section - container only accessible internally
     restart: unless-stopped
     stdin_open: true
     tty: true

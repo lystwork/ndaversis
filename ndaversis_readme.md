@@ -116,6 +116,10 @@ Substitute your own API key (at least one required). Example:
 
 #### 3. Launch Entire Infrastructure
 ```bash
+# Ensure environment is prepared
+source venv/bin/activate
+python ndaversis.py health
+# Launch
 python ndaversis.py
 ```
 
@@ -264,8 +268,10 @@ To unlock automated summaries and stories, you can add API keys to `config.json`
 If you leave them blank, the tool will still work perfectly using its built-in 'smart' logic!
 
 ### Step 5: Run
-Start the GUI or CLI to maintain your project:
+Start the GUI or CLI to maintain your project (ensure you are in your virtual environment):
 ```bash
+# Activate venv if not already active
+source venv/bin/activate
 python ndaversis.py
 ```
 
