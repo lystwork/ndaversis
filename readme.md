@@ -6,7 +6,7 @@ Many things may not work exactly as intended.
 ## 2. Description Summary
 
 <!-- AUTO-DESCRIPTION-START -->
-**Test Readme** is designed with a simple goal: to let you **'set and forget'** your documentation and versioning. It automatically generates and maintains an accurate README.md and manages semantic versioning directly within your code, ensuring your project info is always up-to-date even as you change the code. Whether you have an internet connection or not, it works locally to keep your repository professional and informative with zero manual effort.
+**NDAVERSIS** is designed with a simple goal: to let you **'set and forget'** your documentation and versioning. It automatically generates and maintains an accurate README.md and manages semantic versioning directly within your code, ensuring your project info is always up-to-date even as you change the code. Whether you have an internet connection or not, it works locally to keep your repository professional and informative with zero manual effort.
 <!-- AUTO-DESCRIPTION-END -->
 
 <!-- AUTO-SUMMARY-START -->
