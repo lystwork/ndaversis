@@ -2,6 +2,13 @@
 __pycache__/
 *.py[cod]
 *$py.class
+venv/
+.venv/
+env/
+.env/
+bin/
+include/
+lib/
 *.so
 .Python
 

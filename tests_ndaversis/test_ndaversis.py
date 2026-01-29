@@ -110,7 +110,7 @@ class TestNdaversis(unittest.TestCase):
         """Test the _create_description_summary method."""
         with patch.object(self.app, 'generate_project_description', return_value="Test Description"):
             summary = self.app._create_description_summary()
-            self.assertIn("NDAVERSIS: Agentic Semantic Version Info System", summary)
+            self.assertIn("NDAVERSIS: Agentic AI-powered Code Analytics and Infrastructure Platform (BETA Version)", summary)
             self.assertIn("Test Description", summary)
 
     @patch('ndaversis.__version__', "0.1.0")

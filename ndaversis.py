@@ -1,5 +1,5 @@
 """
-Ndaversis: Agentic Semantic Version Information System.
+NDAVERSIS: Agentic AI-powered Code Analytics and Infrastructure Platform (BETA Version).
 
 This module provides a self-contained, monolithic solution for managing
 semantic versioning, generating comprehensive README documentation, and leveraging
@@ -30,6 +30,9 @@ import ast
 import json
 import datetime
 import getpass
+import threading
+import http.server
+import socketserver
 from typing import Optional
 
 # PyQt6 for modern GUI
@@ -77,7 +80,7 @@ COPYRIGHT_TEXT = (
     "ndaotec.com. @ All rights reserved - Nikita Andreevich Drozdov. "
     "All rights belong to their respective owners."
 )
-__version__ = "0.0.69"
+__version__ = "0.1.2"
 
 # --- AI Service Classes ---
 import time
@@ -319,16 +322,17 @@ class GeminiService(AIService):
     authentication.
     """
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, model: str = "gemini-pro") -> None:
         """
         Initializes the GeminiService.
 
         Args:
             api_key (str): The API key for the Google Gemini service.
+            model (str): The model name to use.
         """
         super().__init__()
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-pro")
+        self.model = genai.GenerativeModel(model)
 
     def generate_content(self, prompt: str, analysis_data: dict) -> str:
         """
@@ -366,15 +370,17 @@ class ClaudeService(AIService):
     It requires a valid API key for authentication.
     """
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, model: str = "claude-3-opus-20240229") -> None:
         """
         Initializes the ClaudeService.
 
         Args:
             api_key (str): The API key for the Anthropic service.
+            model (str): The model name to use.
         """
         super().__init__()
         self.client = anthropic.Anthropic(api_key=api_key)
+        self.model = model
 
     def generate_content(self, prompt: str, analysis_data: dict) -> str:
         """
@@ -389,7 +395,7 @@ class ClaudeService(AIService):
         """
         full_prompt = self._create_full_prompt(prompt, analysis_data)
         message = self.client.messages.create(
-            model="claude-3-opus-20240229",
+            model=self.model,
             max_tokens=1024,
             messages=[{"role": "user", "content": full_prompt}],
         )
@@ -405,15 +411,17 @@ class DeepSeekService(AIService):
     It requires a valid API key for authentication.
     """
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, model: str = "deepseek-chat") -> None:
         """
         Initializes the DeepSeekService.
 
         Args:
             api_key (str): The API key for the DeepSeek service.
+            model (str): The model name to use.
         """
         super().__init__()
         self.client = DeepSeekAPI(api_key=api_key)
+        self.model = model
 
     def generate_content(self, prompt: str, analysis_data: dict) -> str:
         """
@@ -428,7 +436,7 @@ class DeepSeekService(AIService):
         """
         full_prompt = self._create_full_prompt(prompt, analysis_data)
         response = self.client.chat.completions.create(
-            model="deepseek-chat", messages=[{"role": "user", "content": full_prompt}]
+            model=self.model, messages=[{"role": "user", "content": full_prompt}]
         )
         return response.choices[0].message.content
 
@@ -2407,8 +2415,10 @@ class Ndaversis:
 
     def _create_description_summary(self):
         """Creates the description summary section of the README."""
-        project_name = "NDAVERSIS: Agentic Semantic Version Info System"
+        project_name = "NDAVERSIS: Agentic AI-powered Code Analytics and Infrastructure Platform (BETA Version)"
         content = f"# 1. {project_name}\n\n"
+        content += "*Important*: NDAVERSIS is an experimental project under active development. \n"
+        content += "Many things may not work exactly as intended.\n\n"
         content += f"**Current Version:** `{self.version}`\n\n"
         content += "## 2. Description Summary\n\n"
         content += "<!-- AUTO-DESCRIPTION-START -->\n"
@@ -2615,6 +2625,8 @@ class Ndaversis:
 
     def main_cli(self, cli_args):
         """Run the command-line interface."""
+        # Start web server for data access (optional for CLI)
+        threading.Thread(target=run_web_server, daemon=True).start()
         # Use the already loaded previous state
         old_state = self.previous_code_state
 
@@ -2661,6 +2673,9 @@ class Ndaversis:
         if not HAS_PYQT:
             print("PyQt6 not installed. Please run 'pip install PyQt6' to use the GUI.")
             return
+
+        # Start web server for remote metrics access
+        threading.Thread(target=run_web_server, daemon=True).start()
 
         app = QApplication(sys.argv)
         app.setStyle("Fusion")
@@ -3022,8 +3037,11 @@ if HAS_PYQT:
                 metrics_result = self.ndaversis.metrics.get_all_metrics()
                 
                 # Clear previous
-                for i in reversed(range(self.metrics_layout.count())): 
-                    self.metrics_layout.itemAt(i).widget().setParent(None)
+                while self.metrics_layout.count():
+                    item = self.metrics_layout.takeAt(0)
+                    widget = item.widget()
+                    if widget:
+                        widget.deleteLater()
                 
                 # Overall Score
                 overall_score = metrics_result['overall_score']
@@ -3074,7 +3092,16 @@ if HAS_PYQT:
                     # Summary and Details
                     summary = metric_data.get('summary', 'No summary')
                     details = metric_data.get('details', {})
-                    details_text = "\n".join([f"{k}: {v}" for k, v in details.items()])
+                    
+                    details_list = []
+                    for k, v in details.items():
+                        if isinstance(v, list):
+                            v_str = ", ".join(map(str, v))
+                        else:
+                            v_str = str(v)
+                        details_list.append(f"• {k.replace('_', ' ').title()}: {v_str}")
+                    
+                    details_text = "\n".join(details_list)
                     
                     m_desc = QLabel(f"Summary: {summary}\n\nDetails:\n{details_text}")
                     m_desc.setStyleSheet("color: #9ca3b8; font-size: 11px;")
@@ -3100,7 +3127,72 @@ if HAS_PYQT:
             except Exception as e:
                 self.metrics_status.setText(f"❌ Export failed: {str(e)}")
                 self.metrics_status.setStyleSheet("color: #ff3366;")
-else:
+
+# --- Web Interface ---
+class MetricsHandler(http.server.SimpleHTTPRequestHandler):
+    """Simple handler for metrics and stats."""
+    
+    def do_GET(self):
+        if self.path == '/':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            project_name = "NDAVERSIS: Agentic AI-powered Code Analytics and Infrastructure Platform (BETA Version)"
+            version = "0.1.2"
+            
+            html = f"""
+            <html>
+                <head>
+                    <title>NDAVERSIS Meta-Interface</title>
+                    <style>
+                        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1117; color: #c9d1d9; padding: 40px; line-height: 1.6; }}
+                        .container {{ max-width: 800px; margin: 0 auto; background-color: #161b22; padding: 30px; border-radius: 12px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }}
+                        h1 {{ color: #58a6ff; border-bottom: 2px solid #58a6ff; padding-bottom: 10px; }}
+                        .metric-card {{ background-color: #21262d; padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 5px solid #238636; }}
+                        .score {{ font-weight: bold; color: #3fb950; font-size: 1.2em; }}
+                        .footer {{ margin-top: 40px; text-align: center; color: #8b949e; font-size: 0.9em; }}
+                        a {{ color: #58a6ff; text-decoration: none; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>NDAVERSIS Meta-Interface</h1>
+                        <p><strong>Project:</strong> {project_name}</p>
+                        <p><strong>Version:</strong> {version}</p>
+                        <p><strong>Status:</strong> Agentic Analytics Platform is running.</p>
+                        <hr>
+                        <h3>Available Metrics:</h3>
+                        <p>To view detailed metrics, access <a href="/metrics">/metrics</a></p>
+                        <div class="footer">NDAVERSIS BETA &bull; <a href="https://ndaotec.com">ndaotec.com</a></div>
+                    </div>
+                </body>
+            </html>
+            """
+            self.wfile.write(html.encode())
+            
+        elif self.path == '/metrics':
+            if os.path.exists("ndaversis_metrics.json"):
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                with open("ndaversis_metrics.json", "rb") as f:
+                    self.wfile.write(f.read())
+            else:
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b"Metrics file not found. Run 'python ndaversis.py metrics' first.")
+        else:
+            super().do_GET()
+
+def run_web_server(port=8080):
+    """Run the simple web server in a separate thread."""
+    handler = MetricsHandler
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        print(f"Web interface running at http://localhost:{port}")
+        httpd.serve_forever()
+
+if not HAS_PYQT:
     class GUIApp:
         pass
 

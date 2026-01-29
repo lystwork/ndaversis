@@ -1,6 +1,6 @@
-# 1. NDAVERSIS: Agentic Semantic Version Info System (BETA Version)
+# 1. NDAVERSIS: Agentic AI-powered Code Analytics and Infrastructure Platform (BETA Version)
 
-*Important*: Ndaversis is an experimental project under active development. 
+*Important*: NDAVERSIS is an experimental project under active development. 
 Many things may not work exactly as intended.
 
 ## 2. Description Summary

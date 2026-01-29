@@ -1,5 +1,5 @@
-# Ndaversis Requirements
-# Agentic Semantic Version Info System
+# NDAVERSIS Requirements
+# Agentic AI-powered Code Analytics and Infrastructure Platform (BETA Version)
 
 # Core GUI Framework (Required)
 PyQt6>=6.6.0

@@ -31,6 +31,22 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install system dependencies in production stage as well
+RUN apt-get update && apt-get install -y \
+    git \
+    libgl1 \
+    libegl1 \
+    libxrandr2 \
+    libxss1 \
+    libxcursor1 \
+    libxcomposite1 \
+    libasound2 \
+    libxi6 \
+    libxtst6 \
+    libdbus-1-3 \
+    libxkbcommon-x11-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy Python packages from base stage
 COPY --from=base /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=base /usr/local/bin /usr/local/bin
