@@ -330,7 +330,7 @@ class TestNdaversis(unittest.TestCase):
         content = self.app.generate_readme_content("0.1.0", analysis_data, what_changed)
         
         # Check Sections
-        for i in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
+        for i in range(1, 18):
             self.assertIn(f"## {i}.", content)
             
         # Check mermaid diagrams
@@ -362,7 +362,7 @@ class TestNdaversis(unittest.TestCase):
         }
         content_fallback = self.app.generate_readme_content("0.1.0", analysis_empty, what_changed)
         self.assertIn("graph LR", content_fallback) 
-        self.assertIn("## 13. Last Version Summary", content_fallback)
+        self.assertIn("## 12. Last Version Summary", content_fallback)
         # Should still have professional templates in fallback
         self.assertIn("Automated Release Cycles", content_fallback)
         self.assertIn("DevOps Engineer", content_fallback)
@@ -385,36 +385,45 @@ class TestNdaversis(unittest.TestCase):
         self.assertNotIn("tkinter", content)
         self.assertIn("Moving forward", content)
 
-    def test_version_history_limiting(self):
-        """Verify that only the most recent 3 versions are kept in the README."""
-        # Setup existing history with 4 versions
-        existing_history = (
-            "## Version 1.0.0\nGoal 1\n\n"
-            "## Version 0.9.0\nGoal 2\n\n"
-            "## Version 0.8.0\nGoal 3\n\n"
-            "## Version 0.7.0\nGoal 4\n"
-        )
-        
-        # Mocking the existing history in the file
-        with open(self.test_readme_path, "w", encoding="utf-8") as f:
-            f.write(f"# 1. Test\n\n## 14. Version History\n{existing_history}\n## 15. Contacts\n")
-            
+    def test_readme_sections_full_list(self):
+        """Verify that all 17 requested sections are present in the correct order."""
         analysis_data = {
             "functions": {}, "classes": {}, "imports": [], "files": {},
             "metrics": {"total_lines": 0, "code_lines": 0, "comment_lines": 0, "blank_lines": 0, "tabs": 0, "strings": 0},
             "languages": {}, "diff_data": {}
         }
-        what_changed = "Nothing much"
+        what_changed = "Test changes"
+        content = self.app.generate_readme_content("0.1.0", analysis_data, what_changed)
         
-        content = self.app.generate_readme_content("1.1.0", analysis_data, what_changed)
+        expected_sections = [
+            "1. Description Summary", # Note: _create_description_summary uses # 1. then ## 2.
+            "2. Use Cases",
+            "3. User Stories",
+            "4. FAQ",
+            "5. How To",
+            "6. Features",
+            "7. Requirements",
+            "8. Install",
+            "9. Modules Map",
+            "10. Dependencies Map",
+            "11. Project Map",
+            "12. Last Version Summary",
+            "13. Version History",
+            "14. Contacts",
+            "15. Privacy & Terms",
+            "16. Investor Relations",
+            "17. Copyright"
+        ]
         
-        # Should contain Version 1.1.0, 1.0.0, and 0.9.0
-        self.assertIn("## Version 1.1.0", content)
-        self.assertIn("## Version 1.0.0", content)
-        self.assertIn("## Version 0.9.0", content)
-        # Should NOT contain Version 0.8.0 or 0.7.0
-        self.assertNotIn("## Version 0.8.0", content)
-        self.assertNotIn("## Version 0.7.0", content)
+        for section in expected_sections:
+            self.assertIn(section, content, f"Section '{section}' missing from README")
+        
+        # Verify order
+        last_index = 0
+        for section in expected_sections:
+            current_index = content.find(section)
+            self.assertGreater(current_index, last_index, f"Section '{section}' is out of order")
+            last_index = current_index
 
 
 class TestRepositoryMetrics(unittest.TestCase):

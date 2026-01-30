@@ -1797,6 +1797,16 @@ class Ndaversis:
             "    CI_CD --> UC2"
         )
 
+    def _generate_section_prompt(self, section_title: str) -> str:
+        """
+        Generates a prompt for creating a specific README section.
+        """
+        return (
+            f"As a Professional Technical Writer, generate the '{section_title}' section for a README.md file "
+            f"based on the provided codebase analysis. Ensure the content is accurate, well-formatted (Markdown), "
+            f"and provides real value to a developer or user. Do not include the section header (e.g., '## {section_title}') in your response."
+        )
+
     def generate_bpmn_diagram(self, analysis_data: dict) -> str:
         """
         Generates a BPMN diagram in Mermaid syntax.
@@ -1822,6 +1832,125 @@ class Ndaversis:
             "    Bump --> Docs[Update README]\n"
             "    Docs --> End((End))"
         )
+
+
+    def _get_fallback_content(self, title, analysis_data):
+        """Standardized fallback content for various sections."""
+        if "Use Cases" in title:
+            content = (
+                "*   **Automated Release Cycles**: Integrate version management into CI/CD pipelines.\n"
+                "*   **Dynamic Documentation Sync**: Ensure the repository's documentation always matches the latest architectural changes.\n"
+                "*   **Offline Repository Health**: Audit codebase metrics and structure without needing external tool connectivity.\n"
+                "*   **Standardized Versioning**: Enforce consistent versioning across projects automatically.\n\n"
+                "### Use Case Diagram\n\n"
+                "```mermaid\n"
+                f"{self.generate_use_case_diagram(analysis_data)}\n"
+                "```"
+            )
+            return content
+        elif "User Stories" in title:
+            content = (
+                "*   **Maintainer**: As a maintainer, I want documentation to stay in sync with code automatically.\n"
+                "*   **Developer**: As a developer, I want a clear map of project modules and dependencies.\n"
+                "*   **DevOps Engineer**: As a DevOps engineer, I want automated version bumping on every release.\n\n"
+                "### BPMN Diagram\n\n"
+                "```mermaid\n"
+                f"{self.generate_bpmn_diagram(analysis_data)}\n"
+                "```"
+            )
+            return content
+        elif "FAQ" in title:
+            return (
+                "*   **Q: Will this work without internet?**\n    **A:** Yes, core analysis and documentation logic works entirely offline.\n"
+                "*   **Q: Does it update version?**\n    **A:** Yes, it scans and updates version strings automatically according to configured rules."
+            )
+        elif "Install" in title:
+            return (
+                "```bash\n"
+                "# 1. Clone the repository\n"
+                "git clone https://github.com/lystwork/ndaversis.git\n"
+                "cd ndaversis\n\n"
+                "# 2. Install dependencies\n"
+                "pip install -r ndaversis_requirements.txt\n\n"
+                "# 3. Run the tool\n"
+                "python ndaversis.py\n"
+                "```"
+            )
+        elif "Features" in title:
+            return (
+                "*   **Set-and-Forget Automation**: Automatically keeps your project documentation and versioning in sync.\n"
+                "*   **AI-Powered Documentation**: Generates FAQs, User Stories, and Use Cases using AI.\n"
+                "*   **Intelligent Version Management**: Automatically calculates the right semantic version bump.\n"
+                "*   **Visual Logic Maps**: Generates Mermaid diagrams for project structure and logic flows."
+            )
+        elif "Requirements" in title:
+            # Add the stdlib graph here to satisfy tests
+            stdlib_modules = set(sys.stdlib_module_names) | {"typing", "pkg_resources", "argparse", "datetime", "json", "os", "re", "sys", "ast", "getpass", "difflib", "time"}
+            detected_imports = set(analysis_data.get("imports", []))
+            stdlib_deps = {d for d in detected_imports if d in stdlib_modules}
+            
+            req_content = "**Python Version**: 3.8 or higher required\n\n"
+            if stdlib_deps:
+                req_content += "### Built-in Standard Library (Included with Python)\n"
+                req_content += "```mermaid\ngraph LR\n"
+                req_content += "    Python --> " + " & ".join([d for d in sorted(stdlib_deps)]) + "\n"
+                req_content += "```\n\n"
+                req_content += "The following modules are part of Python's standard library:\n\n"
+                req_content += ", ".join([f"`{d}`" for d in sorted(stdlib_deps)])
+            
+            return req_content
+
+        elif "Modules Map" in title:
+            modules_map = ""
+            for filepath, data in sorted(analysis_data.get("files", {}).items()):
+                basename = os.path.basename(filepath)
+                doc = data.get("docstring", "").split("\n")[0].strip() or "Project resource file"
+                modules_map += f"*   **{basename}**: {doc}\n"
+            
+            modules_map += "\n\n### Module Structure Diagram\n\n```mermaid\nclassDiagram\n"
+            classes = analysis_data.get("classes", {})
+            if not classes:
+                modules_map += "    class MainModule {\n        +main()\n    }\n"
+            else:
+                for class_name, class_data in classes.items():
+                    modules_map += f"    class {class_name} {{\n"
+                    for method in class_data.get("methods", {}).keys():
+                        modules_map += f"        +{method}()\n"
+                    modules_map += "    }\n"
+            modules_map += "```"
+            return modules_map
+
+        elif "Dependencies Map" in title:
+            # Reuse logic for external vs internal
+            detected_imports = set(analysis_data.get("imports", []))
+            stdlib_modules = set(sys.stdlib_module_names) | {"typing", "pkg_resources", "argparse", "datetime", "json", "os", "re", "sys", "ast", "getpass", "difflib", "time"}
+            external_deps = {d for d in detected_imports if d not in stdlib_modules}
+            
+            dep_content = "### Libraries Used\n\n"
+            dep_content += "#### Mandatory (Required for correct work)\n"
+            dep_content += "*   `PyQt6` - GUI framework\n"
+            
+            if external_deps:
+                dep_content += "\n#### External Libraries\n"
+                for dep in sorted(external_deps):
+                    dep_content += f"*   `{dep}` - Technical dependency\n"
+            
+            dep_content += "\n#### Optional - AI Providers (Could be used without)\n"
+            dep_content += "> [!NOTE]\n"
+            dep_content += "> The system works in **local on-prem mode** without any AI dependencies.\n\n"
+            dep_content += "For AI-powered documentation insights:\n\n"
+            dep_content += "*   `openai` - AI provider\n*   `google-genai` - AI provider\n"
+            
+            return dep_content
+
+        elif "Privacy & Terms" in title:
+            return f"*   **Privacy Policy:** See privacy policy file for details."
+        elif "Investor Relations" in title:
+            return "> [!IMPORTANT]\n> For investment opportunities, please contact the project maintainers."
+        elif "Copyright" in title:
+            return COPYRIGHT_TEXT
+        
+        return "Content will be available after the next automated analysis."
 
     def _generate_section(self, title, analysis_data, prefix, format_str):
         """Helper function to generate a section of the README."""
@@ -2374,10 +2503,12 @@ class Ndaversis:
         features, code = self._analyze_codebase()
         metrics = features["metrics"]
         
-        # Language breakdown table
+        # Language breakdown table and pie chart
         lang_table = "| Extension | Count |\n| :--- | :--- |\n"
+        pie_chart = "pie title Language Distribution\n"
         for ext, count in sorted(features["languages"].items(), key=lambda x: x[1], reverse=True):
             lang_table += f"| {ext} | {count} |\n"
+            pie_chart += f'    "{ext}" : {count}\n'
             
         # Metrics table
         metrics_table = (
@@ -2420,6 +2551,7 @@ class Ndaversis:
             f"the time of the last version update.*\n\n"
             f"### Repository Metrics\n\n{metrics_table}\n\n"
             f"### Language Breakdown\n\n{lang_table}\n\n"
+            f"### Language Distribution\n\n```mermaid\n{pie_chart}```\n\n"
             f"### File Statistics\n"
             f"- **Total Files:** {sum(features['languages'].values())}\n"
             f"- **Python Files:** {features['languages'].get('.py', 0)}\n"
@@ -2476,11 +2608,11 @@ class Ndaversis:
     def _create_description_summary(self):
         """Creates the description summary section of the README."""
         project_name = "NDAVERSIS: Agentic AI-powered Code Analytics and Infrastructure Platform (BETA Version)"
-        content = f"# 1. {project_name}\n\n"
+        content = f"# {project_name}\n\n"
         content += "*Important*: NDAVERSIS is an experimental project under active development. \n"
         content += "Many things may not work exactly as intended.\n\n"
         content += f"**Current Version:** `{self.version}`\n\n"
-        content += "## 2. Description Summary\n\n"
+        content += "## 1. Description Summary\n\n"
         content += "<!-- AUTO-DESCRIPTION-START -->\n"
         content += f"{self.generate_project_description()}\n"
         content += "<!-- AUTO-DESCRIPTION-END -->\n\n"
@@ -2584,85 +2716,76 @@ class Ndaversis:
         
         return f"Moving forward, you might want to {', '.join(selected)}."
 
-    def generate_readme_content(self, version, analysis_data, what_changed):
-        """Generate the entire content of the README file."""
-        content = self._create_description_summary()
-        content += "<!-- AUTO-SUMMARY-START -->\n"
-        content += f"{self.analyze_repository()}\n"
-        content += "<!-- AUTO-SUMMARY-END -->\n\n"
-        content += f"{self.generate_dynamic_sections(analysis_data)}\n"
-        content += "## 10. Project Map\n\n"
-        content += f"{self.generate_project_map()}\n\n"
-        content += "## 13. Last Version Summary\n\n"
-        content += f"The last version is `{version}`. Detailed change log and metrics:\n"
-        content += f"{what_changed}\n"
+    def _get_formatted_history(self):
+        """Returns the version history formatted as markdown."""
+        if not version_history:
+            return "Version history module not available."
         
-        # Ensure analysis_data has diff_data for benefit analysis
-        if "diff_data" not in analysis_data:
-            analysis_data["diff_data"] = self._generate_diff(self.previous_code_state, self._capture_repo_state())
-
-        benefit_text = self.generate_user_benefit_analysis(analysis_data, what_changed)
-        
-        practical_impact = "Significant improvement to project maintainability and documentation sync."
-        if "### 7. Practical Impact" in benefit_text:
-            try:
-                impact_lines = [line.strip() for line in benefit_text.split("### 7. Practical Impact")[1].strip().split("\n") if line.strip()]
-                if len(impact_lines) >= 1:
-                    practical_impact = impact_lines[0]
-                    if len(impact_lines) >= 2:
-                        practical_impact += f" {impact_lines[1]}"
-            except (IndexError, AttributeError):
-                pass
-        content += f"\n**Practical Impact**: {practical_impact}\n\n"
-        
-        history_start_marker, history_end_marker = "## 14. Version History", "## 15. Contacts"
-        try:
-            with open(README_FILE, "r", encoding="utf-8") as f:
-                existing_content = f.read()
-                start, end = existing_content.find(history_start_marker), existing_content.find(history_end_marker)
-                existing_history = existing_content[start + len(history_start_marker):end].strip() if start != -1 and end != -1 else ""
-        except FileNotFoundError:
-            existing_history = ""
-        
-        # Extract previous "What's Possibly Next" for uniqueness
-        previous_suggestions = ""
-        if existing_history:
-            prev_next = re.findall(r"### What's Possibly Next\n(.*?)(?=\n## Version|\n## 15\. Contacts|$)", existing_history, re.DOTALL)
-            previous_suggestions = "\n".join(prev_next).strip()
-
-        # Strip legacy sections and limit history to top 3
-        if existing_history:
-            # Remove "Change Visualization" sections
-            existing_history = re.sub(r"### 📊 Change Visualization\n\n```mermaid.*?```\n+", "", existing_history, flags=re.DOTALL)
-            # Remove standalone "File-level Insights" text sections (if they exist without diagrams)
-            existing_history = re.sub(r"### 🔍 File-level Insights\n\n(- .*?\n)+", "", existing_history)
+        history = version_history.get_all_versions()
+        if not history:
+            return "No version history recorded yet."
             
-            # Limit to most recent 2 existing versions (to make room for the 1 new one)
-            history_versions = re.split(r"(?=## Version \d+\.\d+\.\d+)", existing_history)
-            # Filter out empty strings from split
-            history_versions = [v.strip() for v in history_versions if v.strip()]
-            if len(history_versions) > 2:
-                existing_history = "\n\n".join(history_versions[:2])
-            else:
-                existing_history = "\n\n".join(history_versions)
+        formatted = ""
+        for v in history[:10]: # Limit to last 10
+            vers = v.get("version", "Unknown")
+            ts = v.get("timestamp", "Unknown")
+            author = v.get("author", "Unknown")
+            changes = v.get("changes", "No details")
+            goals = v.get("goals", "")
+            
+            formatted += f"## Version {vers} ({ts})\n"
+            formatted += f"*Author: {author}*\n\n"
+            if goals:
+                formatted += f"#### Goals\n{goals}\n\n"
+            formatted += f"#### Changes\n{changes}\n\n"
+            formatted += "---\n\n"
+            
+        return formatted
 
-        new_entry = (
-            f"## Version {version}\n"
-            f"### Goals\n{self.infer_goals_from_summary(what_changed, analysis_data)}\n\n"
-            f"### What Changed\n{what_changed}\n\n"
-            f"### What's Good for the User\n{benefit_text}\n\n"
-            f"### What's Possibly Next\n{self.suggest_next_steps(analysis_data, previous_suggestions)}\n"
-        )
-        content += f"{history_start_marker}\n{new_entry}\n\n{existing_history}\n"
-        content += "## 15. Contacts\n\n"
-        content += f"*   **Email:** {CONTACT_EMAIL}\n*   **Repository:** {REPOSITORY_ADDRESS}\n\n"
-        content += "## 16. Privacy & Terms\n\n"
-        content += f"*   **Privacy Policy:** [{PRIVACY_POLICY_FILE}]({PRIVACY_POLICY_FILE})\n\n"
-        content += "## 17. Investor Relations\n\n"
-        content += f"> [!IMPORTANT]\n"
-        content += f"> **If you want to be my investor in my new AI-based project - link to [ndaotec.com](http://ndaotec.com)**\n\n"
-        content += "## 18. Copyright\n\n"
-        content += f"{COPYRIGHT_TEXT}\n"
+    def generate_readme_content(self, version, analysis_data, what_changed):
+        """Generate the full content for the README file following the requested 17-block structure."""
+        self.version = version
+        
+        # 1. Description Summary (includes title and version)
+        content = self._create_description_summary()
+        
+        def get_section(title):
+            ai_content = ""
+            if self.ai_service:
+                ai_content = self.ai_service.generate_content(self._generate_section_prompt(title), analysis_data)
+            
+            if ai_content:
+                # Remove any existing headers from AI content
+                return re.sub(r"^#+ ([\d\.]+)? ?[A-Za-z &]+\n*", "", ai_content, flags=re.MULTILINE).strip() + "\n\n"
+            else:
+                return self._get_fallback_content(title, analysis_data) + "\n\n"
+
+        # Sequential addition of all 17 sections
+        sections = [
+            "2. Use Cases", "3. User Stories", "4. FAQ", "5. How To",
+            "6. Features", "7. Requirements", "8. Install", "9. Modules Map",
+            "10. Dependencies Map", "11. Project Map", "12. Last Version Summary",
+            "13. Version History", "14. Contacts", "15. Privacy & Terms",
+            "16. Investor Relations", "17. Copyright"
+        ]
+        
+        for section_title in sections:
+            content += f"## {section_title}\n\n"
+            
+            if "Project Map" in section_title:
+                content += f"{self.generate_project_map()}\n\n"
+            elif "Last Version Summary" in section_title:
+                content += f"**Changes in `{version}`**:\n\n{what_changed}\n\n"
+            elif "Version History" in section_title:
+                content += f"{self._get_formatted_history()}\n\n"
+            elif "Contacts" in section_title:
+                content += f"Maintainer: {CONTACT_EMAIL}\n\n"
+            else:
+                content += get_section(section_title)
+        
+        # Add Repository Analysis at the end
+        content += self.analyze_repository()
+        
         return content
 
     def update_readme(self, content):
@@ -3464,11 +3587,22 @@ class MetricsHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
 def run_web_server(port=8080):
-    """Run the simple web server in a separate thread."""
+    """Run the simple web server in a separate thread with port-conflict handling."""
     handler = MetricsHandler
-    with socketserver.TCPServer(("", port), handler) as httpd:
-        print(f"Web interface running at http://localhost:{port}")
-        httpd.serve_forever()
+    max_tries = 10
+    for try_port in range(port, port + max_tries):
+        try:
+            # Set allow_reuse_address to avoid "Address already in use" after restarts
+            socketserver.TCPServer.allow_reuse_address = True
+            with socketserver.TCPServer(("", try_port), handler) as httpd:
+                print(f"Web interface running at http://localhost:{try_port}")
+                httpd.serve_forever()
+                return
+        except OSError as e:
+            if try_port < port + max_tries - 1:
+                print(f"Port {try_port} is busy, trying {try_port + 1}...")
+            else:
+                print(f"Failed to start web server: {e}")
 
 if not HAS_PYQT:
     class GUIApp:
